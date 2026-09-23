@@ -28,23 +28,12 @@ export function renderDataNode(name,value,key='',level=0){
  if(!entries.length)return '<div class="report-list"><h4>'+title+'</h4><p>Sem registros informados.</p></div>';
  return '<div class="report-object"><h4>'+title+'</h4><div class="report-fields">'+entries.map(([k,v])=>renderDataNode(labelOf(k),v,k,level+1)).join('')+'</div></div>';
 }
-export function buildReportHtml(data,model,municipal={},printedAt=new Date()){
+export function buildReportHtml(data,model,printedAt=new Date()){
  const area=(name,v)=>'<section class="report-chapter"><h2>'+escapeHtml(name)+'</h2>'+renderDataNode(name,v)+'</section>';
  const basics=Object.fromEntries(Object.entries(data).filter(([k])=>k!=='estabelecimento'&&k!=='socios'));
- const municip=[
-  ['Município',municipal.cityUf||model.cityUf||'Não informado'],
-  ['Inscrição municipal',municipal.inscricao||'Não informada'],
-  ['Conferência da inscrição',municipal.inscricaoConfirmada?'Conferência manual declarada; ATLAS não verificou no órgão municipal':'Pendente de conferência na prefeitura'],
-  ['Número do alvará',municipal.alvara||'Não informado'],
-  ['Data de emissão',municipal.emissao?formatReportValue(municipal.emissao,'data_emissao'):'Não informada'],
-  ['Data de validade',municipal.validade?formatReportValue(municipal.validade,'data_validade'):'Não informada'],
-  ['Conferência do alvará',municipal.alvaraConfirmado?'Conferência manual declarada; ATLAS não verificou no órgão municipal':'Pendente de conferência na prefeitura'],
-  ['Observações do usuário',municipal.observacao||'Não informadas']
- ];
  const fields=[['Razão social',model.razaoSocial],['Nome fantasia',model.fantasia],['Capital social',model.capital],['Porte',model.porte],['Início das atividades',model.inicio],['Endereço',model.address],['Cidade/UF',model.cityUf],['CNAE principal',model.activity],['Telefone',model.phones],['E-mail',model.email]];
  return '<div class="print-page"><header class="print-header"><img class="print-logo" src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE"><div><div class="print-kicker">RELATÓRIO CADASTRAL · ATLAS CNPJ.EXPLORE</div><h1>'+escapeHtml(model.razaoSocial)+'</h1><p>CNPJ '+escapeHtml(model.cnpj||'')+' · Situação '+escapeHtml(model.status)+'</p><p>Emitido em '+escapeHtml(printedAt.toLocaleString('pt-BR'))+'</p></div></header>'
  +'<section class="report-chapter report-summary"><h2>Resumo empresarial</h2><div class="report-fields">'+fields.map(([k,v])=>'<div class="report-field"><span>'+escapeHtml(k)+'</span><strong>'+escapeHtml(v||'Não informado')+'</strong></div>').join('')+'</div></section>'
  +area('Dados da empresa',basics)+area('Estabelecimento e atividades',data.estabelecimento||{})+area('Quadro societário',data.socios||[])
- +'<section class="report-chapter"><h2>Inscrição municipal e alvará de funcionamento</h2><div class="report-fields">'+municip.map(([k,v])=>'<div class="report-field"><span>'+escapeHtml(k)+'</span><strong>'+escapeHtml(v)+'</strong></div>').join('')+'</div><p class="report-warning">Dados municipais informados pelo usuário. Não há validação municipal automática nesta versão. A ausência de registro nesta consulta não indica irregularidade nem inexistência de licença.</p></section>'
- +'<footer class="print-footer">Fonte cadastral: API pública CNPJws. Dados sujeitos à atualização. Consulte a prefeitura e os órgãos competentes para comprovação oficial.</footer></div>';
+ +'<footer class="print-footer">Fonte cadastral: API pública CNPJws. Dados sujeitos à atualização. Confirme informações essenciais nas bases oficiais.</footer></div>';
 }
