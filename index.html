@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#061327" />
+  <meta name="description" content="ATLAS CNPJ.EXPLORE · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
+  <title>ATLAS CNPJ.EXPLORE</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="site-header">
+      <div class="brand-group">
+        <img src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE" class="brand-logo" />
+        <div class="brand-copy">
+          <span class="eyebrow">INTELIGÊNCIA CADASTRAL</span>
+          <h1>ATLAS CNPJ.EXPLORE</h1>
+          <p>Consulte dados empresariais, navegue em quatro categorias e baixe relatórios completos em PDF.</p>
+        </div>
+      </div>
+      <div class="status-card">
+        <span class="status-title">Conectividade</span>
+        <strong id="connect-status">Conectando ao servidor local...</strong>
+        <a href="https://docs.cnpj.ws/referencia-de-api/api-publica/consultando-cnpj" target="_blank" rel="noreferrer">Documentação da API ↗</a>
+      </div>
+    </header>
+
+    <main class="main-layout">
+      <section class="search-card">
+        <div class="search-head">
+          <div>
+            <span class="section-kicker">CONSULTA</span>
+            <h2>Buscar empresa por CNPJ</h2>
+          </div>
+          <div class="badge-inline">Fonte: publica.cnpj.ws</div>
+        </div>
+
+        <form id="search-form" novalidate>
+          <label for="cnpj-input">Número do CNPJ</label>
+          <div class="search-row">
+            <div class="input-shell" id="input-wrap">
+              <span class="input-icon">⌕</span>
+              <input id="cnpj-input" name="cnpj" type="text" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" maxlength="18" aria-describedby="cnpj-help" />
+              <span class="input-counter" id="input-count">0/14</span>
+            </div>
+            <button type="submit" class="primary-btn" id="submit-btn" disabled>Consultar CNPJ</button>
+          </div>
+          <div class="helper-row" id="cnpj-help">
+            <span id="cnpj-help-text">Digite os 14 números do CNPJ. O sistema valida os dígitos verificadores automaticamente.</span>
+            <span>Até 3 novas consultas por minuto/IP, conforme limite da API pública.</span>
+          </div>
+        </form>
+      </section>
+
+      <section id="notice" hidden></section>
+
+      <section id="loading" class="loading-card" hidden aria-live="polite">
+        <span class="loader"></span>
+        <div>
+          <strong>Consultando dados da empresa</strong>
+          <p>Buscando informações cadastrais pelo servidor local ATLAS...</p>
+        </div>
+      </section>
+
+      <section id="empty" class="empty-card">
+        <div class="empty-icon">◎</div>
+        <div>
+          <strong>Pronto para consultar</strong>
+          <p>Informe um CNPJ válido para visualizar o dashboard executivo e o explorador completo dos dados retornados.</p>
+        </div>
+      </section>
+
+      <section id="results" hidden aria-live="polite"></section>
+    </main>
+
+    <footer class="site-footer">
+      <span>ATLAS CNPJ.EXPLORE</span>
+      <span>Dados fornecidos por CNPJws · Uso recomendado para análise e conferência</span>
+    </footer>
+  </div>
+</body>
+</html>

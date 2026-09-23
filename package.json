@@ -1,0 +1,10 @@
+{
+  "name": "atlas-cnpj-explore-vercel",
+  "private": true,
+  "version": "3.2.0",
+  "type": "module",
+  "description": "ATLAS CNPJ.EXPLORE preparado para hospedagem na Vercel.",
+  "engines": {
+    "node": "24.x"
+  }
+}

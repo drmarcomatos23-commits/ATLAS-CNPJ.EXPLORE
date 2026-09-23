@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="ATLAS CNPJ.EXPLORE">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0e305e"/>
+      <stop offset="100%" stop-color="#071322"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#f4d69b"/>
+      <stop offset="100%" stop-color="#c59647"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="26" fill="url(#bg)"/>
+  <circle cx="52" cy="64" r="34" fill="none" stroke="url(#gold)" stroke-width="4"/>
+  <path d="M18 64h68M52 30c10 8 16 20 16 34s-6 26-16 34M52 30c-10 8-16 20-16 34s6 26 16 34" fill="none" stroke="url(#gold)" stroke-width="3" opacity=".88"/>
+  <path d="M74 30l26 62" stroke="url(#gold)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M88 30l-16 38h11l5-12 5 12h12L88 30z" fill="url(#gold)"/>
+</svg>
