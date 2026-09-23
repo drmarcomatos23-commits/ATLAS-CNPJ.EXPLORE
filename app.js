@@ -1,3 +1,4 @@
+import { createExtrasManager } from './extras.mjs';
 import { buildReportHtml } from './report.mjs';
 import { validCnpj as validBranchCnpj, normalizeBranchList, branchFromCnpj } from './filiais.mjs';
 const $ = (selector) => document.querySelector(selector);
@@ -13,6 +14,9 @@ let current = null;
 let controller = null;
 let activeRequest = 0;
 let activeTab = 'company';
+let branchState={root:'',ids:[],details:{},mode:'idle',page:1,pages:1,total:null,error:'',busy:''};
+let branchRequest=0;
+const extras=createExtrasManager(()=>current);
 
 
 const digitsOf = (v) => String(v ?? '').replace(/\D/g, '');
@@ -230,7 +234,7 @@ function ensurePrintArea(data) {
   printArea.innerHTML=buildReportHtml(data,getSummaryModel(data),new Date(),{
     mode:branchState.mode,total:branchState.total,pages:branchState.pages,
     page:branchState.page,ids:[...branchState.ids],details:{...branchState.details}
-  });
+  },extras.getResults());
 }
 function printReport() {
   if (!current) return;
@@ -307,6 +311,7 @@ function renderResult(data) {
     </div>
     ${buildSummary(data)}
     ${branchPanel(data)}
+    ${extras.panel()}
     ${buildExplorer(data)}
     <div class="source-note">Dados fornecidos pela CNPJws. Utilize este painel como apoio e confirme informações cadastrais essenciais nos canais oficiais.</div>
   `;
@@ -315,6 +320,8 @@ function renderResult(data) {
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderExplorerSection(); }));
   $('#print-btn').addEventListener('click', printReport);
   renderExplorerSection();
+  extras.reset();
+  extras.render();
   branchRequest++;
   branchState={root:String(data.cnpj_raiz||data.estabelecimento?.cnpj_raiz||digitsOf(data.estabelecimento?.cnpj).slice(0,8)),ids:[],details:{},mode:'idle',page:1,pages:1,total:null,error:'',busy:''};
   discoverBranches(1);
@@ -337,6 +344,7 @@ form.addEventListener('submit', async (event) => {
   controller = new AbortController();
   const request = ++activeRequest;
   current = null;
+  extras.reset();
   branchRequest++;
   results.hidden = true;
   empty.hidden = true;
