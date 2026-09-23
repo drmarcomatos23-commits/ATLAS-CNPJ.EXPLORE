@@ -1,3 +1,4 @@
+import { buildReportHtml } from './report.mjs';
 const $ = (selector) => document.querySelector(selector);
 const form = $('#search-form');
 const input = $('#cnpj-input');
@@ -10,7 +11,10 @@ const empty = $('#empty');
 let current = null;
 let controller = null;
 let activeRequest = 0;
-let activeTab = 'overview';
+let activeTab = 'company';
+let municipal = blankMunicipal();
+function blankMunicipal() { return { inscricao: '', alvara: '', emissao: '', validade: '', inscricaoConfirmada: false, alvaraConfirmado: false, observacao: '' }; }
+
 
 const digitsOf = (v) => String(v ?? '').replace(/\D/g, '');
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -166,85 +170,16 @@ function buildSummary(data) {
     </section>
   `;
 }
-function compactValue(value) {
-  if (Array.isArray(value)) return value.length ? `${value.length} item(ns)` : 'Sem registros';
-  if (value && typeof value === 'object') return Object.keys(value).length ? `${Object.keys(value).length} campo(s)` : 'Sem registros';
-  return formatValue(value, '');
-}
 function getExplorerSections(data) {
   const e = data.estabelecimento || {};
-  const sections = [
-    {
-      key: 'overview',
-      label: 'Visão geral',
-      value: {
-        razao_social: data.razao_social,
-        natureza_juridica: data.natureza_juridica,
-        porte: data.porte,
-        capital_social: data.capital_social,
-        simples: data.simples,
-        estabelecimento: {
-          nome_fantasia: e.nome_fantasia,
-          situacao_cadastral: e.situacao_cadastral,
-          data_inicio_atividade: e.data_inicio_atividade,
-          atividade_principal: e.atividade_principal,
-        }
-      }
-    },
-    {
-      key: 'company',
-      label: 'Empresa',
-      value: {
-        razao_social: data.razao_social,
-        cnpj_raiz: data.cnpj_raiz,
-        natureza_juridica: data.natureza_juridica,
-        capital_social: data.capital_social,
-        porte: data.porte,
-        simples: data.simples,
-        mei: data.mei,
-      }
-    },
-    {
-      key: 'establishment',
-      label: 'Estabelecimento',
-      value: data.estabelecimento || {}
-    },
-    {
-      key: 'partners',
-      label: 'Sócios',
-      value: Array.isArray(data.socios) ? data.socios : (Array.isArray(data.quadro_societario) ? data.quadro_societario : [])
-    },
-    {
-      key: 'taxes',
-      label: 'Tributos / Inscrições',
-      value: {
-        inscricoes_estaduais: Array.isArray(e.inscricoes_estaduais) ? e.inscricoes_estaduais : (Array.isArray(data.inscricoes_estaduais) ? data.inscricoes_estaduais : []),
-        simples: data.simples,
-        estabelecimento: {
-          situacao_cadastral: e.situacao_cadastral,
-          data_situacao_cadastral: e.data_situacao_cadastral,
-        }
-      }
-    }
+  const company = Object.fromEntries(Object.entries(data).filter(([key]) => key !== 'socios' && key !== 'estabelecimento'));
+  const registries = Array.isArray(e.inscricoes_estaduais) ? e.inscricoes_estaduais : (Array.isArray(data.inscricoes_estaduais) ? data.inscricoes_estaduais : []);
+  return [
+    { key: 'company', label: 'Dados da empresa', value: company },
+    { key: 'establishment', label: 'Estabelecimento', value: e },
+    { key: 'partners', label: 'Sócios', value: Array.isArray(data.socios) ? data.socios : [] },
+    { key: 'taxes', label: 'Fiscal e licenças', value: { inscricoes_estaduais: registries, simples: data.simples, inscricao_municipal: municipal.inscricao || 'Não verificada', alvara: municipal.alvara || 'Não verificado' } }
   ];
-  const used = new Set(['razao_social','cnpj_raiz','natureza_juridica','capital_social','porte','simples','mei','estabelecimento','socios','quadro_societario','inscricoes_estaduais']);
-  const extra = {};
-  Object.entries(data || {}).forEach(([key, value]) => {
-    if (!used.has(key)) extra[key] = value;
-  });
-  if (Object.keys(extra).length) {
-    sections.push({ key: 'others', label: 'Outros dados', value: extra });
-  }
-  return sections.filter((section) => {
-    const value = section.value;
-    if (Array.isArray(value)) return value.length > 0;
-    if (value && typeof value === 'object') return Object.values(value).some((item) => {
-      if (Array.isArray(item)) return item.length > 0;
-      if (item && typeof item === 'object') return Object.keys(item).length > 0;
-      return item !== undefined && item !== null && item !== '';
-    });
-    return value !== undefined && value !== null && value !== '';
-  });
 }
 function treeNode(name, value, key, depth = 0) {
   if (value === null || typeof value !== 'object') {
@@ -290,27 +225,6 @@ function buildExplorer(data) {
     </section>
   `;
 }
-function buildPrintSection(title, value) {
-  if (Array.isArray(value)) {
-    return `
-      <section class="print-section">
-        <h3>${escapeHtml(title)}</h3>
-        ${value.length ? `<div class="print-table">${value.map((item, index) => `<div class="print-block"><strong>${escapeHtml(`Item ${index + 1}`)}</strong>${item && typeof item === 'object' ? Object.entries(item).map(([k, v]) => `<div class="print-row"><span>${escapeHtml(friendlyLabel(k))}</span><b>${escapeHtml(compactValue(v))}</b></div>`).join('') : `<div class="print-row"><b>${escapeHtml(compactValue(item))}</b></div>`}</div>`).join('')}</div>` : '<p>Sem registros.</p>'}
-      </section>`;
-  }
-  if (value && typeof value === 'object') {
-    return `
-      <section class="print-section">
-        <h3>${escapeHtml(title)}</h3>
-        <div class="print-grid">${Object.entries(value).map(([k, v]) => `<div class="print-row"><span>${escapeHtml(friendlyLabel(k))}</span><b>${escapeHtml(compactValue(v))}</b></div>`).join('')}</div>
-      </section>`;
-  }
-  return `
-    <section class="print-section">
-      <h3>${escapeHtml(title)}</h3>
-      <div class="print-grid"><div class="print-row"><b>${escapeHtml(compactValue(value))}</b></div></div>
-    </section>`;
-}
 function ensurePrintArea(data) {
   let printArea = $('#print-area');
   if (!printArea) {
@@ -318,49 +232,38 @@ function ensurePrintArea(data) {
     printArea.id = 'print-area';
     document.body.appendChild(printArea);
   }
-  const model = getSummaryModel(data);
-  const sections = getExplorerSections(data);
-  const now = new Date();
-  printArea.innerHTML = `
-    <div class="print-page">
-      <div class="print-header">
-        <div class="print-brand">
-          <img src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE">
-          <div>
-            <span class="print-kicker">RELATÓRIO DE CONSULTA</span>
-            <h1>${escapeHtml(model.razaoSocial)}</h1>
-            <p>CNPJ: ${escapeHtml(model.cnpj)} · Situação: ${escapeHtml(model.status)}</p>
-            <p>Nome fantasia: ${escapeHtml(model.fantasia)}</p>
-          </div>
-        </div>
-        <div class="print-meta">Emitido em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}<br>ATLAS CNPJ.EXPLORE</div>
-      </div>
-      <section class="print-section">
-        <h2>Resumo cadastral</h2>
-        <div class="print-grid summary">
-          <div class="print-row"><span>Capital social</span><b>${escapeHtml(model.capital)}</b></div>
-          <div class="print-row"><span>Porte</span><b>${escapeHtml(model.porte)}</b></div>
-          <div class="print-row"><span>Início das atividades</span><b>${escapeHtml(model.inicio)}</b></div>
-          <div class="print-row"><span>Campos preenchidos</span><b>${countFilled(data).toLocaleString('pt-BR')}</b></div>
-          <div class="print-row wide"><span>Endereço</span><b>${escapeHtml(model.address)}</b></div>
-          <div class="print-row"><span>Cidade / UF</span><b>${escapeHtml(model.cityUf)}</b></div>
-          <div class="print-row"><span>Telefone</span><b>${escapeHtml(model.phones)}</b></div>
-          <div class="print-row wide"><span>CNAE principal</span><b>${escapeHtml(model.activity)}</b></div>
-          <div class="print-row wide"><span>E-mail</span><b>${escapeHtml(model.email)}</b></div>
-        </div>
-      </section>
-      ${sections.map((section) => buildPrintSection(section.label, section.value)).join('')}
-      <div class="print-footer">Dados fornecidos pela API pública CNPJws. Recomenda-se conferência oficial quando necessário.</div>
-    </div>`;
+  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data), { ...municipal, cityUf: getSummaryModel(data).cityUf });
 }
 function printReport() {
   if (!current) return;
   ensurePrintArea(current);
-  document.body.classList.add('printing');
-  setTimeout(() => {
-    window.print();
-    setTimeout(() => document.body.classList.remove('printing'), 500);
-  }, 100);
+  window.print();
+}
+function municipalSection(data) {
+  const e = data.estabelecimento || {};
+  const city = (e.cidade && typeof e.cidade === 'object' ? e.cidade.nome : e.cidade) || '';
+  const state = (e.estado && typeof e.estado === 'object' ? e.estado.sigla : e.estado) || '';
+  const santos = city.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === 'santos' && state.toUpperCase() === 'SP';
+  const links = santos
+    ? '<div class="municipal-links"><a href="https://egov.santos.sp.gov.br/tribusweb/CertidaoGeral/Certidao" target="_blank" rel="noopener noreferrer">Certidão municipal ↗</a><a href="https://egov.santos.sp.gov.br/tribusweb/Mobiliario/Alvara" target="_blank" rel="noopener noreferrer">Emissão do alvará ↗</a><a href="https://egov.santos.sp.gov.br/tribusweb/Mobiliario/AlvaraAutenticarInicio" target="_blank" rel="noopener noreferrer">Autenticidade do alvará ↗</a></div>'
+    : '<p class="municipal-helper">Para '+escapeHtml([city,state].filter(Boolean).join(' / ') || 'o município')+', consulte o portal oficial da respectiva prefeitura. Não há integração municipal disponível para consulta automática.</p>';
+  const entry = (key, title, placeholder = '') =>
+    '<label>'+title+' <input data-municipal="'+key+'" value="'+escapeHtml(municipal[key])+'" autocomplete="off" placeholder="'+placeholder+'" maxlength="60"></label>';
+  const dates = (key, title) =>
+    '<label>'+title+' <input type="date" data-municipal="'+key+'" value="'+escapeHtml(municipal[key])+'"></label>';
+  const check = (key, title) =>
+    '<label class="municipal-check"><input type="checkbox" data-municipal="'+key+'" '+(municipal[key]?'checked':'')+'> '+title+'</label>';
+  return '<section class="dashboard-card municipal-card" aria-labelledby="municipal-title">'
+    +'<div class="municipal-head"><div><span class="section-kicker">CONFERÊNCIA COMPLEMENTAR</span><h3 id="municipal-title">Inscrição municipal e alvará</h3><p>O cadastro CNPJws não fornece esses documentos. Os campos abaixo são preenchidos manualmente após consulta ao órgão municipal.</p></div><span class="verification-badge">Não verificado automaticamente</span></div>'
+    +links+'<div class="municipal-form">'
+    +entry('inscricao','Inscrição municipal','Número no cadastro municipal')
+    +entry('alvara','Número do alvará','Número constante no documento')
+    +dates('emissao','Emissão do alvará')
+    +dates('validade','Validade do alvará')
+    +check('inscricaoConfirmada','Conferi a inscrição em documento/portal oficial.')
+    +check('alvaraConfirmado','Conferi o alvará em documento/portal oficial.')
+    +'<label class="municipal-wide">Observações e referência documental <textarea data-municipal="observacao" maxlength="500" rows="2" placeholder="Ex.: número da certidão e data da consulta; não informe senhas ou códigos de acesso.">'+escapeHtml(municipal.observacao)+'</textarea></label></div>'
+    +'<p class="municipal-disclaimer">O ATLAS não consulta o sistema municipal nem confirma a autenticidade dos documentos. A marcação de conferência é uma declaração do usuário, não uma validação automatizada. Não informe código de acesso ou CAPTCHA nesta tela.</p></section>';
 }
 function renderResult(data) {
   current = data;
@@ -374,6 +277,7 @@ function renderResult(data) {
       <div class="success-box">✓ Dados carregados</div>
     </div>
     ${buildSummary(data)}
+    ${municipalSection(data)}
     ${buildExplorer(data)}
     <div class="source-note">Dados fornecidos pela CNPJws. Utilize este painel como apoio e confirme informações cadastrais essenciais nos canais oficiais.</div>
   `;
@@ -381,6 +285,11 @@ function renderResult(data) {
   empty.hidden = true;
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderExplorerSection(); }));
   $('#print-btn').addEventListener('click', printReport);
+  document.querySelectorAll('[data-municipal]').forEach(field => field.addEventListener('change', () => {
+    const key = field.dataset.municipal;
+    municipal[key] = field.type === 'checkbox' ? field.checked : field.value;
+    if (activeTab === 'taxes') renderExplorerSection();
+  }));
   renderExplorerSection();
 }
 function refreshInput() {
@@ -401,6 +310,7 @@ form.addEventListener('submit', async (event) => {
   controller = new AbortController();
   const request = ++activeRequest;
   current = null;
+  municipal = blankMunicipal();
   results.hidden = true;
   empty.hidden = true;
   loading.hidden = false;
@@ -418,7 +328,7 @@ form.addEventListener('submit', async (event) => {
     if (request === activeRequest) renderResult(body);
   } catch (error) {
     if (error.name === 'AbortError' || request !== activeRequest) return;
-    displayNotice(error instanceof TypeError ? 'Servidor local indisponível. Mantenha a janela do ATLAS aberta, confira sua conexão e tente novamente.' : error.message);
+    displayNotice(error instanceof TypeError ? 'API indisponível. Mantenha a janela do ATLAS aberta, confira sua conexão e tente novamente.' : error.message);
     empty.hidden = false;
   } finally {
     if (request === activeRequest) {
@@ -432,10 +342,10 @@ async function health() {
   try {
     const response = await fetch('/api/health', { cache: 'no-store' });
     if (!response.ok) throw new Error('Indisponível');
-    $('#connect-status').textContent = 'Servidor local conectado · CNPJws ativa';
+    $('#connect-status').textContent = 'API conectada · CNPJws';
   } catch {
     $('#connect-status').textContent = 'Servidor local indisponível';
-    displayNotice('Execute o arquivo INICIAR-WINDOWS.bat e acesse o endereço http://127.0.0.1:4173. Não abra o index.html diretamente.');
+    displayNotice('Falha na conexão com o backend. Verifique o deployment na Vercel e tente novamente.');
   }
 }
 refreshInput();
