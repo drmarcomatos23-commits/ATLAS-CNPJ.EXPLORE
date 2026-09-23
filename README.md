@@ -1,22 +1,22 @@
-# ATLAS CNPJ.EXPLORE · v5
+# ATLAS CNPJ.EXPLORE · v5.0.2
 
-Consulta empresarial de CNPJ com dashboard responsivo, explorador de dados, relatório para impressão/PDF e módulo **Matriz e filiais**.
+Consulta de dados cadastrais de empresas pelo CNPJ, dashboard responsivo e relatório completo para impressão/PDF.
 
-## Matriz e filiais
+## Funcionalidades
 
-- Na consulta principal, exibe a raiz do CNPJ e a nova seção de estabelecimentos.
-- **Sem custos adicionais obrigatórios:** com a API pública, é possível informar um CNPJ conhecido da mesma raiz e consultar seu endereço, situação e atividades (principal e secundárias). O ATLAS não afirma que uma empresa não tem filiais quando a fonte não disponibiliza uma listagem.
-- **Descoberta automática opcional:** com uma credencial comercial CNPJws e acesso à consulta pela raiz, o ATLAS lista os CNPJs encontrados, com paginação. Clique em *Ver dados* em cada unidade para consultar endereço e CNAEs.
-- O PDF mostra unidades consultadas e marca as que ainda não tiveram os detalhes verificados.
+- Consulta individual de CNPJ pela API pública CNPJws, via função serverless da Vercel.
+- Painel organizado em quatro categorias: Dados da empresa, Estabelecimento, Sócios e Dados fiscais.
+- Relatório A4 com objetos e listas expandidos, incluindo CNAEs, sócios e inscrições estaduais.
+- Identidade visual ATLAS e interface adaptada para computadores e celulares.
 
-**Importante:** a API pública não oferece listagem completa pela raiz. A integração comercial pode depender de plano e contabilizar requisições. O token é armazenado apenas no backend.
+## Publicação na Vercel
 
-## Ativar descoberta automática, caso possua credencial CNPJws
+Framework: **Other**. Root Directory: raiz do repositório. Node.js: **24.x**. Acesse `/api/health` para conferir o backend; depois consulte um CNPJ válido e teste a impressão/PDF.
 
-No painel da Vercel: **Project → Settings → Environment Variables**, crie a variável `CNPJWS_TOKEN`, cole o token comercial e aplique ao ambiente de produção. Depois faça **Redeploy**. Não coloque o token nos arquivos do GitHub nem no navegador.
+O serviço público CNPJws possui limites de requisições. Informações cadastrais podem estar sujeitas à atualização; para comprovação, consulte os canais oficiais.
 
-Endpoints: `/api/health`, `/api/cnpj/:cnpj`, `/api/filiais?raiz=12345678&page=1`, `/api/filial?cnpj=12345678000195`.
+## Histórico de versões
 
-## Publicação
-
-O projeto utiliza frontend estático e funções serverless da Vercel (Framework: Other). Teste uma consulta de CNPJ válido, os dados da filial, a impressão em PDF e o layout no celular.
+- Backup da versão anterior à retirada da seção de filiais: branch `backup/atlas-v5-antes-remocao-filiais-20260923`.
+- Backup da versão 5.0 original: branch `backup/atlas-v5-antes-integracoes-20260923`.
+- Backup da versão 6.0 (fontes complementares): branch `backup/atlas-v6-antes-retorno-v5-20260923`.
