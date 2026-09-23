@@ -28,12 +28,27 @@ export function renderDataNode(name,value,key='',level=0){
  if(!entries.length)return '<div class="report-list"><h4>'+title+'</h4><p>Sem registros informados.</p></div>';
  return '<div class="report-object"><h4>'+title+'</h4><div class="report-fields">'+entries.map(([k,v])=>renderDataNode(labelOf(k),v,k,level+1)).join('')+'</div></div>';
 }
-export function buildReportHtml(data,model,printedAt=new Date()){
+export function buildReportHtml(data,model,printedAt=new Date(),branches=null){
  const area=(name,v)=>'<section class="report-chapter"><h2>'+escapeHtml(name)+'</h2>'+renderDataNode(name,v)+'</section>';
  const basics=Object.fromEntries(Object.entries(data).filter(([k])=>k!=='estabelecimento'&&k!=='socios'));
  const fields=[['Razão social',model.razaoSocial],['Nome fantasia',model.fantasia],['Capital social',model.capital],['Porte',model.porte],['Início das atividades',model.inicio],['Endereço',model.address],['Cidade/UF',model.cityUf],['CNAE principal',model.activity],['Telefone',model.phones],['E-mail',model.email]];
  return '<div class="print-page"><header class="print-header"><img class="print-logo" src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE"><div><div class="print-kicker">RELATÓRIO CADASTRAL · ATLAS CNPJ.EXPLORE</div><h1>'+escapeHtml(model.razaoSocial)+'</h1><p>CNPJ '+escapeHtml(model.cnpj||'')+' · Situação '+escapeHtml(model.status)+'</p><p>Emitido em '+escapeHtml(printedAt.toLocaleString('pt-BR'))+'</p></div></header>'
  +'<section class="report-chapter report-summary"><h2>Resumo empresarial</h2><div class="report-fields">'+fields.map(([k,v])=>'<div class="report-field"><span>'+escapeHtml(k)+'</span><strong>'+escapeHtml(v||'Não informado')+'</strong></div>').join('')+'</div></section>'
- +area('Dados da empresa',basics)+area('Estabelecimento e atividades',data.estabelecimento||{})+area('Quadro societário',data.socios||[])
+ +area('Dados da empresa',basics)+area('Estabelecimento e atividades',data.estabelecimento||{})+area('Quadro societário',data.socios||[])+renderBranchReport(branches)
  +'<footer class="print-footer">Fonte cadastral: API pública CNPJws. Dados sujeitos à atualização. Confirme informações essenciais nas bases oficiais.</footer></div>';
+}
+
+/** Registra somente unidades consultadas, explicitando levantamento parcial. */
+export function renderBranchReport(branches) {
+ if(!branches)return '<section class="report-chapter"><h2>Matriz e filiais</h2><p>Levantamento não realizado.</p></section>';
+ const items=(branches.ids||[]).map(cnpj=>[cnpj,branches.details?.[cnpj]]);
+ const text=branches.mode==='ready'
+  ? 'Listagem da CNPJws comercial. Total informado: '+(branches.total??'não informado')+' estabelecimento(s), incluindo matriz. Páginas '+branches.page+'/'+branches.pages+'. As unidades não detalhadas não foram verificadas individualmente.'
+  : 'Não foi possível identificar automaticamente todas as filiais pela API gratuita. Os resultados abaixo correspondem somente às unidades consultadas individualmente; não comprovam ausência de outras filiais.';
+ const cnpjValue=d=>{const c=digits(d);return c.length===14?c.slice(0,2)+'.'+c.slice(2,5)+'.'+c.slice(5,8)+'/'+c.slice(8,12)+'-'+c.slice(12):c;};
+ const details=items.map(([id,item],i)=>'<div class="report-record"><strong class="record-heading">Unidade '+(i+1)+' · '+escapeHtml(cnpjValue(id))+'</strong>'+
+  (item?'<div class="report-field"><span>Tipo</span><strong>'+escapeHtml(item.tipo)+'</strong></div><div class="report-field"><span>Nome fantasia</span><strong>'+escapeHtml(item.nomeFantasia)+'</strong></div><div class="report-field"><span>Situação</span><strong>'+escapeHtml(item.situacao)+'</strong></div><div class="report-field"><span>Endereço</span><strong>'+escapeHtml(item.endereco)+'</strong></div><div class="report-field"><span>CNAE principal</span><strong>'+escapeHtml([item.atividadePrincipal.codigo,item.atividadePrincipal.descricao].filter(Boolean).join(' — ')||'Não informado')+'</strong></div>'+
+    (item.atividadesSecundarias.length?'<h4>Atividades secundárias ('+item.atividadesSecundarias.length+')</h4>'+item.atividadesSecundarias.map(a=>'<div class="report-field"><span>'+escapeHtml(a.codigo)+'</span><strong>'+escapeHtml(a.descricao)+'</strong></div>').join(''):'<p>Atividades secundárias não informadas.</p>')
+  :'<p>Somente CNPJ identificado. Endereço e atividades pendentes de consulta individual.</p>')+'</div>').join('');
+ return '<section class="report-chapter"><h2>Matriz e filiais</h2><p class="report-warning">'+escapeHtml(text)+'</p>'+(items.length?details:'<p>Nenhuma outra unidade foi identificada nesta consulta.</p>')+'</section>';
 }
