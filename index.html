@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#061327" />
+  <meta name="theme-color" content="#f5f2eb" />
   <meta name="description" content="ATLAS CNPJ.EXPLORE · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
   <title>ATLAS CNPJ.EXPLORE</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css" />
-  <script src="/app.js" type="module"></script>
+  <link rel="stylesheet" href="/styles.css?v=4.0" />
+  <script src="/app.js?v=4.0" type="module"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -18,12 +18,12 @@
         <div class="brand-copy">
           <span class="eyebrow">INTELIGÊNCIA CADASTRAL</span>
           <h1>ATLAS CNPJ.EXPLORE</h1>
-          <p>Consulte dados empresariais, navegue em quatro categorias e baixe relatórios completos em PDF.</p>
+          <p>Consulta empresarial, verificações municipais orientadas e relatório completo para impressão/PDF.</p>
         </div>
       </div>
       <div class="status-card">
         <span class="status-title">Conectividade</span>
-        <strong id="connect-status">Conectando ao servidor local...</strong>
+        <strong id="connect-status">Verificando conexão...</strong>
         <a href="https://docs.cnpj.ws/referencia-de-api/api-publica/consultando-cnpj" target="_blank" rel="noreferrer">Documentação da API ↗</a>
       </div>
     </header>
@@ -61,7 +61,7 @@
         <span class="loader"></span>
         <div>
           <strong>Consultando dados da empresa</strong>
-          <p>Buscando informações cadastrais pelo servidor local ATLAS...</p>
+          <p>Buscando informações cadastrais pela API CNPJws...</p>
         </div>
       </section>
 
