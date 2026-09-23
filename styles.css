@@ -131,21 +131,6 @@ a:hover{text-decoration:underline}
 .source-note{margin-top:14px;color:var(--muted);font-size:12px;line-height:1.6}
 .site-footer{display:flex;justify-content:space-between;gap:14px;padding:20px 4px 0;color:#918678;font-size:12px}
 
-/* Verificação municipal orientada, sem alegação de consulta automática. */
-.municipal-card{padding:24px;margin-top:18px}
-.municipal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-.municipal-head h3{margin:6px 0;font-size:23px;color:var(--text-strong)}
-.municipal-head p,.municipal-disclaimer,.municipal-helper{font-size:13px;line-height:1.6;color:var(--muted)}
-.verification-badge{font-size:11px;font-weight:800;padding:9px 12px;border-radius:20px;background:#fff2da;color:#78613d;border:1px solid #dfccaa;white-space:nowrap}
-.municipal-links{display:flex;flex-wrap:wrap;gap:9px;margin:14px 0}
-.municipal-links a{font-size:12px;font-weight:700;display:inline-block;border:1px solid #d9cfbf;background:#f5eee3;border-radius:10px;padding:11px 12px}
-.municipal-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:15px}
-.municipal-form label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:700;color:#756c60;min-width:0}
-.municipal-form input:not([type=checkbox]),.municipal-form textarea{width:100%;min-width:0;background:#fffdf9;border:1px solid #d8cfc1;border-radius:12px;padding:12px;font-size:15px;color:var(--text-strong);font-weight:400}
-.municipal-form .municipal-check{flex-direction:row;align-items:flex-start;gap:9px;font-size:12px;line-height:1.4}
-.municipal-check input{accent-color:#9f8b72;width:18px;height:18px;flex-shrink:0;margin:0}
-.municipal-form .municipal-wide{grid-column:1/-1}
-.municipal-disclaimer{margin:14px 0 0;font-size:12px}
 #print-area{display:none}
 @media (max-width:1100px){
  .site-header{grid-template-columns:1fr}
@@ -182,12 +167,9 @@ a:hover{text-decoration:underline}
  .input-shell{min-height:50px}
  .input-shell input{font-size:16px}
  .helper-row{font-size:10px;gap:4px}
- .summary-top,.summary-brand-block,.municipal-head{flex-direction:column}
+ .summary-top,.summary-brand-block{flex-direction:column}
  .summary-logo{width:138px}
  .status-pill{white-space:normal}
- .municipal-card{padding:15px;border-radius:18px;margin-top:10px}
- .municipal-form{grid-template-columns:1fr;gap:12px}
- .verification-badge{white-space:normal}
  .explorer-card{margin-top:10px}
  .explorer-actions .secondary-btn{width:100%}
  .tab-btn{flex-shrink:0}
