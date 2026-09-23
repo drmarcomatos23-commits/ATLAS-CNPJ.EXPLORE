@@ -253,7 +253,7 @@ function renderBranchSection() {
   if(b.mode==='loading') status='<div class="branch-message">Localizando estabelecimentos na base comercial...</div>';
   else if(b.mode==='manual') status='<div class="branch-message">A API gratuita não lista automaticamente as filiais. Para descobrir todas pela raiz, habilite uma credencial comercial no servidor. Você pode conferir um CNPJ conhecido abaixo. <strong>A ausência de resultados não significa que a empresa não tenha filiais.</strong></div>';
   else if(b.mode==='ready')status='<div class="branch-message success">Listagem da CNPJws comercial. '+(b.total==null?'Total não informado pela fonte.':'Total informado pela fonte: '+b.total+' estabelecimento(s), incluindo a matriz.')+' Página '+b.page+'/'+b.pages+'. As informações detalhadas são consultadas individualmente.</div>';
-  else if(b.mode==='error')status='<div class="branch-message error">'+escapeHtml(b.error)+'. Você ainda pode conferir um CNPJ conhecido.</div>';
+  if(b.error)status+='<div class="branch-message error">'+escapeHtml(b.error)+'</div>';
   const empty=b.mode==='ready'&&!b.ids.length&&b.pages===1?'<p class="branch-message">Nenhuma outra unidade identificada na listagem consultada.</p>':'';
   const cards=b.ids.map(id=>branchCard(b.details[id],id)).join('');
   const paging=b.mode==='ready'&&b.pages>1?'<div class="branch-pagination"><button type="button" data-page="'+(b.page-1)+'" '+(b.page===1?'disabled':'')+'>← Anterior</button><span>Página '+b.page+' / '+b.pages+'</span><button type="button" data-page="'+(b.page+1)+'" '+(b.page>=b.pages?'disabled':'')+'>Próxima →</button></div>':'';
@@ -262,7 +262,7 @@ function renderBranchSection() {
   section.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>discoverBranches(Number(btn.dataset.page))));
   $('#branch-manual-form').addEventListener('submit',event=>{event.preventDefault();const d=digitsOf($('#branch-cnpj').value);if(!validBranchCnpj(d)){setBranchError('Informe um CNPJ válido, com 14 dígitos');return;}if(d.slice(0,8)!==b.root){setBranchError('Este CNPJ não possui a mesma raiz da empresa pesquisada');return;}if(d===digitsOf(current.estabelecimento?.cnpj)){setBranchError('Este CNPJ já corresponde à empresa consultada');return;}loadBranch(d);});
 }
-function setBranchError(message){branchState.error=message;branchState.mode='error';renderBranchSection();}
+function setBranchError(message){branchState.error=message;renderBranchSection();}
 async function discoverBranches(page=1){
   const request=branchRequest;
   if(page===1){branchState.mode='loading';renderBranchSection();}
@@ -276,7 +276,7 @@ async function discoverBranches(page=1){
     const ids=normalizeBranchList(body.cnpjs,branchState.root,currentCnpj);
     branchState={...branchState,ids:[...new Set([...branchState.ids,...ids])],mode:'ready',page:body.pagina||page,pages:Math.max(1,body.paginas||1),total:body.total??null,error:''};
     renderBranchSection();
-  }catch(error){if(request!==branchRequest)return;setBranchError(error.message||'Não foi possível consultar a listagem');}
+  }catch(error){if(request!==branchRequest)return;branchState.mode='error';setBranchError(error.message||'Não foi possível consultar a listagem');}
 }
 async function loadBranch(cnpj){
   if(branchState.busy)return;
