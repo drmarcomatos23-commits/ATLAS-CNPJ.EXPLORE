@@ -13,6 +13,8 @@ let current = null;
 let controller = null;
 let activeRequest = 0;
 let activeTab = 'company';
+let branchState = { root: '', ids: [], details: {}, mode: 'idle', page: 1, pages: 1, total: null, error: '', busy: '' };
+let branchRequest = 0;
 
 
 const digitsOf = (v) => String(v ?? '').replace(/\D/g, '');
