@@ -1,4 +1,5 @@
 import { buildReportHtml } from './report.mjs';
+import { validCnpj as validBranchCnpj, normalizeBranchList, branchFromCnpj } from './filiais.mjs';
 const $ = (selector) => document.querySelector(selector);
 const form = $('#search-form');
 const input = $('#cnpj-input');
@@ -225,17 +226,73 @@ function buildExplorer(data) {
 }
 function ensurePrintArea(data) {
   let printArea = $('#print-area');
-  if (!printArea) {
-    printArea = document.createElement('div');
-    printArea.id = 'print-area';
-    document.body.appendChild(printArea);
-  }
-  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data));
+  if (!printArea) {printArea=document.createElement('div');printArea.id='print-area';document.body.appendChild(printArea);}
+  printArea.innerHTML=buildReportHtml(data,getSummaryModel(data),new Date(),{
+    mode:branchState.mode,total:branchState.total,pages:branchState.pages,
+    page:branchState.page,ids:[...branchState.ids],details:{...branchState.details}
+  });
 }
 function printReport() {
   if (!current) return;
   ensurePrintArea(current);
   window.print();
+}
+function branchCard(branch,cnpj){
+  const known=Boolean(branch),main=known?branch.atividadePrincipal:null,all=known?branch.atividadesSecundarias:[];
+  const list=known?'<div class="branch-details"><p><b>Endereço:</b> '+escapeHtml(branch.endereco)+'</p><p><b>Atividade principal:</b> '+escapeHtml([main.codigo,main.descricao].filter(Boolean).join(' — ')||'Não informada')+'</p><details class="secondary-activities"><summary>Atividades secundárias ('+all.length+')</summary>'+(all.length?'<ul>'+all.map(item=>'<li>'+escapeHtml([item.codigo,item.descricao].filter(Boolean).join(' — '))+'</li>').join('')+'</ul>':'<p>Não informadas.</p>')+'</details></div>':'<p class="branch-pending">Endereço e atividades disponíveis após consultar esta unidade.</p>';
+  return '<article class="branch-card"><div class="branch-card-top"><div><span class="section-kicker">'+(known?escapeHtml(branch.tipo):'OUTRO CNPJ DA RAIZ')+'</span><h4>'+escapeHtml(formatCnpj(cnpj))+'</h4><p>'+(known?escapeHtml(branch.nomeFantasia):'Cadastro individual ainda não consultado')+'</p></div>'+(known?'<span class="status-pill '+(branch.situacao.toUpperCase()==='ATIVA'?'positive':'neutral')+'">'+escapeHtml(branch.situacao)+'</span>':'<button class="secondary-btn branch-detail-btn" type="button" data-branch-detail="'+cnpj+'" '+(branchState.busy===cnpj?'disabled':'')+'>'+(branchState.busy===cnpj?'Consultando...':'Ver dados')+'</button>')+'</div>'+list+'</article>';
+}
+function branchPanel(data) {
+  const e=data.estabelecimento||{},root=String(data.cnpj_raiz||e.cnpj_raiz||digitsOf(e.cnpj).slice(0,8));
+  return '<section class="dashboard-card branches" aria-labelledby="branches-title"><div class="branches-header"><div><span class="section-kicker">ESTABELECIMENTOS</span><h3 id="branches-title">Matriz e filiais</h3><p>Raiz do CNPJ: '+escapeHtml(root)+' · Confira outras unidades, seus endereços e atividades.</p></div><div class="branches-chip">Identificação por raiz</div></div><div id="branches-live" aria-live="polite"></div></section>';
+}
+function renderBranchSection() {
+  const section=$('#branches-live');if(!section||!current)return;
+  const b=branchState;
+  let status='';
+  if(b.mode==='loading') status='<div class="branch-message">Localizando estabelecimentos na base comercial...</div>';
+  else if(b.mode==='manual') status='<div class="branch-message">A API gratuita não lista automaticamente as filiais. Para descobrir todas pela raiz, habilite uma credencial comercial no servidor. Você pode conferir um CNPJ conhecido abaixo. <strong>A ausência de resultados não significa que a empresa não tenha filiais.</strong></div>';
+  else if(b.mode==='ready')status='<div class="branch-message success">Listagem da CNPJws comercial. '+(b.total==null?'Total não informado pela fonte.':'Total informado pela fonte: '+b.total+' estabelecimento(s), incluindo a matriz.')+' Página '+b.page+'/'+b.pages+'. As informações detalhadas são consultadas individualmente.</div>';
+  else if(b.mode==='error')status='<div class="branch-message error">'+escapeHtml(b.error)+'. Você ainda pode conferir um CNPJ conhecido.</div>';
+  const empty=b.mode==='ready'&&!b.ids.length&&b.pages===1?'<p class="branch-message">Nenhuma outra unidade identificada na listagem consultada.</p>':'';
+  const cards=b.ids.map(id=>branchCard(b.details[id],id)).join('');
+  const paging=b.mode==='ready'&&b.pages>1?'<div class="branch-pagination"><button type="button" data-page="'+(b.page-1)+'" '+(b.page===1?'disabled':'')+'>← Anterior</button><span>Página '+b.page+' / '+b.pages+'</span><button type="button" data-page="'+(b.page+1)+'" '+(b.page>=b.pages?'disabled':'')+'>Próxima →</button></div>':'';
+  section.innerHTML=status+empty+'<div class="branch-list">'+cards+'</div>'+paging+'<form id="branch-manual-form" class="branch-manual"><label for="branch-cnpj">Consultar outra unidade pelo CNPJ completo</label><div class="branch-input-row"><input id="branch-cnpj" type="text" inputmode="numeric" autocomplete="off" maxlength="18" placeholder="00.000.000/0000-00"><button type="submit" class="secondary-btn" '+(b.busy?'disabled':'')+'>Consultar unidade</button></div><p>O CNPJ deve pertencer à mesma raiz ('+escapeHtml(b.root)+'). Consultas gratuitas adicionais estão sujeitas ao limite de 3/min por IP.</p></form>';
+  section.querySelectorAll('[data-branch-detail]').forEach(btn=>btn.addEventListener('click',()=>loadBranch(btn.dataset.branchDetail)));
+  section.querySelectorAll('[data-page]').forEach(btn=>btn.addEventListener('click',()=>discoverBranches(Number(btn.dataset.page))));
+  $('#branch-manual-form').addEventListener('submit',event=>{event.preventDefault();const d=digitsOf($('#branch-cnpj').value);if(!validBranchCnpj(d)){setBranchError('Informe um CNPJ válido, com 14 dígitos');return;}if(d.slice(0,8)!==b.root){setBranchError('Este CNPJ não possui a mesma raiz da empresa pesquisada');return;}if(d===digitsOf(current.estabelecimento?.cnpj)){setBranchError('Este CNPJ já corresponde à empresa consultada');return;}loadBranch(d);});
+}
+function setBranchError(message){branchState.error=message;branchState.mode='error';renderBranchSection();}
+async function discoverBranches(page=1){
+  const request=branchRequest;
+  if(page===1){branchState.mode='loading';renderBranchSection();}
+  try{
+    const response=await fetch('/api/filiais?raiz='+encodeURIComponent(branchState.root)+'&page='+page,{headers:{Accept:'application/json'}});
+    const body=await response.json().catch(()=>({}));
+    if(request!==branchRequest)return;
+    if(response.status===501){branchState.mode='manual';renderBranchSection();return;}
+    if(!response.ok)throw new Error(body.detalhes||body.titulo||'Falha HTTP '+response.status);
+    const currentCnpj=digitsOf(current?.estabelecimento?.cnpj);
+    const ids=normalizeBranchList(body.cnpjs,branchState.root,currentCnpj);
+    branchState={...branchState,ids:[...new Set([...branchState.ids,...ids])],mode:'ready',page:body.pagina||page,pages:Math.max(1,body.paginas||1),total:body.total??null,error:''};
+    renderBranchSection();
+  }catch(error){if(request!==branchRequest)return;setBranchError(error.message||'Não foi possível consultar a listagem');}
+}
+async function loadBranch(cnpj){
+  if(branchState.busy)return;
+  const request=branchRequest;
+  branchState.busy=cnpj;branchState.error='';renderBranchSection();
+  try{
+    const response=await fetch('/api/filial?cnpj='+encodeURIComponent(cnpj),{headers:{Accept:'application/json'}});
+    const body=await response.json().catch(()=>({}));
+    if(request!==branchRequest)return;
+    if(!response.ok)throw new Error(body.detalhes||body.titulo||'Falha HTTP '+response.status);
+    const record=branchFromCnpj(body,branchState.root);
+    branchState.details[cnpj]=record;
+    if(!branchState.ids.includes(cnpj))branchState.ids.push(cnpj);
+    branchState.error='';
+  }catch(error){if(request!==branchRequest)return;branchState.error=error.message||'Falha na consulta individual';}
+  finally{if(request===branchRequest){branchState.busy='';renderBranchSection();}}
 }
 function renderResult(data) {
   current = data;
@@ -249,6 +306,7 @@ function renderResult(data) {
       <div class="success-box">✓ Dados carregados</div>
     </div>
     ${buildSummary(data)}
+    ${branchPanel(data)}
     ${buildExplorer(data)}
     <div class="source-note">Dados fornecidos pela CNPJws. Utilize este painel como apoio e confirme informações cadastrais essenciais nos canais oficiais.</div>
   `;
@@ -257,6 +315,9 @@ function renderResult(data) {
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderExplorerSection(); }));
   $('#print-btn').addEventListener('click', printReport);
   renderExplorerSection();
+  branchRequest++;
+  branchState={root:String(data.cnpj_raiz||data.estabelecimento?.cnpj_raiz||digitsOf(data.estabelecimento?.cnpj).slice(0,8)),ids:[],details:{},mode:'idle',page:1,pages:1,total:null,error:'',busy:''};
+  discoverBranches(1);
 }
 function refreshInput() {
   input.value = formatCnpj(input.value);
@@ -276,6 +337,7 @@ form.addEventListener('submit', async (event) => {
   controller = new AbortController();
   const request = ++activeRequest;
   current = null;
+  branchRequest++;
   results.hidden = true;
   empty.hidden = true;
   loading.hidden = false;
