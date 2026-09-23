@@ -207,34 +207,3 @@ a:hover{text-decoration:underline}
  .report-warning,.print-footer{font-size:8pt;color:#605648;line-height:1.5;margin:10px 0}
  .print-footer{border-top:1px solid #ddd1c2;padding-top:6px}
 }
-
-/* Filiais: informadas pela raiz com credencial comercial ou consultas pontuais. */
-.branches{padding:22px;margin-top:18px}
-.branches-header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
-.branches-header h3{margin:5px 0 8px;color:var(--text-strong);font-size:23px}
-.branches-header p{margin:0;color:var(--muted);font-size:13px;line-height:1.5}
-.branches-chip{font-size:11px;border:1px solid #dbcdb9;border-radius:999px;background:#f5eee3;padding:8px 12px;color:#695a46;white-space:nowrap}
-.branch-message{background:#fbf5e9;border:1px solid #e7d7bd;border-radius:12px;margin:16px 0 10px;padding:13px;color:#695438;font-size:12px;line-height:1.6}
-.branch-message.success{background:#ecf3e9;border-color:#cbddc5;color:#466442}
-.branch-message.error{background:#fff0ed;border-color:#e0bcb8;color:#844843}
-.branch-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
-.branch-card{border:1px solid #dfd4c5;background:#fffefa;border-radius:15px;padding:16px;min-width:0}
-.branch-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-.branch-card h4{margin:6px 0;font-size:18px;color:#3c342b;overflow-wrap:anywhere}
-.branch-card p{margin:4px 0;color:#766a5e;line-height:1.5;font-size:12px}
-.branch-card .branch-pending{font-style:italic;margin-top:12px}
-.branch-card .branch-details{margin-top:12px;padding-top:10px;border-top:1px solid #e9e0d4}
-.secondary-activities{margin-top:10px;color:#655646;font-size:12px}
-.secondary-activities summary{cursor:pointer;font-weight:700}
-.secondary-activities li{margin:7px 0;line-height:1.5}
-.branch-detail-btn{min-height:38px;font-size:12px;padding:0 10px}
-.branch-manual{border-top:1px solid #e5dacc;margin-top:17px;padding-top:17px}
-.branch-manual label{display:block;color:#695f52;font-size:12px;font-weight:700;margin-bottom:8px}
-.branch-input-row{display:flex;gap:10px}
-.branch-input-row input{flex:1;min-width:0;border:1px solid #d8cfc1;background:#fffefa;border-radius:12px;padding:12px;font-size:15px;color:#3d3429}
-.branch-input-row button{min-height:45px}
-.branch-manual p{font-size:11px;color:var(--muted);line-height:1.5;margin:8px 0 0}
-.branch-pagination{display:flex;gap:12px;justify-content:center;align-items:center;margin-top:16px;font-size:12px}
-.branch-pagination button{border-radius:10px;border:1px solid #d8cfc1;color:#675845;background:#f5eee3;padding:9px 11px}
-.branch-pagination button:disabled{opacity:.45;cursor:not-allowed}
-@media(max-width:720px){.branches{padding:16px;margin-top:10px}.branches-header,.branch-card-top{flex-direction:column}.branches-header h3{font-size:20px}.branches-chip{white-space:normal}.branch-list{grid-template-columns:1fr}.branch-card h4{font-size:16px}.branch-input-row{flex-direction:column}.branch-input-row button{width:100%}.branch-pagination{flex-wrap:wrap}}
