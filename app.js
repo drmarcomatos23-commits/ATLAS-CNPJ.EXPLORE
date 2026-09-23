@@ -12,8 +12,6 @@ let current = null;
 let controller = null;
 let activeRequest = 0;
 let activeTab = 'company';
-let municipal = blankMunicipal();
-function blankMunicipal() { return { inscricao: '', alvara: '', emissao: '', validade: '', inscricaoConfirmada: false, alvaraConfirmado: false, observacao: '' }; }
 
 
 const digitsOf = (v) => String(v ?? '').replace(/\D/g, '');
@@ -178,7 +176,7 @@ function getExplorerSections(data) {
     { key: 'company', label: 'Dados da empresa', value: company },
     { key: 'establishment', label: 'Estabelecimento', value: e },
     { key: 'partners', label: 'Sócios', value: Array.isArray(data.socios) ? data.socios : [] },
-    { key: 'taxes', label: 'Fiscal e licenças', value: { inscricoes_estaduais: registries, simples: data.simples, inscricao_municipal: municipal.inscricao || 'Não verificada', alvara: municipal.alvara || 'Não verificado' } }
+    { key: 'taxes', label: 'Dados fiscais', value: { inscricoes_estaduais: registries, simples: data.simples } }
   ];
 }
 function treeNode(name, value, key, depth = 0) {
@@ -232,38 +230,12 @@ function ensurePrintArea(data) {
     printArea.id = 'print-area';
     document.body.appendChild(printArea);
   }
-  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data), { ...municipal, cityUf: getSummaryModel(data).cityUf });
+  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data));
 }
 function printReport() {
   if (!current) return;
   ensurePrintArea(current);
   window.print();
-}
-function municipalSection(data) {
-  const e = data.estabelecimento || {};
-  const city = (e.cidade && typeof e.cidade === 'object' ? e.cidade.nome : e.cidade) || '';
-  const state = (e.estado && typeof e.estado === 'object' ? e.estado.sigla : e.estado) || '';
-  const santos = city.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() === 'santos' && state.toUpperCase() === 'SP';
-  const links = santos
-    ? '<div class="municipal-links"><a href="https://egov.santos.sp.gov.br/tribusweb/CertidaoGeral/Certidao" target="_blank" rel="noopener noreferrer">Certidão municipal ↗</a><a href="https://egov.santos.sp.gov.br/tribusweb/Mobiliario/Alvara" target="_blank" rel="noopener noreferrer">Emissão do alvará ↗</a><a href="https://egov.santos.sp.gov.br/tribusweb/Mobiliario/AlvaraAutenticarInicio" target="_blank" rel="noopener noreferrer">Autenticidade do alvará ↗</a></div>'
-    : '<p class="municipal-helper">Para '+escapeHtml([city,state].filter(Boolean).join(' / ') || 'o município')+', consulte o portal oficial da respectiva prefeitura. Não há integração municipal disponível para consulta automática.</p>';
-  const entry = (key, title, placeholder = '') =>
-    '<label>'+title+' <input data-municipal="'+key+'" value="'+escapeHtml(municipal[key])+'" autocomplete="off" placeholder="'+placeholder+'" maxlength="60"></label>';
-  const dates = (key, title) =>
-    '<label>'+title+' <input type="date" data-municipal="'+key+'" value="'+escapeHtml(municipal[key])+'"></label>';
-  const check = (key, title) =>
-    '<label class="municipal-check"><input type="checkbox" data-municipal="'+key+'" '+(municipal[key]?'checked':'')+'> '+title+'</label>';
-  return '<section class="dashboard-card municipal-card" aria-labelledby="municipal-title">'
-    +'<div class="municipal-head"><div><span class="section-kicker">CONFERÊNCIA COMPLEMENTAR</span><h3 id="municipal-title">Inscrição municipal e alvará</h3><p>O cadastro CNPJws não fornece esses documentos. Os campos abaixo são preenchidos manualmente após consulta ao órgão municipal.</p></div><span class="verification-badge">Não verificado automaticamente</span></div>'
-    +links+'<div class="municipal-form">'
-    +entry('inscricao','Inscrição municipal','Número no cadastro municipal')
-    +entry('alvara','Número do alvará','Número constante no documento')
-    +dates('emissao','Emissão do alvará')
-    +dates('validade','Validade do alvará')
-    +check('inscricaoConfirmada','Conferi a inscrição em documento/portal oficial.')
-    +check('alvaraConfirmado','Conferi o alvará em documento/portal oficial.')
-    +'<label class="municipal-wide">Observações e referência documental <textarea data-municipal="observacao" maxlength="500" rows="2" placeholder="Ex.: número da certidão e data da consulta; não informe senhas ou códigos de acesso.">'+escapeHtml(municipal.observacao)+'</textarea></label></div>'
-    +'<p class="municipal-disclaimer">O ATLAS não consulta o sistema municipal nem confirma a autenticidade dos documentos. A marcação de conferência é uma declaração do usuário, não uma validação automatizada. Não informe código de acesso ou CAPTCHA nesta tela.</p></section>';
 }
 function renderResult(data) {
   current = data;
@@ -277,7 +249,6 @@ function renderResult(data) {
       <div class="success-box">✓ Dados carregados</div>
     </div>
     ${buildSummary(data)}
-    ${municipalSection(data)}
     ${buildExplorer(data)}
     <div class="source-note">Dados fornecidos pela CNPJws. Utilize este painel como apoio e confirme informações cadastrais essenciais nos canais oficiais.</div>
   `;
@@ -285,11 +256,6 @@ function renderResult(data) {
   empty.hidden = true;
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderExplorerSection(); }));
   $('#print-btn').addEventListener('click', printReport);
-  document.querySelectorAll('[data-municipal]').forEach(field => field.addEventListener('change', () => {
-    const key = field.dataset.municipal;
-    municipal[key] = field.type === 'checkbox' ? field.checked : field.value;
-    if (activeTab === 'taxes') renderExplorerSection();
-  }));
   renderExplorerSection();
 }
 function refreshInput() {
@@ -310,7 +276,6 @@ form.addEventListener('submit', async (event) => {
   controller = new AbortController();
   const request = ++activeRequest;
   current = null;
-  municipal = blankMunicipal();
   results.hidden = true;
   empty.hidden = true;
   loading.hidden = false;
