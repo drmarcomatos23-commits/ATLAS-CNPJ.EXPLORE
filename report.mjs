@@ -28,13 +28,13 @@ export function renderDataNode(name,value,key='',level=0){
  if(!entries.length)return '<div class="report-list"><h4>'+title+'</h4><p>Sem registros informados.</p></div>';
  return '<div class="report-object"><h4>'+title+'</h4><div class="report-fields">'+entries.map(([k,v])=>renderDataNode(labelOf(k),v,k,level+1)).join('')+'</div></div>';
 }
-export function buildReportHtml(data,model,printedAt=new Date(),branches=null,extras={}){
+export function buildReportHtml(data,model,printedAt=new Date(),branches=null){
  const area=(name,v)=>'<section class="report-chapter"><h2>'+escapeHtml(name)+'</h2>'+renderDataNode(name,v)+'</section>';
  const basics=Object.fromEntries(Object.entries(data).filter(([k])=>k!=='estabelecimento'&&k!=='socios'));
  const fields=[['Razão social',model.razaoSocial],['Nome fantasia',model.fantasia],['Capital social',model.capital],['Porte',model.porte],['Início das atividades',model.inicio],['Endereço',model.address],['Cidade/UF',model.cityUf],['CNAE principal',model.activity],['Telefone',model.phones],['E-mail',model.email]];
  return '<div class="print-page"><header class="print-header"><img class="print-logo" src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE"><div><div class="print-kicker">RELATÓRIO CADASTRAL · ATLAS CNPJ.EXPLORE</div><h1>'+escapeHtml(model.razaoSocial)+'</h1><p>CNPJ '+escapeHtml(model.cnpj||'')+' · Situação '+escapeHtml(model.status)+'</p><p>Emitido em '+escapeHtml(printedAt.toLocaleString('pt-BR'))+'</p></div></header>'
  +'<section class="report-chapter report-summary"><h2>Resumo empresarial</h2><div class="report-fields">'+fields.map(([k,v])=>'<div class="report-field"><span>'+escapeHtml(k)+'</span><strong>'+escapeHtml(v||'Não informado')+'</strong></div>').join('')+'</div></section>'
- +area('Dados da empresa',basics)+area('Estabelecimento e atividades',data.estabelecimento||{})+area('Quadro societário',data.socios||[])+renderBranchReport(branches)+renderExtrasReport(extras)
+ +area('Dados da empresa',basics)+area('Estabelecimento e atividades',data.estabelecimento||{})+area('Quadro societário',data.socios||[])+renderBranchReport(branches)
  +'<footer class="print-footer">Fonte cadastral: API pública CNPJws. Dados sujeitos à atualização. Confirme informações essenciais nas bases oficiais.</footer></div>';
 }
 
@@ -51,11 +51,4 @@ export function renderBranchReport(branches) {
     (item.atividadesSecundarias.length?'<h4>Atividades secundárias ('+item.atividadesSecundarias.length+')</h4>'+item.atividadesSecundarias.map(a=>'<div class="report-field"><span>'+escapeHtml(a.codigo)+'</span><strong>'+escapeHtml(a.descricao)+'</strong></div>').join(''):'<p>Atividades secundárias não informadas.</p>')
   :'<p>Somente CNPJ identificado. Endereço e atividades pendentes de consulta individual.</p>')+'</div>').join('');
  return '<section class="report-chapter"><h2>Matriz e filiais</h2><p class="report-warning">'+escapeHtml(text)+'</p>'+(items.length?details:'<p>Nenhuma outra unidade foi identificada nesta consulta.</p>')+'</section>';
-}
-
-/** Informações adicionais aparecem apenas após consulta explícita, sem efeito de certidão. */
-export function renderExtrasReport(extras={}) {
- const sections=Object.entries(extras||{}).filter(([,r])=>r?.dados);
- const body=sections.length?sections.map(([key,r])=>'<div class="report-object"><h4>'+escapeHtml(r.fonte)+' · '+escapeHtml(r.consultadoEm||'data não informada')+'</h4>'+renderDataNode('Dados consultados',r.dados)+'</div>').join(''):'<p>Nenhuma consulta complementar foi realizada.</p>';
- return '<section class="report-chapter"><h2>Informações complementares · bases públicas</h2><p class="report-warning">Comparações são informativas. Dados sujeitos a atualizações e limitações da fonte; resultados não substituem certidões oficiais.</p>'+body+'</section>';
 }

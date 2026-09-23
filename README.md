@@ -1,30 +1,22 @@
-# ATLAS CNPJ.EXPLORE · v6.0
+# ATLAS CNPJ.EXPLORE · v5
 
-Dashboard empresarial responsivo para consulta de CNPJ e filiais, relatório A4 completo e **consultas complementares opcionais** com fontes públicas gratuitas.
-
-## Backup antes desta alteração
-
-Versão anterior preservada na branch `backup/atlas-v5-antes-integracoes-20260923`, criada antes de qualquer modificação da v6. O snapshot ZIP da v5 foi entregue ao usuário separadamente. Para recuperar, selecione essa branch no GitHub ou restaure os arquivos a partir do ZIP.
-
-## Fontes complementares sob demanda
-
-| Fonte | Consulta |
-|---|---|
-| Minha Receita | Dados cadastrais alternativos, comparação de razão social, situação, CEP, UF e capital social. |
-| OpenCNPJ | Segunda fonte cadastral, com a mesma comparação. |
-| ViaCEP | Verificação de município, UF e logradouro para o CEP registrado no CNPJ. |
-| TCU | Consulta consolidada por CNPJ dos resultados dos cadastros do TCU, CNJ e CGU. |
-
-**A consulta principal permanece na CNPJws.** Fontes complementares são chamadas *somente ao clicar em Consultar*. Suas informações não substituem automaticamente os dados cadastrais; cada retorno registra fonte e momento da consulta. Diferenças não demonstram irregularidade. Falha de consulta ou ausência de registro não atestam regularidade.
-
-O relatório de impressão inclui apenas fontes efetivamente consultadas. O ATLAS não emite certidões oficiais: para validade documental, consulte os portais de origem.
+Consulta empresarial de CNPJ com dashboard responsivo, explorador de dados, relatório para impressão/PDF e módulo **Matriz e filiais**.
 
 ## Matriz e filiais
 
-Permanece a consulta individual gratuita de CNPJs conhecidos da mesma raiz. A descoberta automática pela raiz exige credencial comercial `CNPJWS_TOKEN` e **não está ativada nem é necessária** para os novos módulos.
+- Na consulta principal, exibe a raiz do CNPJ e a nova seção de estabelecimentos.
+- **Sem custos adicionais obrigatórios:** com a API pública, é possível informar um CNPJ conhecido da mesma raiz e consultar seu endereço, situação e atividades (principal e secundárias). O ATLAS não afirma que uma empresa não tem filiais quando a fonte não disponibiliza uma listagem.
+- **Descoberta automática opcional:** com uma credencial comercial CNPJws e acesso à consulta pela raiz, o ATLAS lista os CNPJs encontrados, com paginação. Clique em *Ver dados* em cada unidade para consultar endereço e CNAEs.
+- O PDF mostra unidades consultadas e marca as que ainda não tiveram os detalhes verificados.
 
-## Vercel
+**Importante:** a API pública não oferece listagem completa pela raiz. A integração comercial pode depender de plano e contabilizar requisições. O token é armazenado apenas no backend.
 
-Projeto estático, functions em `/api`, Node 24.x, Framework Other. Endpoints: `/api/health`, `/api/cnpj/:cnpj`, `/api/filial?cnpj=...`, `/api/filiais?raiz=...`, `/api/complementos?fonte=viacep&cep=01001000`, ou `fonte=minhareceita|opencnpj|tcu&cnpj=...`.
+## Ativar descoberta automática, caso possua credencial CNPJws
 
-As fontes externas podem ficar indisponíveis ou bloquear tráfego serverless. O frontend informa o erro, sem inferir resultados. Verifique limite de cada provedor antes de uso intensivo.
+No painel da Vercel: **Project → Settings → Environment Variables**, crie a variável `CNPJWS_TOKEN`, cole o token comercial e aplique ao ambiente de produção. Depois faça **Redeploy**. Não coloque o token nos arquivos do GitHub nem no navegador.
+
+Endpoints: `/api/health`, `/api/cnpj/:cnpj`, `/api/filiais?raiz=12345678&page=1`, `/api/filial?cnpj=12345678000195`.
+
+## Publicação
+
+O projeto utiliza frontend estático e funções serverless da Vercel (Framework: Other). Teste uma consulta de CNPJ válido, os dados da filial, a impressão em PDF e o layout no celular.

@@ -238,16 +238,3 @@ a:hover{text-decoration:underline}
 .branch-pagination button{border-radius:10px;border:1px solid #d8cfc1;color:#675845;background:#f5eee3;padding:9px 11px}
 .branch-pagination button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:720px){.branches{padding:16px;margin-top:10px}.branches-header,.branch-card-top{flex-direction:column}.branches-header h3{font-size:20px}.branches-chip{white-space:normal}.branch-list{grid-template-columns:1fr}.branch-card h4{font-size:16px}.branch-input-row{flex-direction:column}.branch-input-row button{width:100%}.branch-pagination{flex-wrap:wrap}}
-
-/* ATLAS v6 — bases públicas consultadas sob demanda. */
-.extras-card{padding:22px;margin-top:18px}.extras-intro h3{font-size:23px;margin:5px 0;color:var(--text-strong)}
-.extras-intro p,.extras-disclaimer{color:var(--muted);line-height:1.6;font-size:12px;margin:5px 0 14px}
-.extras-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.extras-source{padding:16px;border:1px solid #ded4c7;border-radius:15px;background:#fffefa;min-width:0}
-.extras-source-top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}.extras-source h4{margin:3px 0 5px;font-size:17px;color:#423629}.extras-source p{color:#766a5c;font-size:12px;line-height:1.55;margin:4px 0}
-.extras-source-top button{min-height:37px;white-space:nowrap;padding:0 10px;font-size:12px}.extras-timestamp{border-top:1px solid #e9dfd0;margin-top:13px!important;padding-top:10px;font-weight:600}
-.extras-row{display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;padding:8px 0;border-bottom:1px solid #ebe3d6;font-size:11px;overflow-wrap:anywhere}.extras-row b{grid-column:1/-1}.extras-row span{line-height:1.5}.extras-row em{grid-column:1/-1;font-size:10px;font-style:normal;font-weight:800}
-.extras-coincidente{color:#396f42}.extras-divergente{color:#94512c}.extras-indeterminado{color:#70675b}.extras-address{margin-top:10px!important}
-.extras-error{border:1px solid #e6bbb2;padding:9px;border-radius:9px;color:#984e40!important;background:#fff3f0}
-.extras-comparison{font-weight:700}.extras-tcu{padding:11px 0;border-bottom:1px solid #e9dfd0;display:flex;gap:4px;flex-direction:column;font-size:12px;overflow-wrap:anywhere}.extras-tcu strong{color:#453a2d}.extras-tcu small{color:#887867}
-.extras-official{display:inline-block;margin:10px 0;text-decoration:underline;color:#67543b;font-size:12px}
-@media(max-width:750px){.extras-card{padding:15px;margin-top:10px}.extras-grid{grid-template-columns:1fr}.extras-source-top{flex-direction:column}.extras-source-top button{width:100%}.extras-row{grid-template-columns:1fr}}
