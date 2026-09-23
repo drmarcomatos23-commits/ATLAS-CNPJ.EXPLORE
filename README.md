@@ -1,20 +1,19 @@
-# ATLAS CNPJ.EXPLORE
+# ATLAS CNPJ.EXPLORE · v4
 
-Sistema de consulta empresarial de CNPJ com dashboard responsivo, explorador de dados organizado e relatório para impressão/salvamento em PDF.
+Painel responsivo para consulta CNPJ com a API pública CNPJws, explorador empresarial em quatro abas, relatório completo para impressão/salvamento como PDF e orientação para conferência municipal.
 
-## Estrutura
+## Funcionalidades
 
-- `index.html`, `app.js` e `styles.css`: interface web.
-- `logo-atlas.png` e `favicon.svg`: identidade visual.
-- `api/health.js`: verificação do backend.
-- `api/cnpj.js`: proxy para a API pública CNPJws.
-- `vercel.json`: configurações da Vercel, inclusive a rota `/api/cnpj/:cnpj`.
-- `DEPLOY-VERCEL.md`: instruções para publicação.
+- Consulta de CNPJ via `/api/cnpj/:cnpj` (proxy Vercel), com tratamento de erros.
+- Dashboard e explorador de dados sem exibir código JSON.
+- Relatório A4 com **todos os objetos e listas expandidos**, incluindo CNAEs, QSA e inscrições estaduais.
+- Cabeçalho adaptado para celular.
+- Seção de **inscrição municipal e alvará**: atalhos para os portais oficiais de Santos/SP, preenchimento de números/datas e declaração opcional de conferência **manual**. Os dados municipais não são disponibilizados pela CNPJws; o aplicativo não confirma sua existência, validade ou autenticidade automaticamente.
 
-## Publicação na Vercel
+## Publicação
 
-Importe este repositório no painel da Vercel, selecione o preset **Other** e mantenha os diretórios de origem e saída no padrão. O frontend é estático; as funções estão em `/api`.
+O repositório está configurado para a Vercel (Framework: Other, raiz `./`). Quando o GitHub estiver conectado à Vercel, commits na branch principal poderão disparar uma nova publicação.
 
-Após o deploy, acesse `/api/health` e consulte um CNPJ válido. Para gerar o PDF, use **Imprimir / Salvar PDF** (função de impressão do navegador).
+Verificação: `/api/health` → `status: ok`. Após publicar, consulte um CNPJ válido, teste o relatório e a visualização mobile.
 
-Atenção: a API pública CNPJws pode limitar a frequência de consultas. A publicação não representa uma integração oficial com a Receita Federal.
+**Atenção:** não insira senhas, código de acesso da prefeitura ou CAPTCHA nos campos complementares. Para documentos municipais, confira as informações no sistema do município competente.
