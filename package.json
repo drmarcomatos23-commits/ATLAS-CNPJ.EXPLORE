@@ -1,9 +1,9 @@
 {
   "name": "atlas-cnpj-explore-vercel",
   "private": true,
-  "version": "5.0.0",
+  "version": "5.0.2",
   "type": "module",
-  "description": "ATLAS CNPJ.EXPLORE com consulta de estabelecimentos, filiais e relatório A4.",
+  "description": "ATLAS CNPJ.EXPLORE com consulta cadastral CNPJ e relatório A4.",
   "engines": {
     "node": "24.x"
   }
