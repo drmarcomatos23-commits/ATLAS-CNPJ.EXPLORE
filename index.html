@@ -62,7 +62,7 @@
           <div><span class="section-kicker">PESQUISA SOCIETÁRIA</span><h2 id="people-title">Vínculos empresariais por pessoa física</h2></div>
           <div class="badge-inline">Consulta assistida · fontes públicas</div>
         </div>
-        <p>Pesquise empresas por nome do sócio e CPF (opcional), consulte os vínculos e gere seu relatório diretamente no Atlas. A busca automática requer integração comercial configurada.</p>
+        <p>Pesquise pelo nome completo e, opcionalmente, pelo CPF. Os nomes das empresas e os CNPJs encontrados serão listados nesta tela, para copiar e consultar individualmente no módulo de CNPJ acima.</p>
         <form id="people-form" novalidate>
           <div class="people-fields">
             <label>Nome completo
@@ -72,18 +72,14 @@
               <input id="person-cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="Somente se necessário" maxlength="14" />
             </label>
           </div>
-          <label for="person-mode">Modalidade de pesquisa</label>
-          <select id="person-mode" class="people-mode">
-            <option value="automatic">Pesquisar empresas automaticamente no Atlas</option>
-            <option value="manual">Verificar CNPJs conhecidos no Atlas</option>
-          </select>
-          <p class="person-warning">Quando informado, o CPF será transmitido exclusivamente ao servidor Atlas e ao provedor cadastral para aplicação dos filtros. Não será publicado no relatório; a identidade precisa de confirmação documental.</p>
-          <div class="people-manual-input" hidden>
+          <select id="person-mode" hidden aria-label="Pesquisa simples"><option value="automatic">Pesquisa simples</option></select>
+          <p class="person-warning">O CPF, quando informado, é usado para filtrar a pesquisa no provedor cadastral e aparece mascarado no relatório. Vínculos societários exigem confirmação documental.</p>
+          <div class="people-manual-input" hidden aria-hidden="true">
             <label for="person-cnpjs">CNPJs a verificar (um por linha ou separados por espaços)</label>
             <textarea id="person-cnpjs" rows="3" placeholder="Cole os CNPJs para verificar no Atlas"></textarea>
           </div>
-          <div class="helper-row"><span id="person-search-status">Resultados apresentados aqui, sem redirecionamento para busca externa.</span><span>Verificação de QSA sujeita ao limite da API pública.</span></div>
-          <button type="submit" class="primary-btn" id="people-submit" disabled>Pesquisar vínculos</button>
+          <div class="helper-row"><span id="person-search-status">A lista de empresas será exibida aqui no Atlas.</span><span>Copie o CNPJ desejado para consultar a empresa.</span></div>
+          <button type="submit" class="primary-btn" id="people-submit" disabled>Pesquisar empresas</button>
         </form>
         <div id="people-results" class="people-results" hidden aria-live="polite"></div>
       </section>
