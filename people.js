@@ -40,11 +40,49 @@ async function consult(cnpj) {
     return {cnpj,data};
   }catch(error){return {cnpj,error:error.message || 'Falha na consulta.'};}
 }
+
+let latestPeopleReport = null;
+const maskedCpf = cpf => cpf ? '***.' + cpf.slice(3,6) + '.' + cpf.slice(6,9) + '-**' : 'Não informado';
+function reportField(label,value) {
+  return '<div class="report-field"><span>'+escape(label)+'</span><strong>'+escape(value ?? 'Não informado')+'</strong></div>';
+}
+function buildPeopleReport(model) {
+  const verified=model.rows.filter(r=>r.level==='Correspondência nominal');
+  const reportHeader='<header class="print-header"><img class="print-logo" src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE"><div><div class="print-kicker">RELATÓRIO DE VÍNCULOS SOCIETÁRIOS · ATLAS EXPLORE</div><h1>'+escape(model.name)+'</h1><p>CPF informado: '+escape(maskedCpf(model.cpf))+'</p><p>Emitido em '+escape(model.createdAt)+'</p></div></header>';
+  const summary='<section class="report-chapter report-summary"><h2>Identificação e escopo</h2><div class="report-fields">'+
+    reportField('Pessoa pesquisada',model.name)+reportField('CPF (mascarado)',maskedCpf(model.cpf))+
+    reportField('Abrangência','CNPJs indicados para verificação — sem busca nacional exaustiva')+
+    reportField('CNPJs consultados',String(model.rows.length))+
+    reportField('Correspondências nominais',String(verified.length))+
+    reportField('Data e hora',model.createdAt)+'</div></section>';
+  const methodology='<section class="report-chapter"><h2>Metodologia e ressalvas</h2><p>Consulta assistida aos CNPJs fornecidos, utilizando dados cadastrais retornados pela API pública CNPJws. O nome pesquisado foi comparado aos nomes constantes dos quadros societários retornados. A situação cadastral refere-se à empresa; não certifica, isoladamente, a atualidade da participação societária.</p><p><strong>Correspondência nominal não comprova identidade pelo CPF.</strong> A pesquisa não permite concluir que todas as empresas vinculadas à pessoa foram identificadas. A conferência conclusiva exige QSA oficial e atos societários atualizados, quando aplicável.</p></section>';
+  const items=model.rows.map((row,i)=>'<div class="report-record people-report-item"><strong class="record-heading">'+(i+1)+'. '+escape(row.company || 'Consulta não concluída')+'</strong>'+
+    reportField('CNPJ',formatCnpj(row.cnpj))+reportField('Situação cadastral',row.status || 'Não verificada')+
+    reportField('Vínculo / qualificação',row.role || 'Não verificado')+
+    reportField('Grau de evidência',row.level)+reportField('Observação',row.reason || '—')+
+    '<div class="report-field"><span>Fontes e conferência</span><strong><a href="https://cnpj.ws/'+encodeURIComponent(row.cnpj)+'">CNPJws — '+escape(formatCnpj(row.cnpj))+'</a><br><a href="https://www.gov.br/pt-br/servicos/consultar-cadastro-nacional-de-pessoas-juridicas">Receita Federal — consulta oficial de CNPJ</a></strong></div></div>').join('');
+  const conclusion='<section class="report-chapter"><h2>Conclusão</h2><p>Foram encontradas '+verified.length+' correspondência(s) nominal(is) entre '+model.rows.length+' CNPJ(s) submetido(s) à verificação. Os resultados não constituem confirmação de identidade pelo CPF, comprovação de percentual societário ou certidão de inexistência de outros vínculos.</p></section>';
+  return '<div class="print-page people-print-page">'+reportHeader+summary+methodology+
+    '<section class="report-chapter"><h2>Empresas verificadas</h2>'+items+'</section>'+conclusion+
+    '<footer class="print-footer">ATLAS CNPJ.EXPLORE · Relatório informativo de pesquisa societária assistida. Fontes: API pública CNPJws; Receita Federal indicada para conferência oficial.</footer></div>';
+}
+function printPeopleReport() {
+  if (!latestPeopleReport) return;
+  let area=document.querySelector('#print-area');
+  if (!area){area=document.createElement('div');area.id='print-area';document.body.appendChild(area);}
+  area.innerHTML=buildPeopleReport(latestPeopleReport);
+  window.print();
+}
+output.addEventListener('click',event=>{
+  if(event.target.closest('#people-print-btn'))printPeopleReport();
+});
+
 form.addEventListener('submit',async event=>{
   event.preventDefault();update();if(submit.disabled)return;
   const name=normalize(nameInput.value);
   const cpf=digits(cpfInput.value);
   const items=candidates();
+  latestPeopleReport=null;
   const requestId=++window.atlasPeopleRequestId;
   submit.disabled=true;submit.textContent='Verificando...';
   output.hidden=false;output.innerHTML='<p>Consultando '+items.length+' CNPJ(s), em sequência para respeitar o limite da API pública...</p>';
@@ -67,11 +105,12 @@ form.addEventListener('submit',async event=>{
     const e=data.estabelecimento||{};
     return {cnpj:item.cnpj,company:data.razao_social||'Não informada',status:status(e.situacao_cadastral),role:matched?.qualificacao_socio?.descricao||matched?.qualificacao?.descricao||'Não informada',level,reason:matches.length?'CPF não validado por fonte oficial nesta consulta.':'Nome não consta do QSA retornado.'};
   });
+  latestPeopleReport={name:nameInput.value.trim(),cpf,rows,createdAt:new Date().toLocaleString('pt-BR')};
   output.innerHTML='<div class="register-head"><h3>Resultado da verificação</h3><span>'+rows.length+' CNPJ(s)</span></div>'+
     '<p class="person-warning">A pesquisa é assistida, restrita aos CNPJs fornecidos. Correspondência nominal não confirma identidade pelo CPF nem certifica a inexistência de outros vínculos. Situação cadastral da empresa não comprova, isoladamente, a atualidade do QSA.</p>'+
     '<div class="people-table-wrap"><table class="people-table"><thead><tr><th>Empresa / CNPJ</th><th>Situação</th><th>Vínculo</th><th>Evidência</th><th>Fonte</th></tr></thead><tbody>'+
     rows.map(row=>'<tr><td><strong>'+escape(row.company||'Consulta não concluída')+'</strong><br>'+escape(formatCnpj(row.cnpj))+'</td><td>'+escape(row.status||'—')+'</td><td>'+escape(row.role||'—')+'</td><td><strong>'+escape(row.level)+'</strong><br>'+escape(row.reason||'')+'</td><td><a href="https://cnpj.ws/'+encodeURIComponent(row.cnpj)+'" target="_blank" rel="noopener noreferrer">CNPJws ↗</a><br><a href="https://www.gov.br/pt-br/servicos/consultar-cadastro-nacional-de-pessoas-juridicas" target="_blank" rel="noopener noreferrer">Receita Federal ↗</a></td></tr>').join('')+
-    '</tbody></table></div><p class="person-warning">Consulta realizada em '+escape(new Date().toLocaleString('pt-BR'))+'. Para prova documental, obtenha o QSA oficial e a ficha cadastral na Junta Comercial competente.</p>';
+    '</tbody></table></div><div class="people-report-actions"><button type="button" class="secondary-btn" id="people-print-btn">Gerar relatório societário · Imprimir / Salvar PDF</button></div><p class="person-warning">Consulta realizada em '+escape(latestPeopleReport.createdAt)+'. Para prova documental, obtenha o QSA oficial e a ficha cadastral na Junta Comercial competente.</p>';
   submit.textContent='Verificar vínculos';update();
 });
 window.atlasPeopleRequestId=0;
