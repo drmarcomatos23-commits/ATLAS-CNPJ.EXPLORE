@@ -7,9 +7,8 @@
   <meta name="description" content="ATLAS CNPJ.EXPLORE 5.1 · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
   <title>ATLAS CNPJ.EXPLORE</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=5.2.0" />
+  <link rel="stylesheet" href="/styles.css?v=5.1.0" />
   <script src="/app.js?v=5.1.0" type="module"></script>
-  <script src="/people.mjs?v=5.2.0" type="module"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -54,27 +53,6 @@
             <span>Até 3 novas consultas por minuto/IP, conforme limite da API pública.</span>
           </div>
         </form>
-      </section>
-
-      <section class="search-card people-search" aria-labelledby="person-title">
-        <div class="search-head">
-          <div><span class="section-kicker">ATLAS 5.2 · PESQUISA HISTÓRICA</span><h2 id="person-title">Localizar empresas por pessoa</h2></div>
-          <div class="badge-inline">Fonte: Brasil.IO · dados de 2020</div>
-        </div>
-        <p>Localize possíveis razões sociais e CNPJs pelo nome do sócio. Copie o número desejado para realizar a consulta empresarial acima somente quando você decidir.</p>
-        <form id="person-form" novalidate>
-          <div class="people-fields">
-            <label for="person-name">Nome completo
-              <input id="person-name" required autocomplete="off" placeholder="Nome da pessoa pesquisada" maxlength="160" />
-            </label>
-            <label for="person-cpf">CPF (opcional)
-              <input id="person-cpf" autocomplete="off" inputmode="numeric" placeholder="Somente para refinamento" maxlength="14" />
-            </label>
-          </div>
-          <p class="person-caution">A fonte possui dados capturados em 20/09/2020. O CPF informado será transmitido ao servidor Atlas para comparação com o CPF mascarado da base, mas não ao Brasil.IO. Uma coincidência de nome ou CPF mascarado não comprova identidade ou vínculo atual.</p>
-          <button type="submit" class="primary-btn" id="person-submit" disabled>Pesquisar empresas</button>
-        </form>
-        <div id="person-results" class="people-results" hidden aria-live="polite"></div>
       </section>
 
       <section id="notice" hidden></section>
