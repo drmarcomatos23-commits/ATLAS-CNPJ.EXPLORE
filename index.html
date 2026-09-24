@@ -7,9 +7,8 @@
   <meta name="description" content="ATLAS CNPJ.EXPLORE · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
   <title>ATLAS CNPJ.EXPLORE</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=5.3.0" />
+  <link rel="stylesheet" href="/styles.css?v=5.0.2" />
   <script src="/app.js?v=5.0.2" type="module"></script>
-  <script src="/people.js?v=5.4.0" type="module"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -54,34 +53,6 @@
             <span>Até 3 novas consultas por minuto/IP, conforme limite da API pública.</span>
           </div>
         </form>
-      </section>
-
-
-      <section class="search-card people-search" aria-labelledby="people-title">
-        <div class="search-head">
-          <div><span class="section-kicker">PESQUISA SOCIETÁRIA</span><h2 id="people-title">Vínculos empresariais por pessoa física</h2></div>
-          <div class="badge-inline">Consulta assistida · fontes públicas</div>
-        </div>
-        <p>Pesquise pelo nome completo e, opcionalmente, pelo CPF. Os nomes das empresas e os CNPJs encontrados serão listados nesta tela, para copiar e consultar individualmente no módulo de CNPJ acima.</p>
-        <form id="people-form" novalidate>
-          <div class="people-fields">
-            <label>Nome completo
-              <input id="person-name" type="text" autocomplete="off" placeholder="Nome da pessoa pesquisada" required />
-            </label>
-            <label>CPF (opcional)
-              <input id="person-cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="Somente se necessário" maxlength="14" />
-            </label>
-          </div>
-          <select id="person-mode" hidden aria-label="Pesquisa simples"><option value="automatic">Pesquisa simples</option></select>
-          <p class="person-warning">O CPF, quando informado, é usado para filtrar a pesquisa no provedor cadastral e aparece mascarado no relatório. Vínculos societários exigem confirmação documental.</p>
-          <div class="people-manual-input" hidden aria-hidden="true">
-            <label for="person-cnpjs">CNPJs a verificar (um por linha ou separados por espaços)</label>
-            <textarea id="person-cnpjs" rows="3" placeholder="Cole os CNPJs para verificar no Atlas"></textarea>
-          </div>
-          <div class="helper-row"><span id="person-search-status">A lista de empresas será exibida aqui no Atlas.</span><span>Copie o CNPJ desejado para consultar a empresa.</span></div>
-          <button type="submit" class="primary-btn" id="people-submit" disabled>Pesquisar empresas</button>
-        </form>
-        <div id="people-results" class="people-results" hidden aria-live="polite"></div>
       </section>
 
       <section id="notice" hidden></section>
