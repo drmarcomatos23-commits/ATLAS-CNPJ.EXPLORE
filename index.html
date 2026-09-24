@@ -7,9 +7,9 @@
   <meta name="description" content="ATLAS CNPJ.EXPLORE · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
   <title>ATLAS CNPJ.EXPLORE</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=5.2.0" />
+  <link rel="stylesheet" href="/styles.css?v=5.3.0" />
   <script src="/app.js?v=5.0.2" type="module"></script>
-  <script src="/people.js?v=5.2.0" type="module"></script>
+  <script src="/people.js?v=5.3.0" type="module"></script>
 </head>
 <body>
   <div class="app-shell">
@@ -62,22 +62,28 @@
           <div><span class="section-kicker">PESQUISA SOCIETÁRIA</span><h2 id="people-title">Vínculos empresariais por pessoa física</h2></div>
           <div class="badge-inline">Consulta assistida · fontes públicas</div>
         </div>
-        <p>Localize possíveis empresas em registros públicos e verifique a participação societária pelos CNPJs encontrados. A API pública atual não permite pesquisa nacional reversa automática por CPF.</p>
+        <p>Pesquise empresas por nome do sócio e CPF (opcional), consulte os vínculos e gere seu relatório diretamente no Atlas. A busca automática requer integração comercial configurada.</p>
         <form id="people-form" novalidate>
           <div class="people-fields">
             <label>Nome completo
               <input id="person-name" type="text" autocomplete="off" placeholder="Nome da pessoa pesquisada" required />
             </label>
-            <label>CPF (opcional, apenas validação local)
+            <label>CPF (opcional)
               <input id="person-cpf" type="text" inputmode="numeric" autocomplete="off" placeholder="Somente se necessário" maxlength="14" />
             </label>
           </div>
-          <p class="person-warning">O CPF não é transmitido nesta pesquisa e não é utilizado para localizar empresas. Se informado, será validado no navegador. Não insira informações sigilosas na pesquisa externa.</p>
-          <a id="person-discovery" class="secondary-btn people-discovery" href="#" target="_blank" rel="noopener noreferrer" hidden>Localizar possíveis CNPJs na web ↗</a>
-          <label for="person-cnpjs">CNPJs a verificar (um por linha ou separados por espaços)</label>
-          <textarea id="person-cnpjs" rows="3" placeholder="Cole os CNPJs encontrados nas fontes públicas"></textarea>
-          <div class="helper-row"><span>Confere nomes no QSA retornado pela CNPJws e indica a situação cadastral.</span><span>Limite: 3 novas consultas/minuto/IP.</span></div>
-          <button type="submit" class="primary-btn" id="people-submit" disabled>Verificar vínculos</button>
+          <label for="person-mode">Modalidade de pesquisa</label>
+          <select id="person-mode" class="people-mode">
+            <option value="automatic">Pesquisar empresas automaticamente no Atlas</option>
+            <option value="manual">Verificar CNPJs conhecidos no Atlas</option>
+          </select>
+          <p class="person-warning">Quando informado, o CPF será transmitido exclusivamente ao servidor Atlas e ao provedor cadastral para aplicação dos filtros. Não será publicado no relatório; a identidade precisa de confirmação documental.</p>
+          <div class="people-manual-input" hidden>
+            <label for="person-cnpjs">CNPJs a verificar (um por linha ou separados por espaços)</label>
+            <textarea id="person-cnpjs" rows="3" placeholder="Cole os CNPJs para verificar no Atlas"></textarea>
+          </div>
+          <div class="helper-row"><span id="person-search-status">Resultados apresentados aqui, sem redirecionamento para busca externa.</span><span>Verificação de QSA sujeita ao limite da API pública.</span></div>
+          <button type="submit" class="primary-btn" id="people-submit" disabled>Pesquisar vínculos</button>
         </form>
         <div id="people-results" class="people-results" hidden aria-live="polite"></div>
       </section>
