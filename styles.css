@@ -223,3 +223,22 @@ a:hover{text-decoration:underline}
 .compare-difference span{color:#8c5521}
 @media(max-width:900px){.compare-header{flex-direction:column}.compare-header button{width:100%}}
 @media print{.compare-card{display:none!important}}
+
+/* Atlas 5.2 · pesquisa histórica por pessoa */
+.people-search{display:grid;gap:14px}
+.people-search>p{margin:0;line-height:1.6}
+.people-search form{display:grid;gap:12px}
+.people-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.people-fields label{display:grid;gap:8px;margin:0}
+.people-fields input{width:100%;min-width:0;background:#fffdf9;border:1px solid #d8cfc1;border-radius:12px;padding:13px 14px;font:inherit;color:var(--text-strong)}
+.people-fields input:focus{outline:2px solid #b59f84;outline-offset:2px}
+.person-caution{background:#fbf3e4;border:1px solid #e7d8bb;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.6;color:#715b38;margin:0}
+.people-results{border-top:1px solid var(--border);padding-top:16px}
+.people-table-wrap{overflow-x:auto}
+.people-table{width:100%;min-width:640px;border-collapse:collapse;text-align:left;font-size:13px}
+.people-table th,.people-table td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:middle;overflow-wrap:anywhere}
+.people-table th{background:#f2ece2;color:var(--text-strong)}
+.people-table .secondary-btn{min-height:38px;padding:8px 12px;font-size:12px}
+.people-actions{display:flex;justify-content:flex-end;margin:12px 0}
+@media(max-width:640px){.people-fields{grid-template-columns:1fr}.people-actions .secondary-btn{width:100%}}
+@media print{.people-search{display:none!important}}
