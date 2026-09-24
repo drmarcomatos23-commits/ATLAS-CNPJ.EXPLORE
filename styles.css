@@ -228,3 +228,14 @@ a:hover{text-decoration:underline}
 .people-table td { overflow-wrap: anywhere; }
 .people-table a { color: #3b577a; }
 @media (max-width: 640px) { .people-fields { grid-template-columns: 1fr; } }
+
+/* Relatório societário */
+.people-report-actions { display:flex; justify-content:flex-end; margin-top:18px; }
+.people-report-actions .secondary-btn { cursor:pointer; }
+@media(max-width:640px) { .people-report-actions .secondary-btn { width:100%; } }
+@media print {
+ .people-print-page .people-report-item { break-inside:avoid; page-break-inside:avoid; margin:9px 0 12px; padding:8px 9px; }
+ .people-print-page .report-chapter p { margin:6px 3px; line-height:1.5; }
+ .people-print-page a { color:#3a342b; text-decoration:none; overflow-wrap:anywhere; }
+ .people-print-page .report-field strong { font-weight:600; }
+}
