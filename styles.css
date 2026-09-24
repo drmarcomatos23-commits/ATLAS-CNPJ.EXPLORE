@@ -239,3 +239,8 @@ a:hover{text-decoration:underline}
  .people-print-page a { color:#3a342b; text-decoration:none; overflow-wrap:anywhere; }
  .people-print-page .report-field strong { font-weight:600; }
 }
+
+/* Busca de vínculos sem redirecionamento */
+.people-search .people-mode {width:100%;box-sizing:border-box;border:1px solid #d6d5d0;border-radius:10px;padding:13px 14px;color:#182c44;background:#fff;font:inherit;}
+.people-search .people-manual-input {display:grid;gap:8px;}
+.people-search .people-manual-input[hidden] {display:none!important;}
