@@ -1,4 +1,5 @@
 import { buildReportHtml } from './report.mjs';
+import { initComparison, getComparisonReport } from './comparison.mjs';
 const $ = (selector) => document.querySelector(selector);
 const form = $('#search-form');
 const input = $('#cnpj-input');
@@ -226,7 +227,7 @@ function buildExplorer(data) {
 function ensurePrintArea(data) {
   let printArea = $('#print-area');
   if (!printArea) {printArea=document.createElement('div');printArea.id='print-area';document.body.appendChild(printArea);}
-  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data));
+  printArea.innerHTML = buildReportHtml(data, getSummaryModel(data), new Date(), getComparisonReport());
 }
 function printReport() {
   if (!current) return;
@@ -253,6 +254,7 @@ function renderResult(data) {
   document.querySelectorAll('[data-tab]').forEach((btn) => btn.addEventListener('click', () => { activeTab = btn.dataset.tab; renderExplorerSection(); }));
   $('#print-btn').addEventListener('click', printReport);
   renderExplorerSection();
+  initComparison(data, results);
 }
 function refreshInput() {
   input.value = formatCnpj(input.value);
