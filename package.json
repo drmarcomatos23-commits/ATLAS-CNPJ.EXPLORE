@@ -1,9 +1,9 @@
 {
-  "name": "atlas-cnpj-explore-vercel",
+  "name": "atlas-legalizacao-gerenciamento",
   "private": true,
-  "version": "5.1.0",
+  "version": "3.12.0",
   "type": "module",
-  "description": "ATLAS CNPJ.EXPLORE com consulta CNPJ, conferência complementar de fontes e relatório A4.",
+  "description": "ATLAS Legalização e Gerenciamento — processos, empresas, documentos, protocolos, custos, licenças e gestão de usuários.",
   "engines": {
     "node": "24.x"
   }
