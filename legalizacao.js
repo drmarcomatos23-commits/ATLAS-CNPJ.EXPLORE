@@ -430,10 +430,25 @@ window.advanceProcess=advanceProcess;
 
 async function deleteProcess(id){
  if(!confirm('Excluir este processo da operação? Ele ficará preservado no banco para auditoria, mas desaparecerá das telas.'))return;
- const db=atlasDb();const profile=atlasProfile();
- const {error}=await db.from('processes').update({deleted_at:new Date().toISOString(),deleted_by:profile.id}).eq('id',id);
- if(error)return alert('Não foi possível excluir: '+error.message);
- await processPage();
+ try{
+   const db=atlasDb();
+   const {data:{session}}=await db.auth.getSession();
+   if(!session?.access_token)throw new Error('Sessão expirada.');
+   const res=await fetch('https://oorpvbxxpbxoaaykrtcf.supabase.co/functions/v1/atlas-processes',{
+     method:'POST',
+     headers:{
+       'Content-Type':'application/json',
+       'apikey':'sb_publishable_5261il-Rwu1wPQG_sTBb5g_tE52L_DQ',
+       'Authorization':'Bearer '+session.access_token
+     },
+     body:JSON.stringify({action:'soft_delete',processId:id})
+   });
+   const body=await res.json().catch(()=>({}));
+   if(!res.ok)throw new Error(body?.detail||body?.error||'Falha ao excluir processo.');
+   await processPage();
+ }catch(err){
+   alert('Não foi possível excluir: '+(err.message||err));
+ }
 }
 window.deleteProcess=deleteProcess;
 
