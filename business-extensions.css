@@ -1,0 +1,27 @@
+/* v3.16 — financeiro, sócios e emissão de relatórios */
+.process-finance-box,.partners-section{
+  border:1px solid #d5e7ea;
+  background:linear-gradient(180deg,#f8ffff 0%,#fbfdff 100%);
+  border-radius:16px;
+  padding:16px;
+  margin-top:6px;
+}
+.finance-title,.partners-title{
+  display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:12px
+}
+.finance-title strong,.partners-title strong{display:block;font-size:12px;color:#17394f}
+.finance-title span,.partners-title span{display:block;margin-top:3px;font-size:9.5px;color:#718495}
+.finance-grid,.partner-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.partner-card{border:1px solid #dbe7ee;border-radius:13px;padding:13px;margin-top:10px;background:#fff}
+.partner-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.partner-card-head strong{font-size:11px}
+.partner-check label{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:700}
+.partner-summary{margin-top:10px;color:#738697;font-size:9.5px}
+.report-emission-box{margin-bottom:16px}
+.report-controls{display:grid;grid-template-columns:1fr 1.25fr auto;gap:12px;align-items:end}
+.report-button-wrap{padding-bottom:12px}
+@media(max-width:760px){
+  .finance-grid,.partner-grid,.report-controls{grid-template-columns:1fr}
+  .report-button-wrap{padding-bottom:0}
+  .report-button-wrap .btn{width:100%}
+}
