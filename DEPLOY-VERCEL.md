@@ -1,29 +1,59 @@
-# ATLAS CNPJ.EXPLORE — Vercel
+# ATLAS LEGALIZAÇÃO E GERENCIAMENTO — Produção Vercel
 
-Esta versão já foi adaptada para a Vercel.
+Esta branch é exclusiva do sistema **ATLAS Legalização e Gerenciamento**.
 
-## O que mudou
-- O servidor local Node foi substituído por Vercel Functions em `/api`.
-- `/api/health` verifica o backend.
-- `/api/cnpj/{cnpj}` é reescrito para a Function `/api/cnpj?cnpj={cnpj}`.
-- O frontend permanece estático e responsivo.
-- O PDF continua sendo gerado pela impressão do navegador.
+## Identidade do projeto
 
-## Configuração na Vercel
-1. Crie/importe um projeto.
-2. Framework Preset: **Other**.
-3. Root Directory: raiz desta pasta.
-4. Build Command: deixe vazio.
-5. Output Directory: deixe vazio.
-6. Node.js Version: **24.x**.
-7. Deploy.
+- Projeto Vercel: `atlas-legalizacao-gerenciamento`
+- Repositório GitHub: `drmarcomatos23-commits/ATLAS-CNPJ.EXPLORE`
+- Production Branch: `atlas-legalizacao-production`
+- Framework Preset: **Other**
+- Root Directory: `./`
+- Build Command: vazio
+- Output Directory: vazio
 
-## Validação após publicar
-1. Abra `https://SEU-DOMINIO.vercel.app/api/health`.
-2. O retorno deve conter `"status":"ok"`.
-3. Abra a página principal.
-4. Consulte um CNPJ válido.
-5. Teste “Imprimir / Salvar PDF” no desktop e no celular.
+## Regra importante de acesso
 
-## Observação
-A API pública CNPJws possui limitação de consultas. A Function envia cache de 10 minutos para respostas bem-sucedidas, reduzindo chamadas repetidas.
+O projeto deve ser acessível publicamente na Vercel.
+
+Em **Settings → Deployment Protection**, deixe **Vercel Authentication desativada** para o projeto de produção.
+
+A segurança de usuários é feita pelo próprio ATLAS por meio do **Supabase Auth**, com perfis, RLS e sessões individuais.
+
+## Backend
+
+O sistema usa:
+- Supabase Auth;
+- Supabase PostgreSQL;
+- Row Level Security (RLS);
+- Supabase Storage privado;
+- Supabase Edge Functions;
+- Vercel Functions para consulta CNPJ.
+
+Não cadastrar OpenAI ou WhatsApp neste projeto neste momento.
+
+## Validação pós-deploy
+
+1. A página inicial deve abrir sem pedir login da Vercel.
+2. O próprio ATLAS deve apresentar a tela de login.
+3. Entrar com um usuário ATLAS.
+4. Validar nome e perfil no cabeçalho.
+5. Validar Empresas.
+6. Validar Processos.
+7. Validar Documentos/Storage.
+8. Validar Integrações → CNPJ.
+9. Validar Relatórios com dados reais.
+
+## Recuperação de senha
+
+Após definir o domínio definitivo, ele deve ser permitido nas URLs de redirecionamento do Supabase Auth para que o fluxo “Esqueci minha senha” retorne ao ATLAS.
+
+Domínio esperado:
+
+`https://atlas-legalizacao-gerenciamento.vercel.app`
+
+## Separação
+
+A branch `main` do repositório continua destinada ao ATLAS CNPJ Explore.
+
+Não alterar a `main` ao publicar o Legalização.
