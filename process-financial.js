@@ -4,7 +4,7 @@
   function brMoneyToNumber(v){
     const s=String(v||'').trim();
     if(!s)return 0;
-    if(s.includes(',')) return Number(s.replace(/./g,'').replace(',','.'))||0;
+    if(s.includes(',')) return Number(s.replace(/\./g,'').replace(',','.'))||0;
     return Number(s)||0;
   }
   function num(v){ return Number(v||0)||0; }
@@ -31,6 +31,8 @@
         <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String(base.payer_name||'').replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
         <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${base.payer_type!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${base.payer_type==='CPF'?'selected':''}>CPF</option></select></div>
         <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String(base.payer_document||'').replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
+        <div class="field"><label>Guia / boleto de honorários</label><input id="proc-hourly-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
+        <div class="field"><label>Guia / boleto da taxa Junta / Cartório</label><input id="proc-fee-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
       </div>`;
 
     const actions=form.querySelector('.modal-actions');
@@ -44,6 +46,45 @@
     };
     document.getElementById('proc-hourly-rate')?.addEventListener('input',calc);
     document.getElementById('proc-hours')?.addEventListener('input',calc);
+  }
+
+
+  function safeFileName(name){
+    return String(name||'arquivo')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-zA-Z0-9._-]+/g,'-')
+      .replace(/-+/g,'-')
+      .slice(-120);
+  }
+
+  async function uploadFinanceDocument(processId, kind, file){
+    if(!file)return;
+    const db=atlasDb();
+    const profile=atlasProfile();
+    const {data:proc,error:procError}=await db.from('processes').select('id,client_id,public_code').eq('id',processId).single();
+    if(procError)throw procError;
+
+    const fileName=safeFileName(file.name);
+    const objectKey=`${profile.organization_id}/${proc.client_id||'sem-empresa'}/${processId}/financeiro/${kind}/${crypto.randomUUID()}-${fileName}`;
+    const {error:uploadError}=await db.storage.from('legalizacao-documents').upload(objectKey,file,{upsert:false,contentType:file.type||undefined});
+    if(uploadError)throw uploadError;
+
+    const category=kind==='honorarios'?'Financeiro · Honorários':'Financeiro · Taxa Junta/Cartório';
+    const {error:docError}=await db.from('documents').insert({
+      organization_id:profile.organization_id,
+      client_id:proc.client_id||null,
+      process_id:processId,
+      name:file.name,
+      category,
+      storage_key:objectKey,
+      mime_type:file.type||null,
+      size_bytes:file.size,
+      uploaded_by:profile.id
+    });
+    if(docError){
+      await db.storage.from('legalizacao-documents').remove([objectKey]);
+      throw docError;
+    }
   }
 
   async function saveFinance(processId){
@@ -101,6 +142,11 @@
       const {error}=await db.from('costs').insert(rows);
       if(error) throw error;
     }
+
+    const hourlyFile=document.getElementById('proc-hourly-attachment')?.files?.[0];
+    const feeFile=document.getElementById('proc-fee-attachment')?.files?.[0];
+    if(hourlyFile) await uploadFinanceDocument(processId,'honorarios',hourlyFile);
+    if(feeFile) await uploadFinanceDocument(processId,'taxa',feeFile);
   }
 
   window.openProcessModal = async function(id=''){
