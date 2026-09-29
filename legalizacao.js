@@ -82,7 +82,83 @@ function protocolPage(){setHead('Protocolos','CONTROLE','Acompanhe números de p
 function costPage(){setHead('Custos e taxas','FINANCEIRO','Controle DARE, DARF, taxas municipais, emolumentos e reembolsos.');page(`<section class="surface pad"><div class="section-head"><h2>Custos do processo</h2><span>Taxas e reembolsos</span></div><div class="table-wrap"><table><thead><tr><th>Processo</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead><tbody>${costs.map(c=>`<tr><td>${c.proc}</td><td>${c.desc}</td><td>${c.type}</td><td><strong>${c.amount}</strong></td><td>${pill(c.status)}</td></tr>`).join('')}</tbody></table></div></section>`)}
 function licensePage(){setHead('Licenças','RENOVAÇÕES','Monitore validade e renovações com alertas de 90, 60 e 30 dias.');page(`<section class="surface pad"><div class="section-head"><h2>Licenças e alvarás</h2><span>Alertas recorrentes</span></div><div class="table-wrap"><table><thead><tr><th>Empresa</th><th>Documento</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>${licenses.map(l=>`<tr><td>${l.client}</td><td><strong>${l.name}</strong></td><td>${l.exp}</td><td>${pill(l.status)}</td></tr>`).join('')}</tbody></table></div></section>`)}
 function docsPage(){setHead('Documentos','DOSSIÊ DIGITAL','Organize documentos societários, pessoais, protocolos e licenças por processo.');page(`<section class="surface pad"><div class="section-head"><h2>Dossiê de documentos</h2><button class="btn btn-primary" onclick="alert('Upload privado será ativado com Supabase Storage.')">＋ Documento</button></div><div class="source-note"><strong>Ambiente de demonstração.</strong> O upload real ficará disponível após a ativação do storage privado e das permissões por usuário.</div></section>`)}
-function reportsPage(){setHead('Relatórios','GESTÃO','Indicadores de prazo, produtividade, custos, licenças e gargalos operacionais.');page(`<div class="grid kpi-grid"><div class="surface kpi"><span class="kpi-label">Tempo médio</span><strong>8,4d</strong><small>Por etapa</small></div><div class="surface kpi"><span class="kpi-label">Concluídos</span><strong>18</strong><small>No mês</small></div><div class="surface kpi"><span class="kpi-label">Pendências</span><strong>4</strong><small>Exigem ação</small></div><div class="surface kpi"><span class="kpi-label">Renovações</span><strong>7</strong><small>Próximos 90 dias</small></div></div>`)}
+async function reportsPage(){
+ setHead('Relatórios','GESTÃO','Indicadores calculados exclusivamente com os dados reais cadastrados no ATLAS.');
+ page('<div class="loading-box"><span class="spinner"></span><div>Calculando indicadores...</div></div>');
+ const db=atlasDb();
+ if(!db){page('<div class="error-box">Banco de dados indisponível.</div>');return}
+
+ const now=new Date();
+ const monthStart=new Date(now.getFullYear(),now.getMonth(),1);
+ const nextMonth=new Date(now.getFullYear(),now.getMonth()+1,1);
+ const in90=new Date(now.getTime()+90*86400000);
+
+ const [procRes,licRes,costRes,protoRes]=await Promise.all([
+   db.from('processes').select('id,status,started_at,completed_at,created_at,due_date,priority,title,public_code').order('created_at',{ascending:false}),
+   db.from('licenses').select('id,name,status,expires_at,client_id').order('expires_at',{ascending:true}),
+   db.from('costs').select('id,amount,payment_status,created_at'),
+   db.from('protocols').select('id,status,agency,protocol_type,protocol_number')
+ ]);
+
+ if(procRes.error){page('<div class="error-box">Não foi possível carregar os relatórios: '+esc(procRes.error.message)+'</div>');return}
+
+ const procs=procRes.data||[];
+ const licenses=licRes.error?[]:(licRes.data||[]);
+ const costs=costRes.error?[]:(costRes.data||[]);
+ const protocols=protoRes.error?[]:(protoRes.data||[]);
+
+ const completed=procs.filter(p=>p.status==='completed'&&p.completed_at);
+ const completedThisMonth=completed.filter(p=>{
+   const d=new Date(p.completed_at);
+   return d>=monthStart&&d<nextMonth;
+ }).length;
+
+ const durations=completed.map(p=>{
+   const start=new Date(p.started_at||p.created_at);
+   const end=new Date(p.completed_at);
+   return (end-start)/86400000;
+ }).filter(v=>Number.isFinite(v)&&v>=0);
+ const avgDays=durations.length?durations.reduce((a,b)=>a+b,0)/durations.length:null;
+
+ const pending=procs.filter(p=>p.status==='pending').length;
+ const renewals=licenses.filter(l=>{
+   if(!l.expires_at)return false;
+   const d=new Date(l.expires_at+'T12:00:00');
+   return d>=now&&d<=in90;
+ }).length;
+ const active=procs.filter(p=>!['completed','cancelled'].includes(p.status)).length;
+ const overdue=procs.filter(p=>p.due_date&&!['completed','cancelled'].includes(p.status)&&new Date(p.due_date+'T23:59:59')<now).length;
+ const totalCosts=costs.reduce((s,c)=>s+(Number(c.amount)||0),0);
+ const openProtocols=protocols.filter(p=>!/(deferido|conclu[ií]do|finalizado|encerrado)/i.test(String(p.status||''))).length;
+
+ const recentCompleted=completed.slice(0,5);
+ const upcomingLicenses=licenses.filter(l=>l.expires_at&&new Date(l.expires_at+'T12:00:00')>=now).slice(0,5);
+
+ page(`
+  <div class="grid kpi-grid">
+   <div class="surface kpi"><span class="kpi-label">Tempo médio</span><strong>${avgDays===null?'—':avgDays.toLocaleString('pt-BR',{maximumFractionDigits:1})+'d'}</strong><small>${durations.length?'Processos concluídos':'Sem processos concluídos'}</small></div>
+   <div class="surface kpi"><span class="kpi-label">Concluídos</span><strong>${completedThisMonth}</strong><small>No mês atual</small></div>
+   <div class="surface kpi"><span class="kpi-label">Pendências</span><strong>${pending}</strong><small>Exigem ação</small></div>
+   <div class="surface kpi"><span class="kpi-label">Renovações</span><strong>${renewals}</strong><small>Próximos 90 dias</small></div>
+  </div>
+  <div class="grid kpi-grid" style="margin-top:16px">
+   <div class="surface kpi"><span class="kpi-label">Processos ativos</span><strong>${active}</strong><small>Em aberto</small></div>
+   <div class="surface kpi"><span class="kpi-label">Prazos vencidos</span><strong>${overdue}</strong><small>Processos não concluídos</small></div>
+   <div class="surface kpi"><span class="kpi-label">Custos registrados</span><strong>${money(totalCosts)}</strong><small>Valores cadastrados</small></div>
+   <div class="surface kpi"><span class="kpi-label">Protocolos em aberto</span><strong>${openProtocols}</strong><small>Não encerrados</small></div>
+  </div>
+  <div class="grid two-col" style="margin-top:16px">
+   <section class="surface pad">
+    <div class="section-head"><h2>Concluídos recentemente</h2><span>Base real</span></div>
+    ${recentCompleted.length?`<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Título</th><th>Conclusão</th></tr></thead><tbody>${recentCompleted.map(p=>`<tr><td><strong>${esc(p.public_code||'—')}</strong></td><td>${esc(p.title||'—')}</td><td>${new Date(p.completed_at).toLocaleDateString('pt-BR')}</td></tr>`).join('')}</tbody></table></div>`:'<div class="muted" style="padding:20px 0">Nenhum processo concluído.</div>'}
+   </section>
+   <section class="surface pad">
+    <div class="section-head"><h2>Próximas renovações</h2><span>Licenças</span></div>
+    ${upcomingLicenses.length?`<div class="alert-list">${upcomingLicenses.map(l=>`<div class="alert-item"><div><strong>${esc(l.name||'Licença')}</strong><div class="muted" style="font-size:10px;margin-top:3px">${esc(l.status||'')}</div></div><div class="date">${fmtDateBR(l.expires_at)}</div></div>`).join('')}</div>`:'<div class="muted" style="padding:20px 0">Nenhuma renovação cadastrada.</div>'}
+   </section>
+  </div>
+ `);
+}
 function configPage(){setHead('Configurações','SISTEMA','Usuários, perfis, integrações e parâmetros operacionais.');page(`<section class="surface pad"><div class="section-head"><h2>Ambiente</h2><span>Preview</span></div><div class="data-list"><div class="data-row"><span>Modo</span><strong>Demonstração online</strong></div><div class="data-row"><span>Banco</span><strong>Próxima etapa · Supabase</strong></div><div class="data-row"><span>IA</span><strong>Próxima etapa · OpenAI</strong></div></div></section>`)}
 
 function integrationPage(){
