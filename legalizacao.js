@@ -323,7 +323,7 @@ function integrationPage(){
  </section>
  <aside class="surface integration-status"><div class="section-head"><h2>Status das integrações</h2></div>
   ${integrationRow('DB','CNPJws','Consulta cadastral CNPJ','Ativa','ok')}${integrationRow('IB','IBGE','UF e municípios','Ativa','ok')}${integrationRow('SB','Supabase','Auth, banco, Storage, RLS e Edge Functions','Ativa','ok')}
-  <div class="integration-info"><strong>Status atual</strong>Supabase está em operação com autenticação, banco e Storage privado de documentos. OpenAI e WhatsApp foram retirados temporariamente do escopo do projeto.</div>
+  <div class="integration-info"><strong>Status atual</strong>Supabase está em operação com autenticação, banco, RLS, Edge Functions e Storage privado de documentos.</div>
  </aside></div>`);
  bindCnpj();
 }
