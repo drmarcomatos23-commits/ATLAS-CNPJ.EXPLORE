@@ -138,7 +138,7 @@
         : '<tr><td colspan="5">Nenhum sócio cadastrado.</td></tr>'
       }</tbody></table>
       <h2>Licenças e documentos</h2>
-      <div class="summary-grid"><div><b>Licenças</b><span>${data.licenses.length}</span></div><div><b>Protocolos</b><span>${data.protocols.length}</span></div><div><b>Documentos</b><span>${data.documents.length}</span></div></div>`;
+      <div class="summary-grid"><div><b>Licenças</b><span>${data.licenses.length}</span></div><div><b>Empresas</b><span>${data.clients.length}</span></div><div><b>Documentos</b><span>${data.documents.length}</span></div></div>`;
   }
 
   async function emitReport(period,composition){
