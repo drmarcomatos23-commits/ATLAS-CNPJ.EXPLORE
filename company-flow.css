@@ -1,0 +1,27 @@
+/* v3.13 — cadastro rápido de empresa no processo */
+.company-field{min-width:0}
+.company-select-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.company-add-btn{white-space:nowrap;padding-inline:12px}
+.quick-company-panel{
+  border:1px solid #cfe7e7;
+  background:linear-gradient(180deg,#f7ffff 0%,#f8fbfd 100%);
+  border-radius:15px;
+  padding:16px;
+  margin:2px 0 8px;
+}
+.quick-company-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:12px}
+.quick-company-head strong{display:block;font-size:12px;color:#17394f}
+.quick-company-head span{display:block;font-size:9.5px;color:#6f8192;margin-top:4px;line-height:1.45}
+.quick-company-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px}
+.quick-cnpj-field{grid-column:1/-1}
+.quick-cnpj-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.quick-company-actions{display:flex;justify-content:flex-end;margin-top:10px}
+.mini-close{width:30px;height:30px;font-size:18px;flex:0 0 auto}
+@media(max-width:760px){
+  .company-select-row{grid-template-columns:1fr}
+  .company-add-btn{width:100%}
+  .quick-company-grid{grid-template-columns:1fr}
+  .quick-cnpj-field{grid-column:auto}
+  .quick-cnpj-row{grid-template-columns:1fr}
+  .quick-company-actions .btn{width:100%}
+}
