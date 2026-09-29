@@ -375,4 +375,5 @@
       await processPage();
     });
   };
+  window.atlasQuickCompany={consultQuickCnpj,saveQuickCompany,toggleQuickCompany};
 })();
