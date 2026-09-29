@@ -87,6 +87,92 @@
     }
   }
 
+  function processDocCategoryOptions(selected=''){
+    const options=['Societário','Documento pessoal','Comprovante','Exigência','Requerimento','Certidão','Fiscal','Contrato','Licença','Outros'];
+    return options.map(x=>`<option value="${x}" ${x===selected?'selected':''}>${x}</option>`).join('');
+  }
+
+  function processDocSize(value){
+    const n=Number(value||0);
+    if(!n)return '—';
+    if(n<1024)return n+' B';
+    if(n<1048576)return (n/1024).toLocaleString('pt-BR',{maximumFractionDigits:1})+' KB';
+    return (n/1048576).toLocaleString('pt-BR',{maximumFractionDigits:1})+' MB';
+  }
+
+  function injectProcessDocuments(form,docs=[]){
+    if(!form||form.querySelector('#proc-documents-section'))return;
+    const actions=form.querySelector('.modal-actions');
+    const wrap=document.createElement('div');
+    wrap.id='proc-documents-section';
+    wrap.className='span-2 process-documents-box';
+    wrap.innerHTML=`
+      <div class="process-documents-title">
+        <div><strong>Documentos do processo</strong><span>Anexe arquivos gerais vinculados à empresa e ao processo.</span></div>
+      </div>
+      <div class="process-documents-upload">
+        <div class="field"><label>Categoria</label><select id="proc-doc-category">${processDocCategoryOptions()}</select></div>
+        <div class="field"><label>Arquivos</label><input id="proc-doc-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt"></div>
+      </div>
+      <div class="process-documents-note">Você pode selecionar vários arquivos de uma vez. Limite de 50 MB por arquivo.</div>
+      <div id="proc-existing-documents" class="process-existing-documents">
+        ${docs.length?docs.map(d=>`<div class="process-doc-row" data-doc-id="${d.id}">
+          <div><strong>${String(d.name||'Documento').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))}</strong><span>${String(d.category||'Geral').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]))} · ${processDocSize(d.size_bytes)}</span></div>
+          <div class="row-actions"><button type="button" class="mini-btn" onclick="openStoredDocument('${d.id}')">Abrir</button><button type="button" class="mini-btn danger" onclick="deleteProcessDocument('${d.id}')">Excluir</button></div>
+        </div>`).join(''):'<div class="muted process-no-docs">Nenhum documento geral anexado a este processo.</div>'}
+      </div>`;
+    form.insertBefore(wrap,actions);
+  }
+
+  async function uploadProcessDocuments(processId){
+    const input=document.getElementById('proc-doc-files');
+    const files=[...(input?.files||[])];
+    if(!files.length)return;
+    const category=document.getElementById('proc-doc-category')?.value||'Outros';
+    const db=atlasDb();
+    const profile=atlasProfile();
+    const {data:proc,error:procError}=await db.from('processes').select('id,client_id').eq('id',processId).single();
+    if(procError)throw procError;
+
+    for(const file of files){
+      if(file.size>50*1024*1024)throw new Error('O arquivo "'+file.name+'" excede o limite de 50 MB.');
+      const fileName=safeFileName(file.name);
+      const objectKey=`${profile.organization_id}/${proc.client_id||'sem-empresa'}/${processId}/processo/${crypto.randomUUID()}-${fileName}`;
+      const {error:uploadError}=await db.storage.from('legalizacao-documents').upload(objectKey,file,{upsert:false,contentType:file.type||undefined});
+      if(uploadError)throw uploadError;
+
+      const {error:docError}=await db.from('documents').insert({
+        organization_id:profile.organization_id,
+        client_id:proc.client_id||null,
+        process_id:processId,
+        name:file.name,
+        category,
+        storage_key:objectKey,
+        mime_type:file.type||null,
+        size_bytes:file.size,
+        uploaded_by:profile.id
+      });
+      if(docError){
+        await db.storage.from('legalizacao-documents').remove([objectKey]);
+        throw docError;
+      }
+    }
+  }
+
+  window.deleteProcessDocument=async function(id){
+    if(!confirm('Excluir este documento do processo?'))return;
+    const db=atlasDb();
+    const {data:doc,error}=await db.from('documents').select('id,storage_key').eq('id',id).single();
+    if(error||!doc)return alert('Documento não encontrado.');
+    const {error:storageError}=await db.storage.from('legalizacao-documents').remove([doc.storage_key]);
+    if(storageError)return alert('Não foi possível excluir o arquivo: '+storageError.message);
+    const {error:metaError}=await db.from('documents').delete().eq('id',id);
+    if(metaError)return alert('Arquivo removido, mas houve falha ao remover o registro: '+metaError.message);
+    document.querySelector('.process-doc-row[data-doc-id="'+id+'"]')?.remove();
+    const list=document.getElementById('proc-existing-documents');
+    if(list&&!list.querySelector('.process-doc-row'))list.innerHTML='<div class="muted process-no-docs">Nenhum documento geral anexado a este processo.</div>';
+  };
+
   async function saveFinance(processId){
     const db=atlasDb();
     const hourlyRate=brMoneyToNumber(document.getElementById('proc-hourly-rate')?.value);
@@ -155,15 +241,21 @@
     if(!form)return;
 
     let existing=[];
+    let processDocs=[];
     if(id){
-      const {data}=await atlasDb().from('costs').select('*').eq('process_id',id);
-      existing=data||[];
+      const [costsRes,docsRes]=await Promise.all([
+        atlasDb().from('costs').select('*').eq('process_id',id),
+        atlasDb().from('documents').select('id,name,category,size_bytes,storage_key,mime_type').eq('process_id',id).not('category','like','Financeiro ·%').order('created_at',{ascending:false})
+      ]);
+      existing=costsRes.data||[];
+      processDocs=docsRes.data||[];
     }
     injectFinance(form,existing);
 
     const cloned=form.cloneNode(true);
     form.replaceWith(cloned);
     injectFinance(cloned,existing);
+    injectProcessDocuments(cloned,processDocs);
 
     // Reativa cadastro rápido de empresa quando o processo é novo.
     if(!id){
@@ -213,6 +305,7 @@
           processId=created.id;
         }
         await saveFinance(processId);
+        await uploadProcessDocuments(processId);
         closeAtlasModal();
         await processPage();
       }catch(err){
