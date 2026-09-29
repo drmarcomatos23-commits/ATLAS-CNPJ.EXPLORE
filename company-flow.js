@@ -149,6 +149,7 @@
 
       select.add(new Option(created.legal_name, created.id));
       select.value = created.id;
+      window.atlasRealtime?.refreshCompanies?.();
 
       msg.textContent = 'Empresa cadastrada e selecionada no processo.';
       msg.className = 'auth-message success';
