@@ -58,10 +58,7 @@
     </section>`);
 
     if(role==='admin'){
-      const {data:archived,error:archivedError}=await db.from('clients')
-        .select('*')
-        .not('deleted_at','is',null)
-        .order('deleted_at',{ascending:false});
+      const {data:archived,error:archivedError}=await db.rpc('atlas_list_archived_clients');
 
       if(!archivedError && archived?.length){
         document.getElementById('page-content')?.insertAdjacentHTML('beforeend',`
