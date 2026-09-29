@@ -4,22 +4,25 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#07192b">
-<meta name="description" content="ATLAS Legalização e Gerenciamento — gestão de legalização empresarial, processos, protocolos, custos e licenças.">
+<meta name="description" content="ATLAS Legalização e Gerenciamento — gestão de legalização empresarial, processos, custos, documentos e licenças.">
 <title>ATLAS Legalização e Gerenciamento</title>
-<link rel="stylesheet" href="/legalizacao.css?v=3.18">
-<link rel="stylesheet" href="/company-flow.css?v=3.18">
-<link rel="stylesheet" href="/business-extensions.css?v=3.18">
+<link rel="stylesheet" href="/legalizacao.css?v=3.20">
+<link rel="stylesheet" href="/company-flow.css?v=3.20">
+<link rel="stylesheet" href="/business-extensions.css?v=3.20">
+<link rel="stylesheet" href="/license-compliance.css?v=3.20">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js" defer></script>
-<script src="/legalizacao.js?v=3.18" defer></script>
-<script src="/company-flow.js?v=3.18" defer></script>
-<script src="/company-registration.js?v=3.18" defer></script>
-<script src="/company-partners.js?v=3.18" defer></script>
-<script src="/process-financial.js?v=3.18" defer></script>
-<script src="/report-emission.js?v=3.19" defer></script>
-<script src="/financial-costs.js?v=3.18" defer></script>
+<script src="/legalizacao.js?v=3.20" defer></script>
+<script src="/company-flow.js?v=3.20" defer></script>
+<script src="/company-registration.js?v=3.20" defer></script>
+<script src="/company-partners.js?v=3.20" defer></script>
+<script src="/process-financial.js?v=3.20" defer></script>
+<script src="/report-emission.js?v=3.20" defer></script>
+<script src="/financial-costs.js?v=3.20" defer></script>
+<script src="/license-compliance.js?v=3.20" defer></script>
+<script src="/dashboard-compliance.js?v=3.20" defer></script>
 <script src="/session-profile-fix.js?v=3.12" defer></script>
 <script src="/atlas-auth.js?v=3.7" defer></script>
-<script src="/company-realtime.js?v=3.18" defer></script>
+<script src="/company-realtime.js?v=3.20" defer></script>
 </head>
 <body>
 <section id="login-screen" class="login-screen">
@@ -27,7 +30,7 @@
     <img class="login-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS Legalização e Gerenciamento" onerror="this.style.display='none';this.parentElement.classList.add('login-logo-fallback')">
     <span class="login-kicker">AMBIENTE SEGURO DE ACESSO</span>
     <h1>Legalização empresarial com visão de ponta a ponta.</h1>
-    <p>Centralize processos, protocolos, custos, documentos, licenças e comunicação com clientes em uma única operação.</p>
+    <p>Centralize processos, custos, documentos, licenças e comunicação com clientes em uma única operação.</p>
     <div class="login-security">
       <span>● Sessão individual</span><span>● Perfis de acesso</span><span>● Banco protegido por RLS</span>
     </div>
@@ -99,7 +102,6 @@
       <button class="nav-item" data-page="processos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">▤</span><span>Processos</span></button>
       <button class="nav-item" data-page="clientes" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Empresas</span></button>
       <button class="nav-item" data-page="documentos" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">□</span><span>Documentos</span></button>
-      <button class="nav-item" data-page="protocolos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">#</span><span>Protocolos</span></button>
       <button class="nav-item" data-page="custos" data-roles="admin,financeiro,auditoria"><span class="nav-ico">R$</span><span>Custos</span></button>
       <button class="nav-item" data-page="licencas" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">✓</span><span>Licenças</span></button>
       <button class="nav-item" data-page="integracoes" data-roles="admin,operacao"><span class="nav-ico">⌘</span><span>Integrações</span></button>
@@ -107,7 +109,7 @@
       <button class="nav-item" data-page="usuarios" data-roles="admin"><span class="nav-ico">♙</span><span>Usuários</span></button>
       <button class="nav-item" data-page="config" data-roles="admin"><span class="nav-ico">⚙</span><span>Configurações</span></button>
     </nav>
-    <div class="sidebar-footer"><strong>ATLAS</strong><span>Legalização e Gerenciamento</span><span style="margin-top:8px">Produção 3.19</span></div>
+    <div class="sidebar-footer"><strong>ATLAS</strong><span>Legalização e Gerenciamento</span><span style="margin-top:8px">Produção 3.20</span></div>
   </aside>
   <div class="workspace">
     <header class="topbar">
