@@ -53,3 +53,6 @@ Deployment Protection / Vercel Authentication: **desativada** no projeto de prod
 A autenticação deve ser feita pelo próprio ATLAS/Supabase.
 
 Consulte `DEPLOY-VERCEL.md` para a configuração completa.
+
+
+<!-- production-deploy-trigger: 2026-09-29 -->
