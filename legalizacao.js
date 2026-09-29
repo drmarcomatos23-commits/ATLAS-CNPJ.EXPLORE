@@ -194,3 +194,247 @@ async function handleUserAction(e){
 }
 
 $('#global-search').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=e.target.value.trim();if(q)alert(`Pesquisa global será conectada ao banco de dados. Busca: ${q}`)}});
+
+
+/* ============================
+   v3.8 - Dados operacionais reais
+   ============================ */
+function atlasDb(){return window.atlasAuth?.client}
+function atlasProfile(){return window.atlasAuth?.getProfile?.()||atlasCurrentProfile||{}}
+function canEditOps(){return ['admin','operacao'].includes(atlasProfile().role)}
+function canDeleteOps(){return ['admin','operacao'].includes(atlasProfile().role)}
+function fmtDateBR(v){if(!v)return '—';try{return new Date(v+'T12:00:00').toLocaleDateString('pt-BR')}catch{return v}}
+function statusLabel(v){return ({open:'Aberto',in_progress:'Em andamento',pending:'Pendência',completed:'Concluído',cancelled:'Cancelado'})[v]||v||'Aberto'}
+function priorityLabel(v){return ({low:'Baixa',normal:'Normal',high:'Alta',urgent:'Urgente'})[v]||v||'Normal'}
+function emptyState(title,text,buttonHtml=''){return `<div class="empty-state"><div class="empty-icon">＋</div><h3>${esc(title)}</h3><p>${esc(text)}</p>${buttonHtml}</div>`}
+
+async function safeTable(table,queryBuilder){
+ const db=atlasDb(); if(!db)return {data:[],error:new Error('Banco indisponível')};
+ try{
+   const q=queryBuilder?queryBuilder(db.from(table)):db.from(table).select('*');
+   const {data,error}=await q;
+   return {data:data||[],error};
+ }catch(error){return {data:[],error}}
+}
+
+async function loadOperationalData(){
+ const db=atlasDb();
+ if(!db) return {clients:[],processes:[],templates:[],stages:[],profiles:[],protocols:[],costs:[],licenses:[]};
+ const results=await Promise.all([
+   db.from('clients').select('*').order('legal_name',{ascending:true}),
+   db.from('processes').select('*').order('created_at',{ascending:false}),
+   db.from('workflow_templates').select('*').eq('active',true).order('name',{ascending:true}),
+   db.from('workflow_stages').select('*').order('position',{ascending:true}),
+   db.from('profiles').select('id,full_name,role,active').eq('active',true).order('full_name',{ascending:true}),
+   db.from('protocols').select('*'),
+   db.from('costs').select('*'),
+   db.from('licenses').select('*').order('expires_at',{ascending:true})
+ ]);
+ const keys=['clients','processes','templates','stages','profiles','protocols','costs','licenses'];
+ const out={};
+ results.forEach((r,i)=>{out[keys[i]]=r.error?[]:(r.data||[]);});
+ return out;
+}
+
+function decorateProcesses(data){
+ const cm=new Map(data.clients.map(c=>[c.id,c]));
+ const sm=new Map(data.stages.map(s=>[s.id,s]));
+ const pm=new Map(data.profiles.map(p=>[p.id,p]));
+ return data.processes.map(p=>({...p,client:cm.get(p.client_id),stage:sm.get(p.current_stage_id),owner:pm.get(p.owner_id)}));
+}
+
+async function dashboard(){
+ setHead('Dashboard','VISÃO GERAL','Acompanhe processos, pendências, custos e vencimentos em um único painel.');
+ page('<div class="loading-box"><span class="spinner"></span><div>Carregando dados operacionais...</div></div>');
+ const data=await loadOperationalData();
+ const procs=decorateProcesses(data);
+ const active=procs.filter(p=>!['completed','cancelled'].includes(p.status));
+ const licenseAttention=data.licenses.filter(l=>l.expires_at && new Date(l.expires_at)<=new Date(Date.now()+90*86400000)).length;
+ const protocolCount=data.protocols.length;
+ const costTotal=data.costs.reduce((s,c)=>s+(Number(c.amount)||0),0);
+ const recent=procs.slice(0,6);
+ const upcoming=data.licenses.filter(l=>l.expires_at).slice(0,5);
+
+ page(`<div class="grid kpi-grid">
+  <div class="surface kpi"><span class="kpi-label">Processos ativos</span><strong>${active.length}</strong><small>Registros reais em andamento</small></div>
+  <div class="surface kpi"><span class="kpi-label">Licenças em atenção</span><strong>${licenseAttention}</strong><small>Vencimentos em até 90 dias</small></div>
+  <div class="surface kpi"><span class="kpi-label">Protocolos monitorados</span><strong>${protocolCount}</strong><small>Protocolos cadastrados</small></div>
+  <div class="surface kpi"><span class="kpi-label">Custos controlados</span><strong>${money(costTotal)}</strong><small>Taxas e reembolsos cadastrados</small></div>
+ </div>
+ <div class="grid two-col" style="margin-top:16px">
+  <section class="surface pad"><div class="section-head"><h2>Processos recentes</h2><span>Dados do Supabase</span></div>
+    ${recent.length?realProcessTable(recent,false):emptyState('Nenhum processo cadastrado','Crie a primeira empresa e depois o primeiro processo.',canEditOps()?'<button class="btn btn-primary" onclick="openProcessModal()">＋ Novo processo</button>':'')}
+  </section>
+  <section class="surface pad"><div class="section-head"><h2>Vencimentos</h2><span>Próximos alertas</span></div>
+    ${upcoming.length?'<div class="alert-list">'+upcoming.map(l=>`<div class="alert-item"><div><strong>${esc(l.name)}</strong><div class="muted" style="font-size:10px;margin-top:3px">${esc(clientNameById(data.clients,l.client_id))}</div></div><div class="date">${fmtDateBR(l.expires_at)}<br>${pill(statusLabel(l.status))}</div></div>`).join('')+'</div>':'<div class="muted" style="padding:18px 0;font-size:11px">Nenhuma licença cadastrada.</div>'}
+  </section>
+ </div>`);
+}
+
+function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_name||'Empresa'}
+
+function realProcessTable(list,actions=true){
+ return `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Etapa</th><th>Responsável</th><th>Prazo</th><th>Status</th>${actions&&canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>${list.map(p=>`<tr>
+  <td><strong>${esc(p.public_code||'Sem código')}</strong><div class="muted">${esc(p.title)}</div></td>
+  <td>${esc(p.client?.legal_name||'—')}</td>
+  <td>${esc(p.stage?.name||'—')}</td>
+  <td>${esc(p.owner?.full_name||'Não atribuído')}</td>
+  <td>${fmtDateBR(p.due_date)}</td>
+  <td>${pill(statusLabel(p.status))}</td>
+  ${actions&&canEditOps()?`<td><div class="row-actions"><button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button><button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button><button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button></div></td>`:''}
+ </tr>`).join('')}</tbody></table></div>`;
+}
+
+async function processPage(){
+ setHead('Processos','LEGALIZAÇÃO','Crie, edite, mova e acompanhe processos reais de legalização.');
+ page('<div class="loading-box"><span class="spinner"></span><div>Carregando processos...</div></div>');
+ const data=await loadOperationalData();
+ const procs=decorateProcesses(data);
+ const role=atlasProfile().role;
+ const toolbar=canEditOps()?'<button class="btn btn-primary" onclick="openProcessModal()">＋ Novo processo</button>':'';
+ if(!procs.length){
+   page(`<section class="surface pad"><div class="section-head"><h2>Processos</h2>${toolbar}</div>${emptyState('Nenhum processo cadastrado','Os dados de demonstração foram removidos. Cadastre uma empresa e crie seu primeiro processo.',canEditOps()?'<button class="btn btn-primary" onclick="openProcessModal()">＋ Criar processo</button>':'')}</section>`);
+   return;
+ }
+ const template=data.templates[0];
+ const stages=data.stages.filter(s=>!template||s.workflow_template_id===template.id);
+ const cardsByStage=new Map(stages.map(s=>[s.id,[]]));
+ procs.forEach(p=>{if(cardsByStage.has(p.current_stage_id))cardsByStage.get(p.current_stage_id).push(p)});
+ let kanban=stages.map(s=>`<div class="kanban-col"><div class="kanban-title"><span>${esc(s.name)}</span><span>${(cardsByStage.get(s.id)||[]).length}</span></div>
+ ${(cardsByStage.get(s.id)||[]).map(p=>`<article class="task-card real-task"><b>${esc(p.public_code)}</b><strong>${esc(p.client?.legal_name||'Empresa')}</strong><p>${esc(p.title)}</p><p>${p.owner?.full_name?esc(p.owner.full_name):'Sem responsável'} · ${fmtDateBR(p.due_date)}</p>${canEditOps()?`<div class="task-actions"><button onclick="openProcessModal('${p.id}')">Editar</button><button onclick="advanceProcess('${p.id}')">Avançar</button><button class="danger-link" onclick="deleteProcess('${p.id}')">Excluir</button></div>`:''}</article>`).join('')||'<div class="kanban-empty">Nenhum processo</div>'}
+ </div>`).join('');
+ page(`<section class="surface pad"><div class="section-head"><div><h2>Pipeline de legalização</h2><span>${procs.length} processo(s) cadastrado(s)</span></div>${toolbar}</div><div class="kanban">${kanban}</div><div style="margin-top:18px"><div class="section-head"><h3>Lista completa</h3></div>${realProcessTable(procs,true)}</div></section>`);
+}
+
+async function clientPage(){
+ setHead('Empresas e clientes','CADASTRO','Cadastre e mantenha as empresas vinculadas aos processos.');
+ page('<div class="loading-box"><span class="spinner"></span><div>Carregando empresas...</div></div>');
+ const db=atlasDb();
+ const {data,error}=await db.from('clients').select('*').order('legal_name',{ascending:true});
+ const list=error?[]:(data||[]);
+ const toolbar=canEditOps()?'<button class="btn btn-primary" onclick="openClientModal()">＋ Nova empresa</button>':'';
+ page(`<section class="surface pad"><div class="section-head"><div><h2>Empresas cadastradas</h2><span>${list.length} registro(s)</span></div>${toolbar}</div>
+ ${list.length?`<div class="table-wrap"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Cidade/UF</th><th>Contato</th>${canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>${list.map(c=>`<tr><td><strong>${esc(c.legal_name)}</strong><div class="muted">${esc(c.trade_name||'')}</div></td><td>${esc(c.tax_id||'—')}</td><td>${esc([c.city,c.state].filter(Boolean).join('/')||'—')}</td><td>${esc(c.contact_name||c.email||'—')}</td>${canEditOps()?`<td><div class="row-actions"><button class="mini-btn" onclick="openClientModal('${c.id}')">Editar</button><button class="mini-btn danger" onclick="deleteClient('${c.id}')">Excluir</button></div></td>`:''}</tr>`).join('')}</tbody></table></div>`:emptyState('Nenhuma empresa cadastrada','Cadastre a primeira empresa para iniciar um processo.',canEditOps()?'<button class="btn btn-primary" onclick="openClientModal()">＋ Cadastrar empresa</button>':'')}
+ </section>`);
+}
+
+async function protocolPage(){
+ setHead('Protocolos','CONTROLE','Protocolos vinculados aos processos cadastrados.');
+ const db=atlasDb();
+ const {data}=await db.from('protocols').select('*');
+ const list=data||[];
+ page(`<section class="surface pad"><div class="section-head"><h2>Protocolos registrados</h2><span>${list.length} itens</span></div>${list.length?'<div class="table-wrap"><table><thead><tr><th>Órgão</th><th>Tipo</th><th>Número</th><th>Status</th></tr></thead><tbody>'+list.map(p=>`<tr><td>${esc(p.agency||'—')}</td><td>${esc(p.protocol_type||'—')}</td><td><strong>${esc(p.protocol_number||'—')}</strong></td><td>${pill(p.status||'Registrado')}</td></tr>`).join('')+'</tbody></table></div>':'<div class="muted" style="padding:20px 0">Nenhum protocolo cadastrado.</div>'}</section>`);
+}
+
+async function costPage(){
+ setHead('Custos e taxas','FINANCEIRO','Custos reais vinculados aos processos.');
+ const db=atlasDb(); const {data}=await db.from('costs').select('*'); const list=data||[];
+ page(`<section class="surface pad"><div class="section-head"><h2>Custos do processo</h2><span>${list.length} itens</span></div>${list.length?'<div class="table-wrap"><table><thead><tr><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Pagamento</th></tr></thead><tbody>'+list.map(c=>`<tr><td>${esc(c.description)}</td><td>${esc(c.cost_type||'—')}</td><td><strong>${money(c.amount)}</strong></td><td>${pill(c.payment_status||'Pendente')}</td></tr>`).join('')+'</tbody></table></div>':'<div class="muted" style="padding:20px 0">Nenhum custo cadastrado.</div>'}</section>`);
+}
+
+async function licensePage(){
+ setHead('Licenças','RENOVAÇÕES','Licenças reais e vencimentos cadastrados.');
+ const data=await loadOperationalData(); const list=data.licenses;
+ page(`<section class="surface pad"><div class="section-head"><h2>Licenças e alvarás</h2><span>${list.length} itens</span></div>${list.length?'<div class="table-wrap"><table><thead><tr><th>Empresa</th><th>Documento</th><th>Órgão</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>'+list.map(l=>`<tr><td>${esc(clientNameById(data.clients,l.client_id))}</td><td><strong>${esc(l.name)}</strong></td><td>${esc(l.agency||'—')}</td><td>${fmtDateBR(l.expires_at)}</td><td>${pill(l.status||'Ativa')}</td></tr>`).join('')+'</tbody></table></div>':'<div class="muted" style="padding:20px 0">Nenhuma licença cadastrada.</div>'}</section>`);
+}
+
+function modalShell(title,body,wide=false){
+ const root=$('#atlas-modal-root');
+ root.innerHTML=`<div class="atlas-modal-backdrop" onclick="if(event.target===this)closeAtlasModal()"><div class="atlas-modal ${wide?'wide':''}"><div class="atlas-modal-head"><div><span class="eyebrow">ATLAS</span><h2>${esc(title)}</h2></div><button class="modal-close" onclick="closeAtlasModal()">×</button></div><div class="atlas-modal-body">${body}</div></div></div>`;
+}
+function closeAtlasModal(){$('#atlas-modal-root').innerHTML=''}
+window.closeAtlasModal=closeAtlasModal;
+
+async function openClientModal(id=''){
+ const db=atlasDb(); let record=null;
+ if(id){const {data}=await db.from('clients').select('*').eq('id',id).single();record=data}
+ modalShell(id?'Editar empresa':'Nova empresa',`<form id="client-real-form" class="modal-form-grid">
+  <div class="field span-2"><label>Razão social *</label><input id="client-legal-name" required value="${esc(record?.legal_name||'')}"></div>
+  <div class="field"><label>Nome fantasia</label><input id="client-trade-name" value="${esc(record?.trade_name||'')}"></div>
+  <div class="field"><label>CNPJ</label><input id="client-tax-id" value="${esc(record?.tax_id||'')}"></div>
+  <div class="field"><label>Contato</label><input id="client-contact" value="${esc(record?.contact_name||'')}"></div>
+  <div class="field"><label>E-mail</label><input id="client-email" type="email" value="${esc(record?.email||'')}"></div>
+  <div class="field"><label>Telefone</label><input id="client-phone" value="${esc(record?.phone||'')}"></div>
+  <div class="field"><label>Cidade</label><input id="client-city" value="${esc(record?.city||'')}"></div>
+  <div class="field"><label>UF</label><input id="client-state" maxlength="2" value="${esc(record?.state||'')}"></div>
+  <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button id="client-save-btn" class="btn btn-primary" type="submit">Salvar empresa</button></div>
+  <div id="client-form-message" class="auth-message hidden span-2"></div>
+ </form>`);
+ $('#client-real-form').addEventListener('submit',async e=>{
+  e.preventDefault(); const btn=$('#client-save-btn'); btn.disabled=true;btn.textContent='Salvando...';
+  const payload={organization_id:atlasProfile().organization_id,legal_name:$('#client-legal-name').value.trim(),trade_name:$('#client-trade-name').value.trim()||null,tax_id:$('#client-tax-id').value.trim()||null,contact_name:$('#client-contact').value.trim()||null,email:$('#client-email').value.trim()||null,phone:$('#client-phone').value.trim()||null,city:$('#client-city').value.trim()||null,state:($('#client-state').value.trim().toUpperCase()||null)};
+  const q=id?db.from('clients').update(payload).eq('id',id):db.from('clients').insert(payload);
+  const {error}=await q;
+  if(error){const m=$('#client-form-message');m.textContent=error.message;m.className='auth-message error span-2';btn.disabled=false;btn.textContent='Salvar empresa';return}
+  closeAtlasModal();await clientPage();
+ });
+}
+window.openClientModal=openClientModal;
+
+async function deleteClient(id){
+ if(!confirm('Excluir esta empresa? A exclusão só será permitida se ela não possuir processos ou outros vínculos.'))return;
+ const db=atlasDb();const {error}=await db.from('clients').delete().eq('id',id);
+ if(error)return alert('Não foi possível excluir: '+error.message);
+ await clientPage();
+}
+window.deleteClient=deleteClient;
+
+async function openProcessModal(id=''){
+ const db=atlasDb();
+ const data=await loadOperationalData();
+ if(!data.clients.length){
+   if(confirm('Nenhuma empresa cadastrada. Deseja cadastrar uma empresa agora?')){closeAtlasModal();openClientModal()}
+   return;
+ }
+ let rec=null;
+ if(id){const {data:r,error}=await db.from('processes').select('*').eq('id',id).single();if(error)return alert(error.message);rec=r}
+ const template=rec?data.templates.find(t=>t.id===rec.workflow_template_id)||data.templates[0]:data.templates[0];
+ const stagesFor=data.stages.filter(s=>!template||s.workflow_template_id===template.id);
+ const firstStage=stagesFor[0];
+ modalShell(id?'Editar processo':'Novo processo',`<form id="process-real-form" class="modal-form-grid">
+   <div class="field span-2"><label>Título do processo *</label><input id="proc-title" required value="${esc(rec?.title||'')}"></div>
+   <div class="field"><label>Empresa *</label><select id="proc-client" required>${data.clients.map(c=>`<option value="${c.id}" ${rec?.client_id===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</select></div>
+   <div class="field"><label>Tipo de serviço</label><input id="proc-service" value="${esc(rec?.service_type||'legalizacao_empresarial')}"></div>
+   <div class="field"><label>Etapa atual *</label><select id="proc-stage" required>${stagesFor.map(s=>`<option value="${s.id}" ${(rec?.current_stage_id||firstStage?.id)===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
+   <div class="field"><label>Responsável</label><select id="proc-owner"><option value="">Não atribuído</option>${data.profiles.filter(p=>['admin','operacao'].includes(p.role)).map(p=>`<option value="${p.id}" ${rec?.owner_id===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('')}</select></div>
+   <div class="field"><label>Prioridade</label><select id="proc-priority"><option value="low" ${rec?.priority==='low'?'selected':''}>Baixa</option><option value="normal" ${!rec||rec?.priority==='normal'?'selected':''}>Normal</option><option value="high" ${rec?.priority==='high'?'selected':''}>Alta</option><option value="urgent" ${rec?.priority==='urgent'?'selected':''}>Urgente</option></select></div>
+   <div class="field"><label>Status</label><select id="proc-status"><option value="open" ${!rec||rec?.status==='open'?'selected':''}>Aberto</option><option value="in_progress" ${rec?.status==='in_progress'?'selected':''}>Em andamento</option><option value="pending" ${rec?.status==='pending'?'selected':''}>Pendência</option><option value="completed" ${rec?.status==='completed'?'selected':''}>Concluído</option><option value="cancelled" ${rec?.status==='cancelled'?'selected':''}>Cancelado</option></select></div>
+   <div class="field"><label>Prazo</label><input id="proc-due" type="date" value="${esc(rec?.due_date||'')}"></div>
+   <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button id="proc-save-btn" class="btn btn-primary" type="submit">Salvar processo</button></div>
+   <div id="proc-form-message" class="auth-message hidden span-2"></div>
+ </form>`,true);
+ $('#process-real-form').addEventListener('submit',async e=>{
+   e.preventDefault();const btn=$('#proc-save-btn');btn.disabled=true;btn.textContent='Salvando...';
+   const payload={organization_id:atlasProfile().organization_id,client_id:$('#proc-client').value,workflow_template_id:template?.id||null,title:$('#proc-title').value.trim(),service_type:$('#proc-service').value.trim()||'legalizacao_empresarial',status:$('#proc-status').value,current_stage_id:$('#proc-stage').value||null,owner_id:$('#proc-owner').value||null,priority:$('#proc-priority').value,due_date:$('#proc-due').value||null,completed_at:$('#proc-status').value==='completed'?new Date().toISOString():null};
+   const q=id?db.from('processes').update(payload).eq('id',id):db.from('processes').insert(payload);
+   const {error}=await q;
+   if(error){const m=$('#proc-form-message');m.textContent=error.message;m.className='auth-message error span-2';btn.disabled=false;btn.textContent='Salvar processo';return}
+   closeAtlasModal();await processPage();
+ });
+}
+window.openProcessModal=openProcessModal;
+
+async function advanceProcess(id){
+ const db=atlasDb();const data=await loadOperationalData();
+ const rec=data.processes.find(p=>p.id===id);if(!rec)return;
+ const stagesFor=data.stages.filter(s=>s.workflow_template_id===rec.workflow_template_id).sort((a,b)=>a.position-b.position);
+ const idx=stagesFor.findIndex(s=>s.id===rec.current_stage_id);
+ if(idx<0||idx===stagesFor.length-1)return alert('O processo já está na última etapa.');
+ const next=stagesFor[idx+1];
+ const patch={current_stage_id:next.id,status:next.name==='Concluído'?'completed':'in_progress',completed_at:next.name==='Concluído'?new Date().toISOString():null};
+ const {error}=await db.from('processes').update(patch).eq('id',id);
+ if(error)return alert('Não foi possível avançar: '+error.message);
+ await processPage();
+}
+window.advanceProcess=advanceProcess;
+
+async function deleteProcess(id){
+ if(!confirm('Excluir este processo da operação? Ele ficará preservado no banco para auditoria, mas desaparecerá das telas.'))return;
+ const db=atlasDb();const profile=atlasProfile();
+ const {error}=await db.from('processes').update({deleted_at:new Date().toISOString(),deleted_by:profile.id}).eq('id',id);
+ if(error)return alert('Não foi possível excluir: '+error.message);
+ await processPage();
+}
+window.deleteProcess=deleteProcess;
+
+$('#new-process-btn')?.addEventListener('click',()=>openProcessModal());
