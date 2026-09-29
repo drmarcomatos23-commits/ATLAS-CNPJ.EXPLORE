@@ -1,0 +1,24 @@
+/* v3.20 — matriz de licenças por empresa */
+.license-company-list{display:grid;gap:14px;margin-top:14px}
+.license-company-head{align-items:center}
+.license-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.license-card{border:1px solid #dbe6ed;border-radius:14px;padding:13px;background:#fff;min-width:0}
+.license-card.ok{border-color:#cce9df;background:#fbfffd}
+.license-card.warn{border-color:#f1dfbd;background:#fffdf8}
+.license-card.bad{border-color:#efcbd0;background:#fffafb}
+.license-card.muted{background:#fafcfd}
+.license-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.license-card-top strong{display:block;font-size:10.5px;color:#17384f}
+.license-card-top span:not(.pill){display:block;margin-top:3px;font-size:8.5px;color:#7b8c9b}
+.license-meta{display:grid;gap:8px;margin-top:13px}
+.license-meta>div{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #edf2f5;padding-top:7px}
+.license-meta span{font-size:8.5px;color:#7c8d9b}
+.license-meta strong{font-size:9.5px;text-align:right}
+.license-countdown strong{max-width:60%}
+.license-edit-list{display:grid;gap:12px;margin-top:14px}
+.license-edit-row{border:1px solid #dce7ee;border-radius:14px;padding:13px;background:#fbfdff}
+.license-edit-title{display:flex;justify-content:space-between;gap:10px;margin-bottom:10px}
+.license-edit-title strong{font-size:11px}.license-edit-title span{font-size:9px;color:#748696}
+.license-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+@media(max-width:1200px){.license-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){.license-grid,.license-edit-grid{grid-template-columns:1fr}.license-company-head{align-items:flex-start}.license-company-head .btn{width:100%;margin-top:8px}}
