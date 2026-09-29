@@ -160,6 +160,7 @@
 
         closeAtlasModal();
         await clientPage();
+        window.atlasRealtime?.refreshCompanies?.();
       }catch(err){
         msg.textContent=err.message||'Não foi possível salvar a empresa.';
         msg.className='auth-message error span-2';
