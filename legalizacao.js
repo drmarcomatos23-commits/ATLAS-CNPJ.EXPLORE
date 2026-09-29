@@ -159,7 +159,7 @@ async function reportsPage(){
   </div>
  `);
 }
-function configPage(){setHead('Configurações','SISTEMA','Usuários, perfis, integrações e parâmetros operacionais.');page(`<section class="surface pad"><div class="section-head"><h2>Ambiente</h2><span>Preview</span></div><div class="data-list"><div class="data-row"><span>Modo</span><strong>Demonstração online</strong></div><div class="data-row"><span>Banco</span><strong>Próxima etapa · Supabase</strong></div><div class="data-row"><span>IA</span><strong>Próxima etapa · OpenAI</strong></div></div></section>`)}
+function configPage(){setHead('Configurações','SISTEMA','Usuários, perfis, integrações e parâmetros operacionais.');page(`<section class="surface pad"><div class="section-head"><h2>Ambiente</h2><span>Produção</span></div><div class="data-list"><div class="data-row"><span>Modo</span><strong>Sistema autenticado</strong></div><div class="data-row"><span>Supabase</span><strong>Ativo · Auth, banco, RLS e Edge Functions</strong></div><div class="data-row"><span>OpenAI</span><strong>Não configurada · aguardando API Key</strong></div><div class="data-row"><span>Documentos</span><strong>Storage privado pendente</strong></div><div class="data-row"><span>Comunicações</span><strong>WhatsApp e e-mail pendentes</strong></div></div></section>`)}
 
 function integrationPage(){
  setHead('Integrações','APIs E CONECTORES','Conecte e consulte fontes oficiais e serviços auxiliares para agilizar seus processos.');
@@ -169,8 +169,8 @@ function integrationPage(){
   <div id="cnpj-feedback" class="cnpj-feedback">Digite os 14 números do CNPJ. A validação dos dígitos é automática.</div><div id="cnpj-result"></div>
  </section>
  <aside class="surface integration-status"><div class="section-head"><h2>Status das integrações</h2></div>
-  ${integrationRow('DB','CNPJws','Consulta cadastral CNPJ','Ativa','ok')}${integrationRow('IB','IBGE','UF e municípios','Ativa','ok')}${integrationRow('SB','Supabase','Auth, banco e storage','Próxima etapa','warn')}${integrationRow('AI','OpenAI','ATLAS IA','Próxima etapa','warn')}
-  <div class="integration-info"><strong>Integrações em evolução</strong>A estrutura foi preparada para incorporar autenticação, storage, WhatsApp, e-mail e ATLAS IA sem alterar o fluxo operacional.</div>
+  ${integrationRow('DB','CNPJws','Consulta cadastral CNPJ','Ativa','ok')}${integrationRow('IB','IBGE','UF e municípios','Ativa','ok')}${integrationRow('SB','Supabase','Auth, banco, usuários, RLS e Edge Functions','Ativa','ok')}${integrationRow('AI','OpenAI','ATLAS IA aguardando API Key','Não configurada','warn')}
+  <div class="integration-info"><strong>Status atual</strong>Supabase já está em operação. Permanecem pendentes: OpenAI/ATLAS IA, storage privado de documentos, WhatsApp e e-mail transacional.</div>
  </aside></div>`);
  bindCnpj();
 }
