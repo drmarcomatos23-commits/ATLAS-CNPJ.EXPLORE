@@ -81,7 +81,160 @@ function clientPage(){setHead('Empresas e clientes','CADASTRO','Cadastros empres
 function protocolPage(){setHead('Protocolos','CONTROLE','Acompanhe números de protocolo, órgãos e situação de cada solicitação.');page(`<section class="surface pad"><div class="section-head"><h2>Protocolos registrados</h2><span>${protocols.length} itens</span></div><div class="table-wrap"><table><thead><tr><th>Processo</th><th>Órgão</th><th>Tipo</th><th>Protocolo</th><th>Status</th></tr></thead><tbody>${protocols.map(p=>`<tr><td>${p.proc}</td><td>${p.org}</td><td>${p.kind}</td><td><strong>${p.num}</strong></td><td>${pill(p.status)}</td></tr>`).join('')}</tbody></table></div></section>`)}
 function costPage(){setHead('Custos e taxas','FINANCEIRO','Controle DARE, DARF, taxas municipais, emolumentos e reembolsos.');page(`<section class="surface pad"><div class="section-head"><h2>Custos do processo</h2><span>Taxas e reembolsos</span></div><div class="table-wrap"><table><thead><tr><th>Processo</th><th>Descrição</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead><tbody>${costs.map(c=>`<tr><td>${c.proc}</td><td>${c.desc}</td><td>${c.type}</td><td><strong>${c.amount}</strong></td><td>${pill(c.status)}</td></tr>`).join('')}</tbody></table></div></section>`)}
 function licensePage(){setHead('Licenças','RENOVAÇÕES','Monitore validade e renovações com alertas de 90, 60 e 30 dias.');page(`<section class="surface pad"><div class="section-head"><h2>Licenças e alvarás</h2><span>Alertas recorrentes</span></div><div class="table-wrap"><table><thead><tr><th>Empresa</th><th>Documento</th><th>Vencimento</th><th>Status</th></tr></thead><tbody>${licenses.map(l=>`<tr><td>${l.client}</td><td><strong>${l.name}</strong></td><td>${l.exp}</td><td>${pill(l.status)}</td></tr>`).join('')}</tbody></table></div></section>`)}
-function docsPage(){setHead('Documentos','DOSSIÊ DIGITAL','Organize documentos societários, pessoais, protocolos e licenças por processo.');page(`<section class="surface pad"><div class="section-head"><h2>Dossiê de documentos</h2><button class="btn btn-primary" onclick="alert('Upload privado será ativado com Supabase Storage.')">＋ Documento</button></div><div class="source-note"><strong>Ambiente de demonstração.</strong> O upload real ficará disponível após a ativação do storage privado e das permissões por usuário.</div></section>`)}
+async function docsPage(){
+ setHead('Documentos','DOSSIÊ DIGITAL','Armazene e acesse documentos privados vinculados a empresas e processos.');
+ page('<div class="loading-box"><span class="spinner"></span><div>Carregando documentos...</div></div>');
+ const db=atlasDb();
+ if(!db){page('<div class="error-box">Storage indisponível.</div>');return}
+
+ const profile=atlasProfile();
+ const canUpload=['admin','operacao','financeiro'].includes(profile.role);
+ const canDelete=['admin','operacao'].includes(profile.role);
+
+ const [docsRes,clientsRes,processesRes]=await Promise.all([
+   db.from('documents').select('*').order('created_at',{ascending:false}),
+   db.from('clients').select('id,legal_name').order('legal_name',{ascending:true}),
+   db.from('processes').select('id,public_code,title,client_id').order('created_at',{ascending:false})
+ ]);
+
+ if(docsRes.error){
+   page('<div class="error-box">Não foi possível carregar os documentos: '+esc(docsRes.error.message)+'</div>');
+   return;
+ }
+
+ const docs=docsRes.data||[];
+ const clients=clientsRes.error?[]:(clientsRes.data||[]);
+ const processes=processesRes.error?[]:(processesRes.data||[]);
+ const cm=new Map(clients.map(x=>[x.id,x]));
+ const pm=new Map(processes.map(x=>[x.id,x]));
+
+ page(`<section class="surface pad">
+  <div class="section-head">
+    <div><h2>Dossiê de documentos</h2><span>${docs.length} arquivo(s) armazenado(s)</span></div>
+    ${canUpload?'<button class="btn btn-primary" onclick="openDocumentModal()">＋ Documento</button>':''}
+  </div>
+  <div class="source-note" style="margin-bottom:14px"><strong>Storage privado ativo.</strong> Os arquivos não possuem URL pública. O acesso é autenticado e controlado pelas permissões do usuário.</div>
+  ${docs.length?`<div class="table-wrap"><table><thead><tr><th>Documento</th><th>Categoria</th><th>Empresa</th><th>Processo</th><th>Tamanho</th><th>Enviado em</th><th>Ações</th></tr></thead><tbody>${docs.map(d=>`<tr>
+   <td><strong>${esc(d.name)}</strong><div class="muted">${esc(d.mime_type||'Arquivo')}</div></td>
+   <td>${esc(d.category||'Geral')}</td>
+   <td>${esc(cm.get(d.client_id)?.legal_name||'—')}</td>
+   <td>${esc(pm.get(d.process_id)?.public_code||'—')}</td>
+   <td>${formatBytes(d.size_bytes)}</td>
+   <td>${d.created_at?new Date(d.created_at).toLocaleString('pt-BR'):'—'}</td>
+   <td><div class="row-actions"><button class="mini-btn" onclick="openStoredDocument('${d.id}')">Abrir</button>${canDelete?`<button class="mini-btn danger" onclick="deleteStoredDocument('${d.id}')">Excluir</button>`:''}</div></td>
+  </tr>`).join('')}</tbody></table></div>`:emptyState('Nenhum documento armazenado','Use “+ Documento” para enviar o primeiro arquivo para o Storage privado.') }
+ </section>`);
+}
+
+function formatBytes(value){
+ const n=Number(value||0);
+ if(!n)return '—';
+ if(n<1024)return n+' B';
+ if(n<1048576)return (n/1024).toLocaleString('pt-BR',{maximumFractionDigits:1})+' KB';
+ return (n/1048576).toLocaleString('pt-BR',{maximumFractionDigits:1})+' MB';
+}
+
+function safeFileName(name){
+ return String(name||'arquivo')
+   .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+   .replace(/[^a-zA-Z0-9._-]+/g,'-')
+   .replace(/-+/g,'-')
+   .slice(-120);
+}
+
+async function openDocumentModal(){
+ const db=atlasDb();
+ const profile=atlasProfile();
+ if(!['admin','operacao','financeiro'].includes(profile.role))return;
+
+ const [clientsRes,processesRes]=await Promise.all([
+   db.from('clients').select('id,legal_name').order('legal_name',{ascending:true}),
+   db.from('processes').select('id,public_code,title,client_id').order('created_at',{ascending:false})
+ ]);
+ const clients=clientsRes.data||[], processes=processesRes.data||[];
+
+ modalShell('Enviar documento',`<form id="document-upload-form" class="modal-form-grid">
+   <div class="field span-2"><label>Arquivo *</label><input id="doc-file" type="file" required accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt"></div>
+   <div class="field"><label>Empresa</label><select id="doc-client"><option value="">Sem vínculo</option>${clients.map(x=>`<option value="${x.id}">${esc(x.legal_name)}</option>`).join('')}</select></div>
+   <div class="field"><label>Processo</label><select id="doc-process"><option value="">Sem vínculo</option>${processes.map(x=>`<option value="${x.id}" data-client="${x.client_id||''}">${esc(x.public_code+' · '+x.title)}</option>`).join('')}</select></div>
+   <div class="field"><label>Categoria</label><select id="doc-category"><option>Societário</option><option>Documento pessoal</option><option>Comprovante</option><option>Protocolo</option><option>Licença</option><option>Fiscal</option><option>Contrato</option><option>Outros</option></select></div>
+   <div class="field"><label>Nome no sistema</label><input id="doc-name" placeholder="Usará o nome do arquivo se vazio"></div>
+   <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button id="doc-upload-btn" class="btn btn-primary" type="submit">Enviar arquivo</button></div>
+   <div id="doc-upload-message" class="auth-message hidden span-2"></div>
+ </form>`);
+
+ const processSelect=$('#doc-process');
+ processSelect?.addEventListener('change',()=>{
+   const opt=processSelect.selectedOptions?.[0];
+   const cid=opt?.dataset?.client;
+   if(cid)$('#doc-client').value=cid;
+ });
+
+ $('#document-upload-form').addEventListener('submit',async e=>{
+   e.preventDefault();
+   const file=$('#doc-file').files?.[0];
+   const msg=$('#doc-upload-message'),btn=$('#doc-upload-btn');
+   if(!file)return;
+   if(file.size>50*1024*1024){msg.textContent='O arquivo excede o limite de 50 MB.';msg.className='auth-message error span-2';return}
+
+   btn.disabled=true;btn.textContent='Enviando...';msg.className='auth-message hidden span-2';
+
+   const clientId=$('#doc-client').value||null;
+   const processId=$('#doc-process').value||null;
+   const fileName=safeFileName(file.name);
+   const objectKey=`${profile.organization_id}/${clientId||'sem-empresa'}/${processId||'sem-processo'}/${crypto.randomUUID()}-${fileName}`;
+
+   const {error:uploadError}=await db.storage.from('legalizacao-documents').upload(objectKey,file,{upsert:false,contentType:file.type||undefined});
+   if(uploadError){
+     msg.textContent='Falha no upload: '+uploadError.message;msg.className='auth-message error span-2';btn.disabled=false;btn.textContent='Enviar arquivo';return;
+   }
+
+   const {error:metaError}=await db.from('documents').insert({
+     organization_id:profile.organization_id,
+     client_id:clientId,
+     process_id:processId,
+     name:$('#doc-name').value.trim()||file.name,
+     category:$('#doc-category').value,
+     storage_key:objectKey,
+     mime_type:file.type||null,
+     size_bytes:file.size,
+     uploaded_by:profile.id
+   });
+
+   if(metaError){
+     await db.storage.from('legalizacao-documents').remove([objectKey]);
+     msg.textContent='Falha ao registrar documento: '+metaError.message;msg.className='auth-message error span-2';btn.disabled=false;btn.textContent='Enviar arquivo';return;
+   }
+
+   closeAtlasModal();
+   await docsPage();
+ });
+}
+window.openDocumentModal=openDocumentModal;
+
+async function openStoredDocument(id){
+ const db=atlasDb();
+ const {data:doc,error}=await db.from('documents').select('id,name,storage_key').eq('id',id).single();
+ if(error||!doc)return alert('Documento não encontrado.');
+ const {data,error:signError}=await db.storage.from('legalizacao-documents').createSignedUrl(doc.storage_key,300);
+ if(signError||!data?.signedUrl)return alert('Não foi possível gerar o acesso ao arquivo: '+(signError?.message||'erro'));
+ window.open(data.signedUrl,'_blank','noopener,noreferrer');
+}
+window.openStoredDocument=openStoredDocument;
+
+async function deleteStoredDocument(id){
+ if(!confirm('Excluir este documento definitivamente do Storage? Esta ação não poderá ser desfeita.'))return;
+ const db=atlasDb();
+ const {data:doc,error}=await db.from('documents').select('id,storage_key').eq('id',id).single();
+ if(error||!doc)return alert('Documento não encontrado.');
+ const {error:storageError}=await db.storage.from('legalizacao-documents').remove([doc.storage_key]);
+ if(storageError)return alert('Não foi possível excluir o arquivo: '+storageError.message);
+ const {error:metaError}=await db.from('documents').delete().eq('id',id);
+ if(metaError)return alert('Arquivo removido, mas houve falha ao remover o registro: '+metaError.message);
+ await docsPage();
+}
+window.deleteStoredDocument=deleteStoredDocument;
+
 async function reportsPage(){
  setHead('Relatórios','GESTÃO','Indicadores calculados exclusivamente com os dados reais cadastrados no ATLAS.');
  page('<div class="loading-box"><span class="spinner"></span><div>Calculando indicadores...</div></div>');
@@ -159,7 +312,7 @@ async function reportsPage(){
   </div>
  `);
 }
-function configPage(){setHead('Configurações','SISTEMA','Usuários, perfis, integrações e parâmetros operacionais.');page(`<section class="surface pad"><div class="section-head"><h2>Ambiente</h2><span>Produção</span></div><div class="data-list"><div class="data-row"><span>Modo</span><strong>Sistema autenticado</strong></div><div class="data-row"><span>Supabase</span><strong>Ativo · Auth, banco, RLS e Edge Functions</strong></div><div class="data-row"><span>OpenAI</span><strong>Não configurada · aguardando API Key</strong></div><div class="data-row"><span>Documentos</span><strong>Storage privado pendente</strong></div><div class="data-row"><span>Comunicações</span><strong>WhatsApp e e-mail pendentes</strong></div></div></section>`)}
+function configPage(){setHead('Configurações','SISTEMA','Usuários, perfis, storage e parâmetros operacionais.');page(`<section class="surface pad"><div class="section-head"><h2>Ambiente</h2><span>Produção</span></div><div class="data-list"><div class="data-row"><span>Modo</span><strong>Sistema autenticado</strong></div><div class="data-row"><span>Supabase</span><strong>Ativo · Auth, banco, RLS e Edge Functions</strong></div><div class="data-row"><span>Documentos</span><strong>Ativo · Storage privado</strong></div><div class="data-row"><span>Comunicações</span><strong>E-mail ainda não configurado</strong></div></div></section>`)}
 
 function integrationPage(){
  setHead('Integrações','APIs E CONECTORES','Conecte e consulte fontes oficiais e serviços auxiliares para agilizar seus processos.');
@@ -169,8 +322,8 @@ function integrationPage(){
   <div id="cnpj-feedback" class="cnpj-feedback">Digite os 14 números do CNPJ. A validação dos dígitos é automática.</div><div id="cnpj-result"></div>
  </section>
  <aside class="surface integration-status"><div class="section-head"><h2>Status das integrações</h2></div>
-  ${integrationRow('DB','CNPJws','Consulta cadastral CNPJ','Ativa','ok')}${integrationRow('IB','IBGE','UF e municípios','Ativa','ok')}${integrationRow('SB','Supabase','Auth, banco, usuários, RLS e Edge Functions','Ativa','ok')}${integrationRow('AI','OpenAI','ATLAS IA aguardando API Key','Não configurada','warn')}
-  <div class="integration-info"><strong>Status atual</strong>Supabase já está em operação. Permanecem pendentes: OpenAI/ATLAS IA, storage privado de documentos, WhatsApp e e-mail transacional.</div>
+  ${integrationRow('DB','CNPJws','Consulta cadastral CNPJ','Ativa','ok')}${integrationRow('IB','IBGE','UF e municípios','Ativa','ok')}${integrationRow('SB','Supabase','Auth, banco, Storage, RLS e Edge Functions','Ativa','ok')}
+  <div class="integration-info"><strong>Status atual</strong>Supabase está em operação com autenticação, banco e Storage privado de documentos. OpenAI e WhatsApp foram retirados temporariamente do escopo do projeto.</div>
  </aside></div>`);
  bindCnpj();
 }
