@@ -25,3 +25,10 @@
   .quick-cnpj-row{grid-template-columns:1fr}
   .quick-company-actions .btn{width:100%}
 }
+/* v3.14 — consulta automática CNPJ no cadastro principal */
+.company-cnpj-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.company-cnpj-row .btn{white-space:nowrap}
+@media(max-width:760px){
+  .company-cnpj-row{grid-template-columns:1fr}
+  .company-cnpj-row .btn{width:100%}
+}
