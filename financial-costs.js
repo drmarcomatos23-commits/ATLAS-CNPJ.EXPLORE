@@ -46,6 +46,36 @@
     const pending=total-paid;
     const overdue=data.costs.filter(c=>c.payment_status!=='paid'&&c.due_date&&new Date(c.due_date+'T23:59:59')<new Date()).length;
 
+    const honorarios=data.costs.filter(c=>c.fee_kind==='honorarios'||c.cost_type==='hourly');
+    const honorariosTotal=honorarios.reduce((s,c)=>s+Number(c.amount||0),0);
+    const honorariosRecebidos=honorarios.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+Number(c.amount||0),0);
+    const honorariosAReceber=honorariosTotal-honorariosRecebidos;
+    const honorariosVencidos=honorarios.filter(c=>c.payment_status!=='paid'&&c.due_date&&new Date(c.due_date+'T23:59:59')<new Date()).reduce((s,c)=>s+Number(c.amount||0),0);
+
+    const honorariosRows=honorarios.map(c=>{
+      const p=pm.get(c.process_id)||{};
+      const client=cm.get(p.client_id)||{};
+      const doc=attachmentFor(data,c);
+      return `<tr>
+        <td><strong>${e(p.public_code||'—')}</strong><div class="muted">${e(p.title||'Processo')}</div></td>
+        <td><strong>${e(client.legal_name||'—')}</strong></td>
+        <td><strong>${m(c.amount)}</strong><div class="muted">${c.hourly_rate?m(c.hourly_rate)+'/h · '+e(c.hours||0)+'h':''}</div></td>
+        <td>${c.payment_status==='paid'?'<span class="pill ok">Recebido</span>':'<span class="pill warn">A receber</span>'}</td>
+        <td>${d(c.due_date)}</td>
+        <td>${c.paid_at?d(c.paid_at):'—'}</td>
+        <td><strong>${e(c.payer_name||'—')}</strong><div class="muted">${e([c.payer_type,c.payer_document].filter(Boolean).join(' · ')||'')}</div></td>
+        <td>${doc?`<button class="mini-btn" onclick="openStoredDocument('${doc.id}')">Abrir boleto</button>`:'<span class="muted">Sem boleto</span>'}</td>
+        <td>
+          <div class="row-actions">
+            ${c.payment_status==='paid'
+              ? `<button class="mini-btn" onclick="setHonorarioRecebido('${c.id}',false)">Voltar p/ pendente</button>`
+              : `<button class="mini-btn" onclick="setHonorarioRecebido('${c.id}',true)">Marcar recebido</button>`}
+            <button class="mini-btn" onclick="openProcessModal('${c.process_id}')">Editar</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+
     const rows=data.costs.map(c=>{
       const p=pm.get(c.process_id)||{};
       const client=cm.get(p.client_id)||{};
@@ -64,7 +94,22 @@
     }).join('');
 
     page(`
-      <div class="grid kpi-grid finance-kpis">
+      <section class="surface pad honorarios-control">
+        <div class="section-head">
+          <div><h2>Controle de honorários recebidos</h2><span>${honorarios.length} lançamento(s) de honorários</span></div>
+        </div>
+        <div class="grid kpi-grid finance-kpis" style="margin-bottom:16px">
+          <div class="surface kpi"><span class="kpi-label">Honorários faturados</span><strong>${m(honorariosTotal)}</strong><small>Total lançado</small></div>
+          <div class="surface kpi"><span class="kpi-label">Honorários recebidos</span><strong>${m(honorariosRecebidos)}</strong><small>Já quitados</small></div>
+          <div class="surface kpi"><span class="kpi-label">Honorários a receber</span><strong>${m(honorariosAReceber)}</strong><small>Pendentes</small></div>
+          <div class="surface kpi"><span class="kpi-label">Honorários vencidos</span><strong>${m(honorariosVencidos)}</strong><small>Em atraso</small></div>
+        </div>
+        ${honorarios.length
+          ? `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Honorários</th><th>Situação</th><th>Vencimento</th><th>Recebido em</th><th>Pagador</th><th>Boleto</th><th>Ações</th></tr></thead><tbody>${honorariosRows}</tbody></table></div>`
+          : '<div class="muted" style="padding:18px 0">Nenhum honorário lançado nos processos.</div>'}
+      </section>
+
+      <div class="grid kpi-grid finance-kpis" style="margin-top:16px">
         <div class="surface kpi"><span class="kpi-label">Total lançado</span><strong>${m(total)}</strong><small>Honorários e taxas</small></div>
         <div class="surface kpi"><span class="kpi-label">Pago</span><strong>${m(paid)}</strong><small>Valores quitados</small></div>
         <div class="surface kpi"><span class="kpi-label">Pendente</span><strong>${m(pending)}</strong><small>Aguardando pagamento</small></div>
@@ -83,6 +128,20 @@
     `);
 
     startFinanceRealtime();
+  };
+
+  window.setHonorarioRecebido=async function(costId,received){
+    const db=atlasDb();
+    const patch={
+      payment_status:received?'paid':'pending',
+      paid_at:received?new Date().toISOString().slice(0,10):null
+    };
+    const {error}=await db.from('costs').update(patch).eq('id',costId);
+    if(error){
+      alert('Não foi possível atualizar o recebimento: '+error.message);
+      return;
+    }
+    await window.costPage();
   };
 
   function startFinanceRealtime(){
