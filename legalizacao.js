@@ -28,13 +28,40 @@ function money(v){const n=Number(String(v??'').replace(',','.'));return Number.i
 function date(v){if(!v)return'Não informado';const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));return m?`${m[3]}/${m[2]}/${m[1]}`:String(v)}
 function pill(s){const c=/defer|regular|pago|ativa/i.test(s)?'ok':/pend|venc|inativa|baixada/i.test(s)?'bad':/anál|aten|pagar/i.test(s)?'warn':'neutral';return `<span class="pill ${c}">${esc(s)}</span>`}
 function setHead(title,kicker,desc){$('#page-title').textContent=title;$('#page-kicker').textContent=kicker||'ATLAS';$('#page-desc').textContent=desc||''}
-function showApp(){ $('#login-screen').classList.add('hidden');$('#app-shell').classList.remove('hidden');render('dashboard') }
+let atlasCurrentProfile=null;
+function initials(name){return String(name||'U').trim().split(/\s+/).slice(0,2).map(x=>x[0]||'').join('').toUpperCase()}
+function showApp(profile){
+ atlasCurrentProfile=profile||{};
+ $('#login-screen').classList.add('hidden');
+ $('#app-shell').classList.remove('hidden');
+ const role=atlasCurrentProfile.role||'cliente';
+ $('[data-roles]').forEach(el=>{
+   const allowed=(el.dataset.roles||'').split(',').map(x=>x.trim());
+   el.classList.toggle('hidden',!allowed.includes(role));
+ });
+ const fullName=atlasCurrentProfile.full_name||'Usuário';
+ $('#user-name').textContent=fullName;
+ $('#user-role').textContent=window.atlasAuth?.roleLabel?.(role)||role;
+ $('#user-avatar').textContent=initials(fullName);
+ const newBtn=$('#new-process-btn');
+ if(newBtn)newBtn.classList.toggle('hidden',!['admin','operacao'].includes(role));
+ const firstVisible=$('#nav [data-page]:not(.hidden)');
+ $('#nav [data-page]').forEach(x=>x.classList.remove('active'));
+ if(firstVisible)firstVisible.classList.add('active');
+ render(firstVisible?.dataset.page||'dashboard');
+}
+function hideAtlasApp(){
+ $('#app-shell').classList.add('hidden');
+ $('#login-screen').classList.remove('hidden');
+ atlasCurrentProfile=null;
+}
 window.showApp=showApp;
+window.hideAtlasApp=hideAtlasApp;
 
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(!b)return;$$('[data-page]').forEach(x=>x.classList.remove('active'));b.classList.add('active');render(b.dataset.page)});
 
 function render(page){
- if(page==='dashboard')return dashboard();if(page==='processos')return processPage();if(page==='clientes')return clientPage();if(page==='protocolos')return protocolPage();if(page==='custos')return costPage();if(page==='licencas')return licensePage();if(page==='integracoes')return integrationPage();if(page==='documentos')return docsPage();if(page==='relatorios')return reportsPage();if(page==='config')return configPage();
+ if(page==='dashboard')return dashboard();if(page==='processos')return processPage();if(page==='clientes')return clientPage();if(page==='protocolos')return protocolPage();if(page==='custos')return costPage();if(page==='licencas')return licensePage();if(page==='integracoes')return integrationPage();if(page==='documentos')return docsPage();if(page==='relatorios')return reportsPage();if(page==='usuarios')return usersPage();if(page==='config')return configPage();
 }
 function page(html){$('#page-content').innerHTML=html}
 function dashboard(){
@@ -85,5 +112,85 @@ function renderCompany(d,n){const e=d.estabelecimento||{};const status=String(e.
  </div>`}
 function dataRow(label,value){return `<div class="data-row"><span>${esc(label)}</span><strong>${esc(value??'Não informado')}</strong></div>`}function mini(title,desc){return `<div class="mini-item"><strong>${esc(title)}</strong><span>${esc(desc)}</span></div>`}
 
+
+async function usersPage(){
+ setHead('Usuários','ACESSOS E PERMISSÕES','Crie e gerencie os acessos ao ATLAS por função.');
+ page(`<div class="grid users-layout">
+  <section class="surface pad">
+    <div class="section-head"><div><h2>Novo usuário</h2><span>O usuário receberá acesso conforme o perfil definido.</span></div></div>
+    <form id="user-create-form" class="user-form-grid">
+      <div class="field"><label>Nome completo</label><input id="new-user-name" required placeholder="Nome do usuário"></div>
+      <div class="field"><label>E-mail</label><input id="new-user-email" type="email" required placeholder="usuario@empresa.com.br"></div>
+      <div class="field"><label>Perfil</label><select id="new-user-role" required><option value="operacao">Legalização / Operação</option><option value="financeiro">Financeiro</option><option value="auditoria">Auditoria</option><option value="cliente">Cliente</option><option value="admin">Administrador</option></select></div>
+      <div class="field"><label>Senha temporária</label><input id="new-user-password" type="password" minlength="10" required placeholder="Mínimo 10 caracteres"></div>
+      <div class="user-form-actions"><button id="create-user-btn" class="btn btn-primary" type="submit">＋ Criar acesso</button></div>
+    </form>
+    <div id="user-create-message" class="auth-message hidden"></div>
+  </section>
+  <section class="surface pad users-list-card">
+    <div class="section-head"><div><h2>Usuários cadastrados</h2><span id="users-count">Carregando...</span></div><button id="refresh-users-btn" class="btn btn-muted" type="button">Atualizar</button></div>
+    <div id="users-list"><div class="loading-box"><span class="spinner"></span><div>Carregando usuários...</div></div></div>
+  </section>
+ </div>`);
+ $('#user-create-form')?.addEventListener('submit',createAtlasUser);
+ $('#refresh-users-btn')?.addEventListener('click',loadAtlasUsers);
+ await loadAtlasUsers();
+}
+
+function roleName(role){return window.atlasAuth?.roleLabel?.(role)||role}
+function userStatusBadge(active){return active?'<span class="pill ok">Ativo</span>':'<span class="pill bad">Desativado</span>'}
+
+async function loadAtlasUsers(){
+ const box=$('#users-list'); if(!box)return;
+ box.innerHTML='<div class="loading-box"><span class="spinner"></span><div>Carregando usuários...</div></div>';
+ try{
+   const data=await window.atlasAuth.adminRequest({action:'list'});
+   const users=data.users||[];
+   $('#users-count').textContent=users.length+' '+(users.length===1?'usuário':'usuários');
+   box.innerHTML=`<div class="table-wrap"><table class="users-table"><thead><tr><th>Usuário</th><th>Perfil</th><th>Status</th><th>Último acesso</th><th>Ações</th></tr></thead><tbody>${users.map(u=>`<tr>
+     <td><strong>${esc(u.fullName||'Sem nome')}</strong><div class="muted">${esc(u.email||'')}</div></td>
+     <td><select class="user-role-select" data-user-id="${u.id}" ${u.id===atlasCurrentProfile?.id?'disabled':''}><option value="admin" ${u.role==='admin'?'selected':''}>Administrador</option><option value="operacao" ${u.role==='operacao'?'selected':''}>Operação</option><option value="financeiro" ${u.role==='financeiro'?'selected':''}>Financeiro</option><option value="auditoria" ${u.role==='auditoria'?'selected':''}>Auditoria</option><option value="cliente" ${u.role==='cliente'?'selected':''}>Cliente</option></select></td>
+     <td>${userStatusBadge(u.active)}</td>
+     <td class="muted">${u.lastSignInAt?new Date(u.lastSignInAt).toLocaleString('pt-BR'):'Nunca'}</td>
+     <td><div class="user-actions"><button class="mini-btn" data-user-action="save" data-user-id="${u.id}" ${u.id===atlasCurrentProfile?.id?'disabled':''}>Salvar perfil</button><button class="mini-btn ${u.active?'danger':''}" data-user-action="toggle" data-user-id="${u.id}" data-active="${u.active}" ${u.id===atlasCurrentProfile?.id?'disabled':''}>${u.active?'Desativar':'Ativar'}</button><button class="mini-btn" data-user-action="password" data-user-id="${u.id}">Redefinir senha</button></div></td>
+   </tr>`).join('')}</tbody></table></div>`;
+   box.querySelectorAll('[data-user-action]').forEach(btn=>btn.addEventListener('click',handleUserAction));
+ }catch(err){box.innerHTML=`<div class="error-box">${esc(err.message||'Falha ao carregar usuários.')}</div>`}
+}
+
+async function createAtlasUser(e){
+ e.preventDefault();
+ const msg=$('#user-create-message'),btn=$('#create-user-btn');
+ const payload={action:'create',fullName:$('#new-user-name').value.trim(),email:$('#new-user-email').value.trim(),role:$('#new-user-role').value,password:$('#new-user-password').value};
+ msg.className='auth-message hidden';btn.disabled=true;btn.textContent='Criando...';
+ try{
+   await window.atlasAuth.adminRequest(payload);
+   msg.textContent='Usuário criado com sucesso.';msg.className='auth-message success';
+   e.target.reset();await loadAtlasUsers();
+ }catch(err){msg.textContent=err.message||'Falha ao criar usuário.';msg.className='auth-message error'}
+ finally{btn.disabled=false;btn.textContent='＋ Criar acesso'}
+}
+
+async function handleUserAction(e){
+ const btn=e.currentTarget,userId=btn.dataset.userId,action=btn.dataset.userAction;
+ btn.disabled=true;
+ try{
+   if(action==='save'){
+     const role=$(`.user-role-select[data-user-id="${userId}"]`)?.value;
+     await window.atlasAuth.adminRequest({action:'update',userId,role});
+   }else if(action==='toggle'){
+     const active=btn.dataset.active==='true';
+     await window.atlasAuth.adminRequest({action:'update',userId,active:!active});
+   }else if(action==='password'){
+     const password=prompt('Informe uma nova senha temporária (mínimo 10 caracteres):');
+     if(!password)return;
+     if(password.length<10)throw new Error('A senha deve ter ao menos 10 caracteres.');
+     await window.atlasAuth.adminRequest({action:'update',userId,password});
+     alert('Senha redefinida com sucesso.');
+   }
+   await loadAtlasUsers();
+ }catch(err){alert(err.message||'Não foi possível atualizar o usuário.')}
+ finally{btn.disabled=false}
+}
+
 $('#global-search').addEventListener('keydown',e=>{if(e.key==='Enter'){const q=e.target.value.trim();if(q)alert(`Pesquisa global será conectada ao banco de dados. Busca: ${q}`)}});
-showApp();
