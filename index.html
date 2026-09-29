@@ -1,12 +1,124 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07192b"><meta name="description" content="ATLAS Legalização e Gerenciamento — gestão de legalização empresarial, processos, protocolos, custos e licenças.">
-<title>ATLAS Legalização e Gerenciamento</title><link rel="stylesheet" href="/legalizacao.css?v=3.6"><script src="/legalizacao.js?v=3.6" defer></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#07192b">
+<meta name="description" content="ATLAS Legalização e Gerenciamento — gestão de legalização empresarial, processos, protocolos, custos e licenças.">
+<title>ATLAS Legalização e Gerenciamento</title>
+<link rel="stylesheet" href="/legalizacao.css?v=3.7">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js" defer></script>
+<script src="/legalizacao.js?v=3.7" defer></script>
+<script src="/atlas-auth.js?v=3.7" defer></script>
 </head>
 <body>
-<section id="login-screen" class="login-screen hidden"><div class="login-hero"><img class="login-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS Legalização e Gerenciamento" onerror="this.style.display='none';this.parentElement.classList.add('login-logo-fallback')"><h1>Legalização empresarial com visão de ponta a ponta.</h1><p>Centralize processos, protocolos, custos, documentos, licenças e comunicação com clientes em uma única operação.</p></div><div class="login-panel"><div class="login-card"><span class="eyebrow">Acesso de demonstração</span><h2>Bem-vindo</h2><p class="sub">Acesse o ambiente de avaliação do ATLAS.</p><div class="field"><label>E-mail</label><input value="admin@atlas.local"></div><div class="field"><label>Senha</label><input type="password" value="demo123"></div><div class="field"><label>Perfil</label><select><option>Administrador</option><option>Legalização / Operação</option><option>Financeiro</option><option>Cliente</option></select></div><button class="btn btn-primary" onclick="showApp()">Entrar no ATLAS</button><div class="demo-note">Ambiente preview. Os dados operacionais são demonstrativos; autenticação real e armazenamento privado entram na etapa de produção.</div></div></div></section>
-<div id="app-shell" class="app-shell"><aside class="sidebar"><div class="brand-box"><img class="brand-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS" onerror="this.style.display='none';this.parentElement.classList.add('logo-fallback')"></div><nav id="nav" class="nav-list"><button class="nav-item active" data-page="dashboard"><span class="nav-ico">⌂</span><span>Dashboard</span></button><button class="nav-item" data-page="processos"><span class="nav-ico">▤</span><span>Processos</span></button><button class="nav-item" data-page="clientes"><span class="nav-ico">▥</span><span>Empresas</span></button><button class="nav-item" data-page="documentos"><span class="nav-ico">□</span><span>Documentos</span></button><button class="nav-item" data-page="protocolos"><span class="nav-ico">#</span><span>Protocolos</span></button><button class="nav-item" data-page="custos"><span class="nav-ico">R$</span><span>Custos</span></button><button class="nav-item" data-page="licencas"><span class="nav-ico">✓</span><span>Licenças</span></button><button class="nav-item" data-page="integracoes"><span class="nav-ico">⌘</span><span>Integrações</span></button><button class="nav-item" data-page="relatorios"><span class="nav-ico">▥</span><span>Relatórios</span></button><button class="nav-item" data-page="config"><span class="nav-ico">⚙</span><span>Configurações</span></button></nav><div class="sidebar-footer"><strong>ATLAS</strong><span>Legalização e Gerenciamento</span><span style="margin-top:8px">Preview 3.6</span></div></aside>
-<div class="workspace"><header class="topbar"><div class="global-search"><input id="global-search" placeholder="Buscar processos, empresas, documentos..."></div><div class="top-actions"><button class="bell" aria-label="Notificações">♧</button><div class="user-block"><div class="avatar">AS</div><div><strong>Administrador</strong><small>Ambiente de demonstração</small></div></div></div></header><main class="main"><div class="page-head"><div><span id="page-kicker" class="eyebrow">VISÃO GERAL</span><h1 id="page-title">Dashboard</h1><p id="page-desc"></p></div><button class="btn btn-primary" onclick="alert('O briefing completo será ativado na versão conectada ao banco de dados.')">＋ Novo processo</button></div><div id="page-content"></div></main></div></div>
+<section id="login-screen" class="login-screen">
+  <div class="login-hero">
+    <img class="login-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS Legalização e Gerenciamento" onerror="this.style.display='none';this.parentElement.classList.add('login-logo-fallback')">
+    <span class="login-kicker">AMBIENTE SEGURO DE ACESSO</span>
+    <h1>Legalização empresarial com visão de ponta a ponta.</h1>
+    <p>Centralize processos, protocolos, custos, documentos, licenças e comunicação com clientes em uma única operação.</p>
+    <div class="login-security">
+      <span>● Sessão individual</span><span>● Perfis de acesso</span><span>● Banco protegido por RLS</span>
+    </div>
+  </div>
+  <div class="login-panel">
+    <div class="login-card auth-card">
+      <span class="eyebrow">ATLAS LEGALIZAÇÃO E GERENCIAMENTO</span>
+
+      <div id="auth-login-view">
+        <h2>Acessar sistema</h2>
+        <p class="sub">Entre com seu e-mail e senha cadastrados.</p>
+        <form id="login-form">
+          <div class="field"><label for="login-email">E-mail</label><input id="login-email" type="email" autocomplete="username" required placeholder="nome@empresa.com.br"></div>
+          <div class="field"><label for="login-password">Senha</label><div class="password-field"><input id="login-password" type="password" autocomplete="current-password" required placeholder="Sua senha"><button class="password-toggle" type="button" data-toggle-password="login-password" aria-label="Mostrar senha">◉</button></div></div>
+          <div class="auth-options"><label class="remember"><input id="remember-session" type="checkbox" checked> Manter sessão neste dispositivo</label><button id="forgot-password-btn" class="link-btn" type="button">Esqueci minha senha</button></div>
+          <button id="login-submit" class="btn btn-primary auth-main-btn" type="submit">Entrar no ATLAS</button>
+        </form>
+        <div id="login-message" class="auth-message hidden"></div>
+        <button id="first-access-btn" class="first-access-btn hidden" type="button"><span>Primeira configuração</span><strong>Ativar conta Administrador →</strong></button>
+      </div>
+
+      <div id="auth-bootstrap-view" class="hidden">
+        <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
+        <h2>Primeiro acesso</h2>
+        <p class="sub">Crie o primeiro Administrador do ATLAS. Depois desta ativação, novos usuários serão criados dentro do sistema.</p>
+        <form id="bootstrap-form">
+          <div class="field"><label for="bootstrap-name">Nome completo</label><input id="bootstrap-name" required autocomplete="name" placeholder="Nome do administrador"></div>
+          <div class="field"><label for="bootstrap-email">E-mail</label><input id="bootstrap-email" type="email" required autocomplete="email" placeholder="administrador@empresa.com.br"></div>
+          <div class="field"><label for="bootstrap-password">Senha</label><div class="password-field"><input id="bootstrap-password" type="password" minlength="10" required autocomplete="new-password" placeholder="Mínimo de 10 caracteres"><button class="password-toggle" type="button" data-toggle-password="bootstrap-password">◉</button></div></div>
+          <div class="field"><label for="bootstrap-confirm">Confirmar senha</label><input id="bootstrap-confirm" type="password" minlength="10" required autocomplete="new-password"></div>
+          <div class="field"><label for="bootstrap-code">Código de implantação</label><input id="bootstrap-code" required autocomplete="off" placeholder="ATLAS-XXXX-XXXX-XXXX" style="text-transform:uppercase"></div>
+          <button id="bootstrap-submit" class="btn btn-primary auth-main-btn" type="submit">Criar Administrador</button>
+        </form>
+        <div id="bootstrap-message" class="auth-message hidden"></div>
+      </div>
+
+      <div id="auth-reset-view" class="hidden">
+        <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
+        <h2>Recuperar senha</h2>
+        <p class="sub">Informe seu e-mail. Se a conta existir, enviaremos as instruções de recuperação.</p>
+        <form id="reset-form">
+          <div class="field"><label for="reset-email">E-mail</label><input id="reset-email" type="email" required autocomplete="email" placeholder="nome@empresa.com.br"></div>
+          <button class="btn btn-primary auth-main-btn" type="submit">Enviar recuperação</button>
+        </form>
+        <div id="reset-message" class="auth-message hidden"></div>
+      </div>
+
+      <div id="auth-new-password-view" class="hidden">
+        <h2>Definir nova senha</h2>
+        <p class="sub">Crie uma nova senha para concluir a recuperação da conta.</p>
+        <form id="new-password-form">
+          <div class="field"><label for="new-password">Nova senha</label><input id="new-password" type="password" minlength="10" required autocomplete="new-password"></div>
+          <div class="field"><label for="new-password-confirm">Confirmar senha</label><input id="new-password-confirm" type="password" minlength="10" required autocomplete="new-password"></div>
+          <button class="btn btn-primary auth-main-btn" type="submit">Atualizar senha</button>
+        </form>
+        <div id="new-password-message" class="auth-message hidden"></div>
+      </div>
+
+      <div class="auth-footer"><span id="auth-status-dot"></span><span id="auth-status-text">Conectando ao ambiente seguro...</span></div>
+    </div>
+  </div>
+</section>
+
+<div id="app-shell" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="brand-box"><img class="brand-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS" onerror="this.style.display='none';this.parentElement.classList.add('logo-fallback')"></div>
+    <nav id="nav" class="nav-list">
+      <button class="nav-item active" data-page="dashboard" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">⌂</span><span>Dashboard</span></button>
+      <button class="nav-item" data-page="processos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">▤</span><span>Processos</span></button>
+      <button class="nav-item" data-page="clientes" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Empresas</span></button>
+      <button class="nav-item" data-page="documentos" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">□</span><span>Documentos</span></button>
+      <button class="nav-item" data-page="protocolos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">#</span><span>Protocolos</span></button>
+      <button class="nav-item" data-page="custos" data-roles="admin,financeiro,auditoria"><span class="nav-ico">R$</span><span>Custos</span></button>
+      <button class="nav-item" data-page="licencas" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">✓</span><span>Licenças</span></button>
+      <button class="nav-item" data-page="integracoes" data-roles="admin,operacao"><span class="nav-ico">⌘</span><span>Integrações</span></button>
+      <button class="nav-item" data-page="relatorios" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Relatórios</span></button>
+      <button class="nav-item" data-page="usuarios" data-roles="admin"><span class="nav-ico">♙</span><span>Usuários</span></button>
+      <button class="nav-item" data-page="config" data-roles="admin"><span class="nav-ico">⚙</span><span>Configurações</span></button>
+    </nav>
+    <div class="sidebar-footer"><strong>ATLAS</strong><span>Legalização e Gerenciamento</span><span style="margin-top:8px">Produção Auth 3.7</span></div>
+  </aside>
+  <div class="workspace">
+    <header class="topbar">
+      <div class="global-search"><input id="global-search" placeholder="Buscar processos, empresas, documentos..."></div>
+      <div class="top-actions">
+        <button class="bell" aria-label="Notificações">♧</button>
+        <div class="user-block">
+          <div id="user-avatar" class="avatar">--</div>
+          <div><strong id="user-name">Usuário</strong><small id="user-role">Perfil</small></div>
+        </div>
+        <button id="logout-btn" class="logout-btn" type="button" title="Sair">↪</button>
+      </div>
+    </header>
+    <main class="main">
+      <div class="page-head">
+        <div><span id="page-kicker" class="eyebrow">VISÃO GERAL</span><h1 id="page-title">Dashboard</h1><p id="page-desc"></p></div>
+        <button id="new-process-btn" class="btn btn-primary" onclick="alert('O briefing completo será ativado na versão conectada ao banco de dados.')">＋ Novo processo</button>
+      </div>
+      <div id="page-content"></div>
+    </main>
+  </div>
+</div>
 </body>
 </html>
