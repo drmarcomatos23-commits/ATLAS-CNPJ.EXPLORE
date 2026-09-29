@@ -121,8 +121,11 @@
 
     // Reativa cadastro rápido de empresa quando o processo é novo.
     if(!id){
-      document.getElementById('quick-company-toggle')?.addEventListener('click',()=>document.getElementById('quick-company-panel')?.classList.toggle('hidden'));
-      document.getElementById('quick-company-close')?.addEventListener('click',()=>document.getElementById('quick-company-panel')?.classList.toggle('hidden'));
+      const quick=window.atlasQuickCompany;
+      document.getElementById('quick-company-toggle')?.addEventListener('click',()=>quick?.toggleQuickCompany?.());
+      document.getElementById('quick-company-close')?.addEventListener('click',()=>quick?.toggleQuickCompany?.());
+      document.getElementById('quick-company-consult')?.addEventListener('click',()=>quick?.consultQuickCnpj?.());
+      document.getElementById('quick-company-save')?.addEventListener('click',()=>quick?.saveQuickCompany?.());
     }
 
     cloned.addEventListener('submit',async e=>{
