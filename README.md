@@ -1,22 +1,55 @@
-# ATLAS CNPJ.EXPLORE · v5.0.2
+# ATLAS LEGALIZAÇÃO E GERENCIAMENTO
 
-Consulta de dados cadastrais de empresas pelo CNPJ, dashboard responsivo e relatório completo para impressão/PDF.
+Sistema interno para gestão de legalização empresarial.
 
-## Funcionalidades
+## Produção
 
-- Consulta individual de CNPJ pela API pública CNPJws, via função serverless da Vercel.
-- Painel organizado em quatro categorias: Dados da empresa, Estabelecimento, Sócios e Dados fiscais.
-- Relatório A4 com objetos e listas expandidos, incluindo CNAEs, sócios e inscrições estaduais.
-- Identidade visual ATLAS e interface adaptada para computadores e celulares.
+Esta branch é exclusiva do ATLAS Legalização:
 
-## Publicação na Vercel
+`atlas-legalizacao-production`
 
-Framework: **Other**. Root Directory: raiz do repositório. Node.js: **24.x**. Acesse `/api/health` para conferir o backend; depois consulte um CNPJ válido e teste a impressão/PDF.
+O ATLAS CNPJ Explore continua na branch `main`.
 
-O serviço público CNPJws possui limites de requisições. Informações cadastrais podem estar sujeitas à atualização; para comprovação, consulte os canais oficiais.
+## Funcionalidades ativas
 
-## Histórico de versões
+- autenticação Supabase;
+- perfis de acesso;
+- administração de usuários;
+- empresas;
+- processos com etapas de legalização;
+- edição e exclusão lógica de processos;
+- dashboard com dados reais;
+- relatórios com dados reais;
+- consulta CNPJ;
+- Supabase Storage privado;
+- documentos vinculados a empresas e processos;
+- Row Level Security;
+- Edge Functions administrativas.
 
-- Backup da versão anterior à retirada da seção de filiais: branch `backup/atlas-v5-antes-remocao-filiais-20260923`.
-- Backup da versão 5.0 original: branch `backup/atlas-v5-antes-integracoes-20260923`.
-- Backup da versão 6.0 (fontes complementares): branch `backup/atlas-v6-antes-retorno-v5-20260923`.
+## Perfis
+
+- Administrador
+- Legalização / Operação
+- Financeiro
+- Auditoria
+- Cliente
+
+## Publicação Vercel
+
+Nome recomendado:
+
+`atlas-legalizacao-gerenciamento`
+
+Production Branch:
+
+`atlas-legalizacao-production`
+
+Framework: **Other**
+
+Root Directory: `./`
+
+Deployment Protection / Vercel Authentication: **desativada** no projeto de produção.
+
+A autenticação deve ser feita pelo próprio ATLAS/Supabase.
+
+Consulte `DEPLOY-VERCEL.md` para a configuração completa.
