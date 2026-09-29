@@ -15,10 +15,15 @@
     const e = d?.estabelecimento || {};
     const city = typeof e.cidade === 'object' ? e.cidade?.nome : e.cidade;
     const state = typeof e.estado === 'object' ? e.estado?.sigla : e.estado;
+    const ieList = Array.isArray(e.inscricoes_estaduais) ? e.inscricoes_estaduais : [];
+    const ie = ieList.find(x => x?.ativo !== false && (typeof x?.estado === 'object' ? x.estado?.sigla : x?.estado) === state)
+      || ieList.find(x => x?.ativo !== false)
+      || ieList[0];
     return {
       legal_name: d?.razao_social || '',
       trade_name: e?.nome_fantasia || '',
       tax_id: formatTaxId(e?.cnpj || d?.cnpj || ''),
+      state_registration: ie?.inscricao_estadual ? String(ie.inscricao_estadual) : '',
       city: city || '',
       state: state || ''
     };
@@ -54,6 +59,8 @@
       document.getElementById('quick-company-trade-name').value = company.trade_name;
       document.getElementById('quick-company-city').value = company.city;
       document.getElementById('quick-company-state').value = company.state;
+      const ieInput = document.getElementById('quick-company-ie');
+      if (ieInput) ieInput.value = company.state_registration || '';
 
       msg.textContent = 'Dados carregados. Revise as informações e clique em “Cadastrar empresa”.';
       msg.className = 'auth-message success';
@@ -84,6 +91,8 @@
     const state = document.getElementById('quick-company-state')?.value.trim().toUpperCase() || null;
     const contactName = document.getElementById('quick-company-contact')?.value.trim() || null;
     const email = document.getElementById('quick-company-email')?.value.trim() || null;
+    const stateRegistration = document.getElementById('quick-company-ie')?.value.trim() || null;
+    const municipalRegistration = document.getElementById('quick-company-im')?.value.trim() || null;
 
     if (!legalName) {
       msg.textContent = 'Informe a razão social.';
@@ -129,7 +138,9 @@
           city,
           state,
           contact_name: contactName,
-          email
+          email,
+          state_registration: stateRegistration,
+          municipal_registration: municipalRegistration
         })
         .select('id,legal_name,tax_id')
         .single();
@@ -228,6 +239,14 @@
           <div class="field">
             <label>Nome fantasia</label>
             <input id="quick-company-trade-name">
+          </div>
+          <div class="field">
+            <label>Inscrição Estadual</label>
+            <input id="quick-company-ie" placeholder="IE">
+          </div>
+          <div class="field">
+            <label>Inscrição Municipal</label>
+            <input id="quick-company-im" placeholder="IM">
           </div>
           <div class="field">
             <label>Cidade</label>
