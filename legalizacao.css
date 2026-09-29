@@ -54,3 +54,22 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
 @media(max-width:760px){
   .brand-box{display:none}
 }
+
+.brand-box.logo-fallback::after{
+  content:"ATLAS";
+  display:block;
+  color:#fff;
+  font-weight:900;
+  font-size:25px;
+  letter-spacing:.12em;
+  text-align:center;
+}
+.login-hero.login-logo-fallback::before{
+  content:"ATLAS";
+  display:block;
+  color:#fff;
+  font-weight:900;
+  font-size:34px;
+  letter-spacing:.12em;
+  margin-bottom:28px;
+}
