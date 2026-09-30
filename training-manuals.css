@@ -152,3 +152,38 @@
   .training-meta span{border-bottom:1px solid #e1e8ed}
   .training-troubles>div{grid-template-columns:1fr}
 }
+
+/* v3.33 — vídeo de treinamento Financeiro */
+.training-video-section{
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(240px,.7fr);
+  gap:22px;
+  align-items:center;
+  margin-bottom:16px;
+  overflow:hidden;
+}
+.training-video-copy h2{margin:5px 0 7px;font-size:18px;color:#17384f}
+.training-video-copy p{margin:0 0 12px;color:#667b8d;font-size:10.5px;line-height:1.6;max-width:720px}
+.training-video-meta{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.training-video-meta span{
+  padding:6px 8px;border-radius:999px;background:#f2f7fa;color:#607589;font-size:8.5px
+}
+.training-video-preview{
+  min-height:150px;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:8px;
+  border-radius:16px;
+  background:linear-gradient(145deg,#07192b,#0c4f67);
+  color:#fff;
+}
+.training-video-preview img{
+  width:115px;max-height:85px;object-fit:contain;
+  background:#fff;border-radius:12px;padding:8px
+}
+.training-video-preview span{font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+@media(max-width:760px){
+  .training-video-section{grid-template-columns:1fr}
+  .training-video-preview{min-height:120px}
+}
