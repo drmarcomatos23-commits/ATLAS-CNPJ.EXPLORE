@@ -503,15 +503,38 @@ async function dashboard(){
 function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_name||'Empresa'}
 
 function realProcessTable(list,actions=true){
- return `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Etapa</th><th>Responsável</th><th>Prazo</th><th>Status</th>${actions&&canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>${list.map(p=>`<tr>
+ const canAct=actions&&canEditOps();
+ const desktop=`<div class="table-wrap process-table-desktop"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Etapa</th><th>Responsável</th><th>Prazo</th><th>Status</th>${canAct?'<th>Ações</th>':''}</tr></thead><tbody>${list.map(p=>`<tr>
   <td><strong>${esc(p.public_code||'Sem código')}</strong><div class="muted">${esc(p.title)}</div></td>
   <td>${esc(p.client?.legal_name||'—')}</td>
   <td>${esc(p.stage?.name||'—')}</td>
   <td>${esc(p.owner?.full_name||'Não atribuído')}</td>
   <td>${fmtDateBR(p.due_date)}</td>
   <td>${pill(statusLabel(p.status))}</td>
-  ${actions&&canEditOps()?`<td><div class="row-actions"><button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button><button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button><button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button></div></td>`:''}
+  ${canAct?`<td><div class="row-actions"><button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button><button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button><button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button></div></td>`:''}
  </tr>`).join('')}</tbody></table></div>`;
+
+ const mobile=`<div class="process-mobile-list">${list.map(p=>`
+   <article class="process-mobile-card">
+     <div class="process-mobile-head">
+       <div class="process-mobile-code">${esc(p.public_code||'Sem código')}</div>
+       <div class="process-mobile-status">${pill(statusLabel(p.status))}</div>
+     </div>
+     <h3>${esc(p.title||'Processo')}</h3>
+     <div class="process-mobile-company">${esc(p.client?.legal_name||'Empresa não informada')}</div>
+     <div class="process-mobile-meta">
+       <div><span>Etapa</span><strong>${esc(p.stage?.name||'—')}</strong></div>
+       <div><span>Prazo</span><strong>${fmtDateBR(p.due_date)}</strong></div>
+       <div class="process-mobile-owner"><span>Responsável</span><strong>${esc(p.owner?.full_name||'Não atribuído')}</strong></div>
+     </div>
+     ${canAct?`<div class="process-mobile-actions">
+       <button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button>
+       <button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button>
+       <button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button>
+     </div>`:''}
+   </article>`).join('')}</div>`;
+
+ return desktop+mobile;
 }
 
 async function processPage(){
