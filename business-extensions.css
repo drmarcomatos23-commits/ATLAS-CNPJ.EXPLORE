@@ -49,3 +49,28 @@
   .process-documents-upload{grid-template-columns:1fr}
   .process-doc-row{align-items:flex-start;flex-direction:column}
 }
+
+/* v3.35 — endereço completo da empresa */
+.company-address-title{
+  margin-top:8px;
+  padding:11px 12px;
+  border-radius:12px;
+  background:#f3fafb;
+  border:1px solid #d4e8ea;
+}
+.company-address-title strong{
+  display:block;
+  font-size:11px;
+  color:#17384f;
+}
+.company-address-title span{
+  display:block;
+  margin-top:3px;
+  font-size:9px;
+  color:#718596;
+}
+.company-address-inline{
+  margin-top:4px;
+  max-width:520px;
+  line-height:1.4;
+}
