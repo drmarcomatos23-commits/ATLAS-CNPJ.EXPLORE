@@ -1,0 +1,457 @@
+[
+  {
+    "role": "admin",
+    "title": "Manual de Treinamento - Administrador",
+    "subtitle": "Gestão completa do sistema, usuários, permissões e governança operacional",
+    "objective": "Governar o ATLAS, administrar usuários e permissões, supervisionar cadastros, processos, documentos, financeiro, licenças, relatórios e Base de Conhecimento.",
+    "modules": [
+      "Dashboard",
+      "Processos",
+      "Empresas",
+      "Documentos",
+      "Custos",
+      "Licenças",
+      "Relatórios",
+      "Base de Conhecimento",
+      "Usuários",
+      "Configurações"
+    ],
+    "procedures": [
+      {
+        "title": "Criar e administrar usuários",
+        "steps": [
+          "Acesse Usuários.",
+          "Crie cada colaborador com nome, e-mail individual, senha inicial e perfil adequado.",
+          "Evite usuários compartilhados.",
+          "Redistribua responsabilidades antes de desativar um usuário."
+        ]
+      },
+      {
+        "title": "Definir permissões por perfil",
+        "steps": [
+          "Acesse Configurações.",
+          "Marque ou desmarque funções de Operação, Financeiro, Auditoria e Cliente.",
+          "Salve e valide com um usuário de teste."
+        ]
+      },
+      {
+        "title": "Cadastrar e manter empresas",
+        "steps": [
+          "Acesse Empresas > + Nova empresa.",
+          "Informe o CNPJ e use a consulta automática.",
+          "Revise Razão Social, IE, IM, cidade, UF e contatos.",
+          "Cadastre sócios e administradores.",
+          "Use Arquivar em vez de exclusão física."
+        ]
+      },
+      {
+        "title": "Criar e supervisionar processos",
+        "steps": [
+          "Crie o processo com empresa, tipo, etapa, responsável, prioridade e prazo.",
+          "Preencha honorários, taxa de Junta/Cartório, vencimentos e pagador.",
+          "Anexe documentos do processo.",
+          "Acompanhe o pipeline e mantenha dados atualizados."
+        ]
+      },
+      {
+        "title": "Administrar a Base de Conhecimento",
+        "steps": [
+          "Acesse Base de Conhecimento > + Novo artigo.",
+          "Defina título, categoria, caminho, passo a passo e solução de problemas.",
+          "Selecione os perfis que podem visualizar."
+        ]
+      },
+      {
+        "title": "Emitir relatórios",
+        "steps": [
+          "Acesse Relatórios.",
+          "Escolha Semanal ou Mensal.",
+          "Selecione PROCESSOS, PROCESSOS + FINANCEIRO, GERAL ou HONORÁRIOS.",
+          "Use Imprimir / Salvar PDF."
+        ]
+      }
+    ],
+    "attachments": [
+      "Documentos gerais: Processos > Editar processo > Documentos do processo.",
+      "Boletos de honorários: Financeiro do processo > Guia / boleto de honorários.",
+      "Guias de Junta/Cartório: Financeiro do processo > Guia / boleto da taxa.",
+      "Licenças digitalizadas: categoria Licença."
+    ],
+    "troubles": [
+      {
+        "issue": "Empresa sumiu da lista",
+        "solution": "Verifique Empresas arquivadas e use Restaurar."
+      },
+      {
+        "issue": "Usuário não vê uma aba",
+        "solution": "Confira Configurações > Permissões por perfil."
+      },
+      {
+        "issue": "Documento não abre",
+        "solution": "Confira Documentos > Visualizar e o Storage privado."
+      },
+      {
+        "issue": "Dados financeiros não aparecem",
+        "solution": "Reabra o processo, confirme valores e salve novamente."
+      }
+    ],
+    "checklist": [
+      "Criar usuário de treinamento.",
+      "Alterar uma permissão.",
+      "Cadastrar empresa e sócio.",
+      "Criar processo completo com anexos e financeiro.",
+      "Cadastrar licenças.",
+      "Emitir relatórios.",
+      "Criar artigo na Base de Conhecimento."
+    ]
+  },
+  {
+    "role": "operacao",
+    "title": "Manual de Treinamento - Operação",
+    "subtitle": "Execução dos processos de legalização, cadastros, documentos, custos e licenças",
+    "objective": "Executar o fluxo diário de legalização, manter empresas e sócios, movimentar processos, anexar documentos, controlar prazos, custos e licenças.",
+    "modules": [
+      "Dashboard",
+      "Processos",
+      "Empresas",
+      "Documentos",
+      "Custos",
+      "Licenças",
+      "Integrações",
+      "Relatórios",
+      "Base de Conhecimento"
+    ],
+    "procedures": [
+      {
+        "title": "Cadastrar empresa por CNPJ",
+        "steps": [
+          "Acesse Empresas > + Nova empresa.",
+          "Digite o CNPJ e aguarde a consulta.",
+          "Revise dados cadastrais e complemente IE/IM quando necessário.",
+          "Cadastre sócios e administradores.",
+          "Salve."
+        ]
+      },
+      {
+        "title": "Abrir um novo processo",
+        "steps": [
+          "Acesse Processos > + Novo processo.",
+          "Informe título, empresa, tipo de serviço, etapa, responsável, prioridade, status e prazo.",
+          "Preencha financeiro quando aplicável.",
+          "Anexe documentos e salve."
+        ]
+      },
+      {
+        "title": "Movimentar o pipeline",
+        "steps": [
+          "Localize o processo no Kanban.",
+          "Use Editar para atualizar dados.",
+          "Use Avançar para mover à próxima etapa.",
+          "Mantenha responsável e prazo atualizados."
+        ]
+      },
+      {
+        "title": "Anexar documentos",
+        "steps": [
+          "Abra o processo em edição.",
+          "Selecione a categoria em Documentos do processo.",
+          "Escolha um ou vários arquivos.",
+          "Salve e confira na aba Documentos."
+        ]
+      },
+      {
+        "title": "Controlar licenças",
+        "steps": [
+          "Acesse Licenças.",
+          "Edite a empresa.",
+          "Preencha AVCB, Alvará, Sanitária e ANVISA.",
+          "Informe emissão e vencimento.",
+          "Acompanhe alertas de 90, 60 e 30 dias."
+        ]
+      }
+    ],
+    "attachments": [
+      "Documentos pessoais: categoria Documento pessoal.",
+      "Requerimentos e exigências: categorias correspondentes.",
+      "Boletos e guias: campos específicos do Financeiro do processo.",
+      "Licenças: categoria Licença."
+    ],
+    "troubles": [
+      {
+        "issue": "Empresa não aparece ao criar processo",
+        "solution": "Confirme se foi salva e não está arquivada."
+      },
+      {
+        "issue": "CNPJ não preenche",
+        "solution": "Use Consultar CNPJ e complete manualmente o que não retornar."
+      },
+      {
+        "issue": "Arquivo não aparece",
+        "solution": "Confirme que o processo foi salvo."
+      },
+      {
+        "issue": "Não consigo editar",
+        "solution": "A permissão pode ter sido retirada pelo Administrador."
+      }
+    ],
+    "checklist": [
+      "Cadastrar empresa e sócio.",
+      "Criar processo completo.",
+      "Avançar etapa.",
+      "Anexar documentos.",
+      "Cadastrar licença com vencimento.",
+      "Registrar honorários e taxa."
+    ]
+  },
+  {
+    "role": "financeiro",
+    "title": "Manual de Treinamento - Financeiro",
+    "subtitle": "Controle de honorários, taxas, recebimentos, vencimentos e relatórios financeiros",
+    "objective": "Controlar honorários faturados e recebidos, taxas, vencimentos, pagadores, boletos e relatórios financeiros.",
+    "modules": [
+      "Dashboard",
+      "Empresas",
+      "Documentos",
+      "Custos",
+      "Relatórios",
+      "Base de Conhecimento"
+    ],
+    "procedures": [
+      {
+        "title": "Conferir lançamentos financeiros",
+        "steps": [
+          "Acesse Custos.",
+          "Confira Total lançado, Pago, Pendente e Vencidos.",
+          "No Controle de honorários recebidos, confira faturado, recebido, a receber e vencido."
+        ]
+      },
+      {
+        "title": "Confirmar honorários recebidos",
+        "steps": [
+          "Localize o processo em Custos.",
+          "Clique em Marcar recebido.",
+          "Confira a data de recebimento e os indicadores.",
+          "Use Voltar p/ pendente para corrigir quando necessário."
+        ]
+      },
+      {
+        "title": "Conferir taxas",
+        "steps": [
+          "Confira os lançamentos Junta / Cartório.",
+          "Valide valor, status, vencimento e responsável.",
+          "Abra a guia ou boleto quando houver."
+        ]
+      },
+      {
+        "title": "Emitir relatório de honorários",
+        "steps": [
+          "Acesse Relatórios.",
+          "Selecione Semanal ou Mensal.",
+          "Escolha HONORÁRIOS.",
+          "Use Imprimir / Salvar PDF."
+        ]
+      }
+    ],
+    "attachments": [
+      "Boleto de honorários: campo próprio no Financeiro do processo.",
+      "Guia Junta/Cartório: campo próprio da taxa.",
+      "Comprovantes adicionais: Documentos, categoria Comprovante ou Fiscal."
+    ],
+    "troubles": [
+      {
+        "issue": "Honorário não aparece em Custos",
+        "solution": "Confirme se o processo possui valor/hora e horas e se foi salvo."
+      },
+      {
+        "issue": "Valor continua pendente",
+        "solution": "Use Marcar recebido."
+      },
+      {
+        "issue": "Não consigo editar processo",
+        "solution": "Solicite à Operação/Administrador se a correção exigir editar processo."
+      },
+      {
+        "issue": "Boleto não abre",
+        "solution": "Confira a permissão de Documentos."
+      }
+    ],
+    "checklist": [
+      "Identificar honorários pendentes.",
+      "Marcar honorário recebido.",
+      "Abrir boleto.",
+      "Conferir taxa de Junta/Cartório.",
+      "Emitir relatório HONORÁRIOS."
+    ]
+  },
+  {
+    "role": "auditoria",
+    "title": "Manual de Treinamento - Auditoria",
+    "subtitle": "Consulta, conferência e verificação independente de processos, custos, documentos e licenças",
+    "objective": "Realizar conferência independente das informações do ATLAS, atuando predominantemente em modo consultivo.",
+    "modules": [
+      "Dashboard",
+      "Processos",
+      "Empresas",
+      "Documentos",
+      "Custos",
+      "Licenças",
+      "Relatórios",
+      "Base de Conhecimento"
+    ],
+    "procedures": [
+      {
+        "title": "Revisar processos",
+        "steps": [
+          "Acesse Processos.",
+          "Confira código, empresa, etapa, responsável, status e prazo.",
+          "Compare o andamento com os documentos anexados."
+        ]
+      },
+      {
+        "title": "Conferir documentos",
+        "steps": [
+          "Acesse Documentos ou o processo.",
+          "Confira presença, categoria, legibilidade e coerência."
+        ]
+      },
+      {
+        "title": "Conferir custos",
+        "steps": [
+          "Acesse Custos.",
+          "Confira valores, pagamento, vencimento e pagador.",
+          "Abra boletos/guias quando disponíveis."
+        ]
+      },
+      {
+        "title": "Conferir licenças",
+        "steps": [
+          "Acesse Licenças.",
+          "Confira AVCB, Alvará, Sanitária e ANVISA.",
+          "Priorize vencidas e em atenção."
+        ]
+      },
+      {
+        "title": "Emitir evidências",
+        "steps": [
+          "Acesse Relatórios.",
+          "Selecione período e composição.",
+          "Salve em PDF quando autorizado."
+        ]
+      }
+    ],
+    "attachments": [
+      "Por padrão, Auditoria consulta documentos e não altera arquivos.",
+      "Quando precisar inserir evidência, solicite permissão específica ao Administrador."
+    ],
+    "troubles": [
+      {
+        "issue": "Não aparece botão de editar",
+        "solution": "É esperado para perfil configurado como somente leitura."
+      },
+      {
+        "issue": "Falta documento",
+        "solution": "Comunique à Operação responsável."
+      },
+      {
+        "issue": "Não aparece uma aba",
+        "solution": "Confira com o Administrador as permissões do perfil."
+      },
+      {
+        "issue": "Relatório não abre",
+        "solution": "Permita pop-ups para o domínio do ATLAS."
+      }
+    ],
+    "checklist": [
+      "Revisar processo.",
+      "Abrir documentos.",
+      "Conferir lançamento financeiro.",
+      "Identificar licença em atenção.",
+      "Emitir relatório para evidência."
+    ]
+  },
+  {
+    "role": "cliente",
+    "title": "Manual de Treinamento - Cliente",
+    "subtitle": "Consulta do andamento, documentos e licenças vinculados à empresa",
+    "objective": "Acompanhar processos, documentos e licenças da própria empresa, conforme as permissões concedidas, sem interferir na operação interna.",
+    "modules": [
+      "Dashboard",
+      "Processos",
+      "Documentos",
+      "Licenças",
+      "Base de Conhecimento"
+    ],
+    "procedures": [
+      {
+        "title": "Acessar o sistema",
+        "steps": [
+          "Abra o endereço oficial do ATLAS.",
+          "Informe e-mail e senha.",
+          "Use Esqueci minha senha quando necessário.",
+          "Não compartilhe credenciais."
+        ]
+      },
+      {
+        "title": "Acompanhar processos",
+        "steps": [
+          "Acesse Processos.",
+          "Abra o processo desejado.",
+          "Observe status, etapa, responsável e prazo quando disponíveis."
+        ]
+      },
+      {
+        "title": "Consultar documentos",
+        "steps": [
+          "Acesse Documentos.",
+          "Localize o arquivo.",
+          "Use Abrir para visualizar."
+        ]
+      },
+      {
+        "title": "Acompanhar licenças",
+        "steps": [
+          "Acesse Licenças.",
+          "Confira AVCB, Alvará, Licença Sanitária e ANVISA.",
+          "Observe vencimentos e alertas."
+        ]
+      },
+      {
+        "title": "Usar a Base de Conhecimento",
+        "steps": [
+          "Acesse Base de Conhecimento.",
+          "Pesquise sua dúvida.",
+          "Abra artigos destinados ao perfil Cliente."
+        ]
+      }
+    ],
+    "attachments": [
+      "O perfil Cliente normalmente consulta arquivos já disponibilizados.",
+      "Se precisar enviar documento, confirme com a equipe responsável o canal ou permissão adequada."
+    ],
+    "troubles": [
+      {
+        "issue": "Processo não aparece",
+        "solution": "Peça ao Administrador para conferir o vínculo com a empresa correta."
+      },
+      {
+        "issue": "Documento não abre",
+        "solution": "Informe o nome do arquivo à equipe responsável."
+      },
+      {
+        "issue": "Licença não informada",
+        "solution": "Solicite atualização à Operação."
+      },
+      {
+        "issue": "Função não aparece",
+        "solution": "O menu do Cliente é limitado às funções liberadas."
+      }
+    ],
+    "checklist": [
+      "Entrar no sistema.",
+      "Abrir processo.",
+      "Abrir documento.",
+      "Conferir licença.",
+      "Usar Base de Conhecimento."
+    ]
+  }
+]
