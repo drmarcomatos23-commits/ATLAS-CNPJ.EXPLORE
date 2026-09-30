@@ -502,6 +502,15 @@ async function dashboard(){
 
 function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_name||'Empresa'}
 
+function processActionButtons(p){
+ const id=String(p?.id||'');
+ const edit='<button class="mini-btn" onclick="openProcessModal(\''+id+'\')">Editar</button>';
+ const middle=p?.status==='completed'
+   ? '<button class="mini-btn cartilha-btn" onclick="emitirCartilha(\''+id+'\')">Emitir cartilha</button>'
+   : '<button class="mini-btn" onclick="advanceProcess(\''+id+'\')">Avançar</button>';
+ const del='<button class="mini-btn danger" onclick="deleteProcess(\''+id+'\')">Excluir</button>';
+ return edit+middle+del;
+}
 function realProcessTable(list,actions=true){
  const canAct=actions&&canEditOps();
  const desktop=`<div class="table-wrap process-table-desktop"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Etapa</th><th>Responsável</th><th>Prazo</th><th>Status</th>${canAct?'<th>Ações</th>':''}</tr></thead><tbody>${list.map(p=>`<tr>
@@ -511,7 +520,7 @@ function realProcessTable(list,actions=true){
   <td>${esc(p.owner?.full_name||'Não atribuído')}</td>
   <td>${fmtDateBR(p.due_date)}</td>
   <td>${pill(statusLabel(p.status))}</td>
-  ${canAct?`<td><div class="row-actions"><button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button><button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button><button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button></div></td>`:''}
+  ${canAct?`<td><div class="row-actions">${processActionButtons(p)}</div></td>`:''}
  </tr>`).join('')}</tbody></table></div>`;
 
  const mobile=`<div class="process-mobile-list">${list.map(p=>`
@@ -528,9 +537,7 @@ function realProcessTable(list,actions=true){
        <div class="process-mobile-owner"><span>Responsável</span><strong>${esc(p.owner?.full_name||'Não atribuído')}</strong></div>
      </div>
      ${canAct?`<div class="process-mobile-actions">
-       <button class="mini-btn" onclick="openProcessModal('${p.id}')">Editar</button>
-       <button class="mini-btn" onclick="advanceProcess('${p.id}')">Avançar</button>
-       <button class="mini-btn danger" onclick="deleteProcess('${p.id}')">Excluir</button>
+       ${processActionButtons(p)}
      </div>`:''}
    </article>`).join('')}</div>`;
 
@@ -557,7 +564,7 @@ async function processPage(){
    if(cardsByStage.has(targetStageId))cardsByStage.get(targetStageId).push(p);
  });
  let kanban=stages.map(s=>`<div class="kanban-col"><div class="kanban-title"><span>${esc(s.name)}</span><span>${(cardsByStage.get(s.id)||[]).length}</span></div>
- ${(cardsByStage.get(s.id)||[]).map(p=>`<article class="task-card real-task"><b>${esc(p.public_code)}</b><strong>${esc(p.client?.legal_name||'Empresa')}</strong><p>${esc(p.title)}</p><p>${p.owner?.full_name?esc(p.owner.full_name):'Sem responsável'} · ${fmtDateBR(p.due_date)}</p>${canEditOps()?`<div class="task-actions"><button onclick="openProcessModal('${p.id}')">Editar</button><button onclick="advanceProcess('${p.id}')">Avançar</button><button class="danger-link" onclick="deleteProcess('${p.id}')">Excluir</button></div>`:''}</article>`).join('')||'<div class="kanban-empty">Nenhum processo</div>'}
+ ${(cardsByStage.get(s.id)||[]).map(p=>`<article class="task-card real-task"><b>${esc(p.public_code)}</b><strong>${esc(p.client?.legal_name||'Empresa')}</strong><p>${esc(p.title)}</p><p>${p.owner?.full_name?esc(p.owner.full_name):'Sem responsável'} · ${fmtDateBR(p.due_date)}</p>${canEditOps()?`<div class="task-actions">${processActionButtons(p)}</div>`:''}</article>`).join('')||'<div class="kanban-empty">Nenhum processo</div>'}
  </div>`).join('');
  page(`<section class="surface pad"><div class="section-head"><div><h2>Pipeline de legalização</h2><span>${procs.length} processo(s) cadastrado(s)</span></div>${toolbar}</div><div class="kanban">${kanban}</div><div style="margin-top:18px"><div class="section-head"><h3>Lista completa</h3></div>${realProcessTable(procs,true)}</div></section>`);
 }
