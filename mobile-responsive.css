@@ -3,7 +3,7 @@ html,body{max-width:100%;overflow-x:hidden}
 img{max-width:100%}
 .mobile-menu-btn,.mobile-nav-overlay{display:none}
 
-@media(max-width:900px){
+@media(max-width:1180px){
   body.mobile-menu-open{overflow:hidden}
 
   .app-shell{
