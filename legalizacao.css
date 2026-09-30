@@ -218,3 +218,31 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
 .atlas-modal-head h2{margin:5px 0 0;font-size:23px;letter-spacing:-.03em}.modal-close{width:36px;height:36px;border:1px solid #dce6ef;border-radius:11px;background:#f8fbfd;color:#385269;font-size:22px;line-height:1}
 .atlas-modal-body{padding:20px 22px 24px}.modal-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.modal-form-grid .span-2{grid-column:1/-1}.modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:12px}
 @media(max-width:760px){.atlas-modal-backdrop{padding:8px;align-items:end}.atlas-modal{width:100%;max-height:94vh;border-radius:20px 20px 0 0}.modal-form-grid{grid-template-columns:1fr}.modal-form-grid .span-2{grid-column:auto}.modal-actions{position:sticky;bottom:0;background:#fff;padding-top:10px}}
+
+/* v3.25 — rodapé de propriedade intelectual */
+.workspace{
+  min-width:0;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.main{
+  width:100%;
+  flex:1 0 auto;
+}
+.system-legal-footer{
+  margin-top:auto;
+  padding:16px 28px 20px;
+  border-top:1px solid var(--border);
+  color:#718394;
+  font-size:9.5px;
+  line-height:1.5;
+  text-align:center;
+  background:rgba(255,255,255,.72);
+}
+@media(max-width:760px){
+  .system-legal-footer{
+    padding:14px 18px 18px;
+    font-size:9px;
+  }
+}
