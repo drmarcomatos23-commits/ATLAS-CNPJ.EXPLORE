@@ -61,7 +61,7 @@ window.hideAtlasApp=hideAtlasApp;
 $('#nav').addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(!b)return;$$('[data-page]').forEach(x=>x.classList.remove('active'));b.classList.add('active');render(b.dataset.page)});
 
 function render(page){
- if(page==='dashboard')return dashboard();if(page==='processos')return processPage();if(page==='clientes')return clientPage();if(page==='protocolos')return protocolPage();if(page==='custos')return costPage();if(page==='licencas')return licensePage();if(page==='integracoes')return integrationPage();if(page==='documentos')return docsPage();if(page==='relatorios')return reportsPage();if(page==='conhecimento')return window.knowledgePage?.();if(page==='usuarios')return usersPage();if(page==='config')return configPage();
+ if(page==='dashboard')return dashboard();if(page==='processos')return processPage();if(page==='clientes')return clientPage();if(page==='protocolos')return protocolPage();if(page==='custos')return costPage();if(page==='licencas')return licensePage();if(page==='integracoes')return integrationPage();if(page==='documentos')return docsPage();if(page==='relatorios')return reportsPage();if(page==='conhecimento')return window.knowledgePage?.();if(page==='treinamento')return window.trainingPage?.();if(page==='usuarios')return usersPage();if(page==='config')return configPage();
 }
 function page(html){$('#page-content').innerHTML=html}
 function dashboard(){
