@@ -43,8 +43,7 @@
       +'</table>';
   }
   function brand(){
-    return '<div class="model-brand"><div class="oea-mark"><span>OEA</span></div>'
-      +'<div class="model-names">DR. SERGIO FREITAS<br>DR. RAFAEL COBRA<br>DR. RICARDO CLEMENTE<br>DR. MARCO MATOS<br>DR. MATHEUS BADINI</div></div>';
+    return '<div class="model-brand official-letterhead"><img src="/assets/oea-cartilha-header.webp" alt="OEA - Timbrado oficial"></div>';
   }
   function styles(){
     return '<style>'
@@ -57,10 +56,10 @@
       +'.shape-b{left:-45px;top:180px;width:320px;height:16px;background:#eff8ca;transform:rotate(-48deg);opacity:.8}'
       +'.shape-c{right:-135px;bottom:-110px;width:420px;height:290px;background:linear-gradient(145deg,#f8f6bd 0 22%,#cfeaf4 23% 55%,#e4effb 56%);transform:rotate(-18deg);opacity:.72}'
       +'.shape-d{right:-125px;bottom:90px;width:250px;height:16px;background:#d8eff7;transform:rotate(-30deg)}'
-      +'.content{position:relative;z-index:2;padding:18mm 16mm}.model-brand{height:34mm;display:flex;justify-content:flex-end;align-items:flex-start;gap:8px;margin-bottom:1mm}'
-      +'.oea-mark{position:relative;width:38mm;height:20mm;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18pt;font-weight:900;font-style:italic}'
-      +'.oea-mark:before{content:"";position:absolute;inset:3mm 0;border-radius:50%;background:linear-gradient(135deg,#84b817 0 45%,#0c5795 46%);transform:skewX(-12deg);z-index:-1}'
-      +'.model-names{font-size:7pt;line-height:1.35;color:#777;font-weight:700;padding-top:2mm}h1{text-align:center;margin:0;color:#284f77;font-size:18pt;letter-spacing:.4px}'
+      +'.content{position:relative;z-index:2;padding:18mm 16mm}.model-brand{height:34mm;display:flex;justify-content:center;align-items:flex-start;margin-bottom:1mm}.official-letterhead img{width:104mm;max-width:100%;height:auto;display:block;object-fit:contain}'
+      +'.oea-mark{display:none}'
+      +'.oea-mark:before{display:none}'
+      +'.model-names{display:none}h1{text-align:center;margin:0;color:#284f77;font-size:18pt;letter-spacing:.4px}'
       +'h2{text-align:center;margin:7mm 0 10mm;font-size:12.5pt}.service{font-weight:700;font-size:11.5pt;margin-bottom:8mm}.service span{margin-right:8mm}'
       +'.activity-note{font-size:9.5pt;margin:-3mm 0 8mm}.section-title{font-size:12pt;font-weight:700;color:#53677c;margin:0 0 5mm}'
       +'table{width:100%;border-collapse:collapse;background:rgba(255,255,255,.84);margin-bottom:7mm;break-inside:avoid}th,td{border:1px solid #444;padding:2.7mm 2mm;font-size:9.6pt;vertical-align:top}'
