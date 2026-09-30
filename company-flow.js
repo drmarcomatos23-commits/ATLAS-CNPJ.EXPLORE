@@ -209,6 +209,7 @@
         <label>Tipo de serviço</label>
         <select id="proc-service">
           <option value="legalizacao_empresarial" selected>Legalização empresarial</option>
+          <option value="abertura">Abertura</option>
           <option value="alteracao_societaria">Alteração societária</option>
           <option value="regularizacao">Regularização</option>
           <option value="licenciamento">Licenciamento</option>
