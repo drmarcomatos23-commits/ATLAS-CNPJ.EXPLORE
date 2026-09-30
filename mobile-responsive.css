@@ -278,3 +278,32 @@ img{max-width:100%}
 
   .permission-table{min-width:660px!important}
 }
+
+/* v3.31 — restaurar rótulos do menu no tablet/mobile */
+@media(max-width:1180px){
+  .sidebar .nav-item{
+    justify-content:flex-start!important;
+    gap:12px!important;
+    padding:12px 14px!important;
+  }
+
+  .sidebar .nav-item .nav-ico{
+    display:inline-flex!important;
+    width:24px!important;
+    min-width:24px!important;
+    flex:0 0 24px!important;
+    align-items:center!important;
+    justify-content:center!important;
+    text-align:center!important;
+  }
+
+  .sidebar .nav-item span:last-child{
+    display:inline!important;
+    flex:1 1 auto!important;
+    min-width:0!important;
+    color:inherit!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+}
