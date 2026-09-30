@@ -26,11 +26,13 @@
         <div class="field"><label>Horas previstas</label><input id="proc-hours" inputmode="decimal" value="${hourly.hours||''}" placeholder="0"></div>
         <div class="field"><label>Total honorários (R$)</label><input id="proc-hourly-total" value="${hourly.amount?fmt(hourly.amount):'0,00'}" readonly></div>
         <div class="field"><label>Taxa Junta / Cartório (R$)</label><input id="proc-registry-fee" inputmode="decimal" value="${fee.amount?fmt(fee.amount):''}" placeholder="0,00"></div>
-        <div class="field"><label>Situação do pagamento</label><select id="proc-payment-status"><option value="pending" ${base.payment_status!=='paid'?'selected':''}>Não pago</option><option value="paid" ${base.payment_status==='paid'?'selected':''}>Pago</option></select></div>
-        <div class="field"><label>Vencimento</label><input id="proc-payment-due" type="date" value="${base.due_date||''}"></div>
-        <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String(base.payer_name||'').replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
-        <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${base.payer_type!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${base.payer_type==='CPF'?'selected':''}>CPF</option></select></div>
-        <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String(base.payer_document||'').replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
+        <div class="field finance-status-field honor-status"><label>Honorários recebidos?</label><select id="proc-hourly-payment-status"><option value="pending" ${hourly.payment_status!=='paid'?'selected':''}>A receber</option><option value="paid" ${hourly.payment_status==='paid'?'selected':''}>Recebido</option></select></div>
+        <div class="field finance-status-field honor-due"><label>Vencimento dos honorários</label><input id="proc-hourly-due" type="date" value="${hourly.due_date||''}"></div>
+        <div class="field finance-status-field fee-status"><label>Taxa Junta / Cartório paga?</label><select id="proc-fee-payment-status"><option value="pending" ${fee.payment_status!=='paid'?'selected':''}>Não paga</option><option value="paid" ${fee.payment_status==='paid'?'selected':''}>Paga</option></select></div>
+        <div class="field finance-status-field fee-due"><label>Vencimento da taxa</label><input id="proc-fee-due" type="date" value="${fee.due_date||''}"></div>
+        <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String((hourly.payer_name||fee.payer_name||'')).replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
+        <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${(hourly.payer_type||fee.payer_type)!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${(hourly.payer_type||fee.payer_type)==='CPF'?'selected':''}>CPF</option></select></div>
+        <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String((hourly.payer_document||fee.payer_document||'')).replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
         <div class="field"><label>Guia / boleto de honorários</label><input id="proc-hourly-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
         <div class="field"><label>Guia / boleto da taxa Junta / Cartório</label><input id="proc-fee-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
       </div>`;
@@ -178,12 +180,15 @@
     const hourlyRate=brMoneyToNumber(document.getElementById('proc-hourly-rate')?.value);
     const hours=brMoneyToNumber(document.getElementById('proc-hours')?.value);
     const feeAmount=brMoneyToNumber(document.getElementById('proc-registry-fee')?.value);
-    const paymentStatus=document.getElementById('proc-payment-status')?.value||'pending';
-    const dueDate=document.getElementById('proc-payment-due')?.value||null;
+    const hourlyPaymentStatus=document.getElementById('proc-hourly-payment-status')?.value||'pending';
+    const hourlyDueDate=document.getElementById('proc-hourly-due')?.value||null;
+    const feePaymentStatus=document.getElementById('proc-fee-payment-status')?.value||'pending';
+    const feeDueDate=document.getElementById('proc-fee-due')?.value||null;
     const payerName=document.getElementById('proc-payer-name')?.value.trim()||null;
     const payerType=document.getElementById('proc-payer-type')?.value||null;
     const payerDocument=document.getElementById('proc-payer-document')?.value.trim()||null;
-    const paidAt=paymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
+    const hourlyPaidAt=hourlyPaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
+    const feePaidAt=feePaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
 
     const {data:old}=await db.from('costs').select('id,metadata').eq('process_id',processId);
     const ids=(old||[]).filter(c=>c.metadata?.source==='process_form').map(c=>c.id);
@@ -199,9 +204,9 @@
         hourly_rate:hourlyRate,
         hours,
         amount:hourlyRate*hours,
-        payment_status:paymentStatus,
-        paid_at:paidAt,
-        due_date:dueDate,
+        payment_status:hourlyPaymentStatus,
+        paid_at:hourlyPaidAt,
+        due_date:hourlyDueDate,
         payer_name:payerName,
         payer_type:payerType,
         payer_document:payerDocument,
@@ -215,9 +220,9 @@
         cost_type:'registry_fee',
         fee_kind:'junta_cartorio',
         amount:feeAmount,
-        payment_status:paymentStatus,
-        paid_at:paidAt,
-        due_date:dueDate,
+        payment_status:feePaymentStatus,
+        paid_at:feePaidAt,
+        due_date:feeDueDate,
         payer_name:payerName,
         payer_type:payerType,
         payer_document:payerDocument,
