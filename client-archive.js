@@ -64,7 +64,7 @@
           <div class="muted company-address-inline">${escA([c.street,c.address_number,c.address_complement,c.neighborhood,[c.city,c.state].filter(Boolean).join('/'),c.postal_code?String(c.postal_code).replace(/^(\d{5})(\d{3})$/,'$1-$2'):null].filter(Boolean).join(' · ')||'')}</div>
         </td>
         <td>
-          ${(()=>{const pc=processCounts.get(c.id)||{total:0,active:0};return `<div class="company-process-count"><strong>${pc.total}</strong><span>${pc.active} ativo(s)</span></div>`})()}
+          ${(()=>{const pc=processCounts.get(c.id)||{total:0,active:0};return `<div class="company-process-count"><strong>${pc.total} ${pc.total===1?'processo':'processos'}</strong><span>${pc.active} ${pc.active===1?'ativo':'ativos'}</span></div>`})()}
         </td>
         <td>${escA(c.tax_id||'—')}</td>
         <td>${escA(c.state_registration||'—')}</td>
