@@ -285,6 +285,10 @@
         const status=document.getElementById('proc-status').value;
         const data=await loadOperationalData();
         const template=data.templates[0];
+        const stagesFor=data.stages
+          .filter(s=>!template||s.workflow_template_id===template.id)
+          .sort((a,b)=>a.position-b.position);
+        const finalStage=stagesFor.find(s=>/conclu[ií]do/i.test(String(s.name||'')))||stagesFor[stagesFor.length-1];
         const payload={
           organization_id:atlasProfile().organization_id,
           client_id:clientId,
@@ -292,7 +296,7 @@
           title:document.getElementById('proc-title').value.trim(),
           service_type:document.getElementById('proc-service').value,
           status,
-          current_stage_id:document.getElementById('proc-stage').value||null,
+          current_stage_id:status==='completed'?(finalStage?.id||document.getElementById('proc-stage').value||null):(document.getElementById('proc-stage').value||null),
           owner_id:document.getElementById('proc-owner').value||null,
           priority:document.getElementById('proc-priority').value,
           due_date:document.getElementById('proc-due').value||null,
