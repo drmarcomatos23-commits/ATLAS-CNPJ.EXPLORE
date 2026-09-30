@@ -1,5 +1,6 @@
 (() => {
   let trainingManuals=[];
+  const FINANCE_VIDEO_URL='https://share.descript.com/view/OQT2WeVV1hp';
 
   function e(v){
     return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -18,24 +19,40 @@
   }
 
   window.trainingPage=async function(){
-    if(atlasProfile()?.role!=='admin'){
-      page('<div class="error-box">Esta área é exclusiva do Administrador.</div>');
-      return;
-    }
+    const profile=atlasProfile();
+    const currentRole=profile?.role||'cliente';
 
-    setHead('Manuais de Treinamento','TREINAMENTO','Documentos de instrução de procedimentos para capacitação dos usuários do ATLAS.');
+    setHead('Treinamento','TREINAMENTO','Manual de procedimentos e materiais de capacitação correspondentes ao seu perfil no ATLAS.');
     page('<div class="loading-box"><span class="spinner"></span><div>Carregando manuais...</div></div>');
 
     try{
-      const manuals=await loadTrainingManuals();
+      const allManuals=await loadTrainingManuals();
+      const manuals=currentRole==='admin'?allManuals:allManuals.filter(m=>m.role===currentRole);
       page(`
         <section class="surface pad training-intro">
           <div>
-            <h2>Kit de treinamento por perfil</h2>
-            <p>Utilize estes manuais para integração de novos usuários, reciclagem de equipe e padronização dos procedimentos do ATLAS.</p>
+            <h2>${currentRole==='admin'?'Kit de treinamento por perfil':'Treinamento do perfil '+e(roleName(currentRole))}</h2>
+            <p>${currentRole==='admin'
+              ? 'Acesse todos os manuais para integração de novos usuários, reciclagem da equipe e padronização dos procedimentos do ATLAS.'
+              : 'Utilize este material para aprender os procedimentos, anexos, boas práticas e soluções correspondentes ao seu acesso.'}</p>
           </div>
           <span class="training-version">Versão 1.0 · Setembro/2026</span>
         </section>
+
+        ${(currentRole==='admin'||currentRole==='financeiro')?`
+          <section class="surface pad training-video-section">
+            <div class="training-video-copy">
+              <span class="training-kicker">VÍDEO DE TREINAMENTO</span>
+              <h2>Perfil Financeiro · ATLAS</h2>
+              <p>Treinamento em vídeo para controle de honorários, taxas, recebimentos, vencimentos e relatórios financeiros.</p>
+              <div class="training-video-meta"><span>▶ Aproximadamente 8 minutos</span><span>Perfil: Financeiro</span></div>
+              <button class="btn btn-primary" type="button" onclick="openFinanceTrainingVideo()">▶ Assistir treinamento</button>
+            </div>
+            <div class="training-video-preview">
+              <img src="/logo-atlas-legalizacao.png" alt="ATLAS">
+              <span>Treinamento Financeiro</span>
+            </div>
+          </section>`:''}
 
         <section class="training-grid">
           ${manuals.map(m=>`
@@ -56,12 +73,12 @@
         </section>
 
         <section class="surface pad training-guidance">
-          <h2>Uso recomendado no treinamento</h2>
+          <h2>${currentRole==='admin'?'Uso recomendado no treinamento':'Como concluir seu treinamento'}</h2>
           <div class="training-steps">
-            <div><strong>1</strong><span>Entregue o manual correspondente ao perfil antes do primeiro acesso.</span></div>
-            <div><strong>2</strong><span>Faça o usuário executar o checklist de treinamento no ambiente real.</span></div>
-            <div><strong>3</strong><span>Valide as permissões do perfil em Configurações antes de liberar o uso definitivo.</span></div>
-            <div><strong>4</strong><span>Use a Base de Conhecimento para dúvidas recorrentes e atualizações de procedimento.</span></div>
+            <div><strong>1</strong><span>${currentRole==='admin'?'Entregue o manual correspondente ao perfil antes do primeiro acesso.':'Leia o manual do seu perfil do início ao fim.'}</span></div>
+            <div><strong>2</strong><span>${currentRole==='admin'?'Faça o usuário executar o checklist de treinamento no ambiente real.':'Execute o checklist de treinamento no ATLAS.'}</span></div>
+            <div><strong>3</strong><span>${currentRole==='admin'?'Valide as permissões do perfil em Configurações antes de liberar o uso definitivo.':'Consulte a Base de Conhecimento sempre que surgir uma dúvida operacional.'}</span></div>
+            <div><strong>4</strong><span>${currentRole==='admin'?'Use a Base de Conhecimento para dúvidas recorrentes e atualizações de procedimento.':'Em caso de bloqueio de acesso, solicite revisão de permissões ao Administrador.'}</span></div>
           </div>
         </section>
       `);
@@ -141,7 +158,8 @@
   }
 
   window.openTrainingManual=async function(role){
-    if(atlasProfile()?.role!=='admin')return;
+    const currentRole=atlasProfile()?.role||'cliente';
+    if(currentRole!=='admin'&&currentRole!==role)return;
     const manuals=await loadTrainingManuals();
     const m=manuals.find(x=>x.role===role);
     if(!m)return;
@@ -155,7 +173,8 @@
   };
 
   window.printTrainingManual=async function(role){
-    if(atlasProfile()?.role!=='admin')return;
+    const currentRole=atlasProfile()?.role||'cliente';
+    if(currentRole!=='admin'&&currentRole!==role)return;
     const manuals=await loadTrainingManuals();
     const m=manuals.find(x=>x.role===role);
     if(!m)return;
@@ -192,5 +211,11 @@
       @media print{.toolbar{display:none}section,.training-procedure,.training-troubles>div{break-inside:avoid}}
     </style></head><body><div class="toolbar"><button onclick="window.print()">Imprimir / Salvar PDF</button></div>${manualHtml(m)}</body></html>`);
     popup.document.close();
+  };
+
+  window.openFinanceTrainingVideo=function(){
+    const role=atlasProfile()?.role||'cliente';
+    if(!['admin','financeiro'].includes(role))return;
+    window.open(FINANCE_VIDEO_URL,'_blank','noopener,noreferrer');
   };
 })();
