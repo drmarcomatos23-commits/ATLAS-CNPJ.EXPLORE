@@ -1,5 +1,5 @@
 (() => {
-  const isMobile = () => window.matchMedia('(max-width: 900px)').matches;
+  const isMobile = () => window.matchMedia('(max-width: 1180px)').matches;
 
   function elements(){
     return {
