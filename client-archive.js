@@ -28,25 +28,44 @@
     page('<div class="loading-box"><span class="spinner"></span><div>Carregando empresas...</div></div>');
     const db=atlasDb();
 
-    const {data,error}=await db.from('clients')
-      .select('*')
-      .is('deleted_at',null)
-      .order('legal_name',{ascending:true});
+    const [clientsRes,processesRes]=await Promise.all([
+      db.from('clients')
+        .select('*')
+        .is('deleted_at',null)
+        .order('legal_name',{ascending:true}),
+      db.from('processes')
+        .select('id,client_id,status')
+        .is('deleted_at',null)
+    ]);
 
-    if(error){
-      page('<div class="error-box">Não foi possível carregar as empresas: '+escA(error.message)+'</div>');
+    if(clientsRes.error){
+      page('<div class="error-box">Não foi possível carregar as empresas: '+escA(clientsRes.error.message)+'</div>');
       return;
     }
 
-    const list=data||[];
+    const list=clientsRes.data||[];
+    const processCounts=new Map();
+    (processesRes.data||[]).forEach(p=>{
+      const current=processCounts.get(p.client_id)||{total:0,active:0};
+      current.total+=1;
+      if(!['completed','cancelled'].includes(p.status))current.active+=1;
+      processCounts.set(p.client_id,current);
+    });
     const role=atlasProfile().role;
     const toolbar=canEditOps()?'<button class="btn btn-primary" onclick="openClientModal()">＋ Nova empresa</button>':'';
 
     page(`<section class="surface pad">
       <div class="section-head"><div><h2>Empresas cadastradas</h2><span>${list.length} registro(s)</span></div>${toolbar}</div>
-      ${list.length?`<div class="table-wrap"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>IE</th><th>IM</th><th>Cidade/UF</th><th>Contato</th>${canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>
+      ${list.length?`<div class="table-wrap"><table><thead><tr><th>Empresa</th><th>Processos</th><th>CNPJ</th><th>IE</th><th>IM</th><th>Cidade/UF</th><th>Contato</th>${canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>
       ${list.map(c=>`<tr>
-        <td><strong>${escA(c.legal_name)}</strong><div class="muted">${escA(c.trade_name||'')}</div></td>
+        <td>
+          <strong>${escA(c.legal_name)}</strong>
+          <div class="muted">${escA(c.trade_name||'')}</div>
+          <div class="muted company-address-inline">${escA([c.street,c.address_number,c.address_complement,c.neighborhood,[c.city,c.state].filter(Boolean).join('/'),c.postal_code?String(c.postal_code).replace(/^(\d{5})(\d{3})$/,'$1-$2'):null].filter(Boolean).join(' · ')||'')}</div>
+        </td>
+        <td>
+          ${(()=>{const pc=processCounts.get(c.id)||{total:0,active:0};return `<div class="company-process-count"><strong>${pc.total}</strong><span>${pc.active} ativo(s)</span></div>`})()}
+        </td>
         <td>${escA(c.tax_id||'—')}</td>
         <td>${escA(c.state_registration||'—')}</td>
         <td>${escA(c.municipal_registration||'—')}</td>
