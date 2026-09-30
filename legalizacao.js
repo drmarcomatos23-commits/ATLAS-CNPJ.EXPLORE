@@ -551,7 +551,11 @@ async function processPage(){
  const template=data.templates[0];
  const stages=data.stages.filter(s=>!template||s.workflow_template_id===template.id);
  const cardsByStage=new Map(stages.map(s=>[s.id,[]]));
- procs.forEach(p=>{if(cardsByStage.has(p.current_stage_id))cardsByStage.get(p.current_stage_id).push(p)});
+ const finalStage=stages.find(s=>/conclu[ií]do/i.test(String(s.name||'')))||stages[stages.length-1];
+ procs.forEach(p=>{
+   const targetStageId=p.status==='completed'&&finalStage?.id?finalStage.id:p.current_stage_id;
+   if(cardsByStage.has(targetStageId))cardsByStage.get(targetStageId).push(p);
+ });
  let kanban=stages.map(s=>`<div class="kanban-col"><div class="kanban-title"><span>${esc(s.name)}</span><span>${(cardsByStage.get(s.id)||[]).length}</span></div>
  ${(cardsByStage.get(s.id)||[]).map(p=>`<article class="task-card real-task"><b>${esc(p.public_code)}</b><strong>${esc(p.client?.legal_name||'Empresa')}</strong><p>${esc(p.title)}</p><p>${p.owner?.full_name?esc(p.owner.full_name):'Sem responsável'} · ${fmtDateBR(p.due_date)}</p>${canEditOps()?`<div class="task-actions"><button onclick="openProcessModal('${p.id}')">Editar</button><button onclick="advanceProcess('${p.id}')">Avançar</button><button class="danger-link" onclick="deleteProcess('${p.id}')">Excluir</button></div>`:''}</article>`).join('')||'<div class="kanban-empty">Nenhum processo</div>'}
  </div>`).join('');
