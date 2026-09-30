@@ -262,6 +262,42 @@
     injectFinance(cloned,existing);
     injectProcessDocuments(cloned,processDocs);
 
+    // v3.42 - conclusão reversível: permite reabrir e mover o processo para qualquer etapa/status.
+    const stageSelect=document.getElementById('proc-stage');
+    const statusSelect=document.getElementById('proc-status');
+    const stageOptions=[...(stageSelect?.options||[])];
+    const completedStageOption=stageOptions.find(opt=>/conclu[ií]do/i.test(String(opt.textContent||'')));
+    const fallbackNonCompletedStage=stageOptions.filter(opt=>opt.value!==completedStageOption?.value).slice(-1)[0];
+    let lastNonCompletedStage=stageSelect?.value&&stageSelect.value!==completedStageOption?.value
+      ? stageSelect.value
+      : (fallbackNonCompletedStage?.value||'');
+
+    let syncingStageStatus=false;
+    const syncFromStage=()=>{
+      if(syncingStageStatus||!stageSelect||!statusSelect)return;
+      syncingStageStatus=true;
+      if(completedStageOption&&stageSelect.value===completedStageOption.value){
+        statusSelect.value='completed';
+      }else{
+        if(stageSelect.value)lastNonCompletedStage=stageSelect.value;
+        if(statusSelect.value==='completed')statusSelect.value='in_progress';
+      }
+      syncingStageStatus=false;
+    };
+    const syncFromStatus=()=>{
+      if(syncingStageStatus||!stageSelect||!statusSelect)return;
+      syncingStageStatus=true;
+      if(statusSelect.value==='completed'&&completedStageOption){
+        if(stageSelect.value!==completedStageOption.value&&stageSelect.value)lastNonCompletedStage=stageSelect.value;
+        stageSelect.value=completedStageOption.value;
+      }else if(completedStageOption&&stageSelect.value===completedStageOption.value){
+        stageSelect.value=lastNonCompletedStage||fallbackNonCompletedStage?.value||stageSelect.value;
+      }
+      syncingStageStatus=false;
+    };
+    stageSelect?.addEventListener('change',syncFromStage);
+    statusSelect?.addEventListener('change',syncFromStatus);
+
     // Reativa cadastro rápido de empresa quando o processo é novo.
     if(!id){
       const quick=window.atlasQuickCompany;
@@ -284,11 +320,15 @@
       try{
         const status=document.getElementById('proc-status').value;
         const data=await loadOperationalData();
-        const template=data.templates[0];
+        const existingProcess=id?data.processes.find(p=>p.id===id):null;
+        const template=id
+          ? (data.templates.find(t=>t.id===existingProcess?.workflow_template_id)||data.templates[0])
+          : data.templates[0];
         const stagesFor=data.stages
           .filter(s=>!template||s.workflow_template_id===template.id)
           .sort((a,b)=>a.position-b.position);
         const finalStage=stagesFor.find(s=>/conclu[ií]do/i.test(String(s.name||'')))||stagesFor[stagesFor.length-1];
+        const selectedStageId=document.getElementById('proc-stage').value||null;
         const payload={
           organization_id:atlasProfile().organization_id,
           client_id:clientId,
@@ -296,11 +336,13 @@
           title:document.getElementById('proc-title').value.trim(),
           service_type:document.getElementById('proc-service').value,
           status,
-          current_stage_id:status==='completed'?(finalStage?.id||document.getElementById('proc-stage').value||null):(document.getElementById('proc-stage').value||null),
+          current_stage_id:status==='completed'?(finalStage?.id||selectedStageId):selectedStageId,
           owner_id:document.getElementById('proc-owner').value||null,
           priority:document.getElementById('proc-priority').value,
           due_date:document.getElementById('proc-due').value||null,
-          completed_at:status==='completed'?new Date().toISOString():null
+          completed_at:status==='completed'
+            ? (existingProcess?.status==='completed'&&existingProcess?.completed_at?existingProcess.completed_at:new Date().toISOString())
+            : null
         };
         Object.keys(payload).forEach(k=>payload[k]===undefined&&delete payload[k]);
 
