@@ -109,13 +109,60 @@
       <div id="client-form-message" class="auth-message hidden span-2"></div>
     </form>`,true);
 
+    let duplicateClient=null;
+
+    async function checkDuplicateCnpj(){
+      duplicateClient=null;
+      const msg=document.getElementById('client-cnpj-message');
+      const saveBtn=document.getElementById('client-save-btn');
+      const cnpj=digits(document.getElementById('client-tax-id')?.value||'');
+      if(!msg||!saveBtn)return false;
+      if(cnpj.length!==14){
+        saveBtn.disabled=false;
+        return false;
+      }
+      const {data,error}=await db.rpc('atlas_find_client_by_cnpj',{
+        p_cnpj:cnpj,
+        p_exclude_id:id||null
+      });
+      if(error){
+        console.error('Falha ao verificar duplicidade',error);
+        return false;
+      }
+      duplicateClient=(data||[])[0]||null;
+      if(duplicateClient){
+        const archived=duplicateClient.archived===true;
+        msg.innerHTML='<strong>Atenção:</strong> este CNPJ já está cadastrado para <strong>'+escHtml(duplicateClient.legal_name)+'</strong>.'+(archived?' O cadastro está arquivado; solicite restauração em vez de criar uma nova empresa.':'');
+        msg.className='auth-message error span-2';
+        saveBtn.disabled=true;
+        return true;
+      }
+      if(msg.textContent?.includes('CNPJ já está cadastrado')||msg.textContent?.includes('este CNPJ já está cadastrado')){
+        msg.textContent='';
+        msg.className='auth-message hidden span-2';
+      }
+      saveBtn.disabled=false;
+      return false;
+    }
+
     const cnpjInput=document.getElementById('client-tax-id');
-    cnpjInput?.addEventListener('input',()=>{
+    cnpjInput?.addEventListener('input',async ()=>{
       const d=digits(cnpjInput.value);
       cnpjInput.value=d.length===14?formatCnpj(d):d;
-      if(d.length===14 && !id) lookupCompanyCnpj();
+      if(d.length===14){
+        const duplicated=await checkDuplicateCnpj();
+        if(!duplicated && !id) lookupCompanyCnpj();
+      }else{
+        duplicateClient=null;
+        const saveBtn=document.getElementById('client-save-btn');
+        if(saveBtn)saveBtn.disabled=false;
+      }
     });
-    document.getElementById('client-cnpj-consult')?.addEventListener('click',lookupCompanyCnpj);
+    cnpjInput?.addEventListener('blur',checkDuplicateCnpj);
+    document.getElementById('client-cnpj-consult')?.addEventListener('click',async ()=>{
+      const duplicated=await checkDuplicateCnpj();
+      if(!duplicated)lookupCompanyCnpj();
+    });
 
     document.getElementById('client-real-form')?.addEventListener('submit',async e=>{
       e.preventDefault();
@@ -130,12 +177,15 @@
 
       try{
         if(cnpjDigits.length===14){
-          const {data:existing,error:existError}=await db.from('clients')
-            .select('id,legal_name,tax_id')
-            .eq('organization_id',atlasProfile().organization_id);
+          const {data:existing,error:existError}=await db.rpc('atlas_find_client_by_cnpj',{
+            p_cnpj:cnpjDigits,
+            p_exclude_id:id||null
+          });
           if(existError)throw existError;
-          const duplicate=(existing||[]).find(c=>c.id!==id && digits(c.tax_id)===cnpjDigits);
-          if(duplicate)throw new Error('Este CNPJ já está cadastrado para '+duplicate.legal_name+'.');
+          const duplicate=(existing||[])[0];
+          if(duplicate){
+            throw new Error('Cadastro bloqueado: este CNPJ já está cadastrado para '+duplicate.legal_name+(duplicate.archived?' (empresa arquivada).':' .'));
+          }
         }
 
         const payload={
