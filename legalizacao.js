@@ -504,7 +504,8 @@ function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_nam
 
 function processActionButtons(p){
  const id=String(p?.id||'');
- const edit='<button class="mini-btn" onclick="openProcessModal(\''+id+'\')">Editar</button>';
+ const editLabel=p?.status==='completed'?'Reabrir / alterar':'Editar';
+ const edit='<button class="mini-btn" onclick="openProcessModal(\''+id+'\')">'+editLabel+'</button>';
  const middle=p?.status==='completed'
    ? '<button class="mini-btn cartilha-btn" onclick="emitirCartilha(\''+id+'\')">Emitir cartilha</button>'
    : '<button class="mini-btn" onclick="advanceProcess(\''+id+'\')">Avançar</button>';
