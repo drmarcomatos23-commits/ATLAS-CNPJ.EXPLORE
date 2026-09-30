@@ -93,3 +93,23 @@
   color:#7b8d9c;
   white-space:nowrap;
 }
+
+/* v3.37 — contagem legível de processos */
+.company-process-count{
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:flex-start!important;
+  gap:4px!important;
+  line-height:1.15!important;
+  white-space:nowrap!important;
+}
+.company-process-count strong{
+  display:block!important;
+  font-size:11px!important;
+  color:#17384f!important;
+}
+.company-process-count span{
+  display:block!important;
+  font-size:9px!important;
+  color:#6f8394!important;
+}
