@@ -23,15 +23,23 @@
     const e=d?.estabelecimento||{};
     const city=typeof e.cidade==='object'?e.cidade?.nome:e.cidade;
     const state=typeof e.estado==='object'?e.estado?.sigla:e.estado;
+    const streetType=e?.tipo_logradouro||e?.descricao_tipo_de_logradouro||'';
+    const streetName=e?.logradouro||e?.nome_logradouro||'';
+    const street=[streetType,streetName].filter(Boolean).join(' ').trim();
     return {
-      legal_name:d?.razao_social||'',
-      trade_name:e?.nome_fantasia||'',
+      legal_name:d?.razao_social||d?.razaoSocial||'',
+      trade_name:e?.nome_fantasia||d?.nome_fantasia||d?.nomeFantasia||'',
       tax_id:formatCnpj(e?.cnpj||d?.cnpj||''),
       state_registration:activeStateRegistration(d),
-      city:city||'',
-      state:state||'',
-      phone:[e?.ddd1,e?.telefone1].filter(Boolean).join(' ')||'',
-      email:e?.email||''
+      postal_code:digits(e?.cep||d?.cep||'').slice(0,8),
+      street:street||d?.logradouro||d?.street||'',
+      address_number:e?.numero||d?.numero||d?.number||'',
+      address_complement:e?.complemento||d?.complemento||d?.complement||'',
+      neighborhood:e?.bairro||d?.bairro||d?.neighborhood||'',
+      city:city||d?.municipio||d?.city||'',
+      state:state||d?.uf||d?.state||'',
+      phone:[e?.ddd1,e?.telefone1].filter(Boolean).join(' ')||d?.telefone||'',
+      email:e?.email||d?.email||''
     };
   }
 
@@ -57,6 +65,11 @@
       document.getElementById('client-legal-name').value=company.legal_name;
       document.getElementById('client-trade-name').value=company.trade_name;
       document.getElementById('client-state-registration').value=company.state_registration;
+      document.getElementById('client-postal-code').value=company.postal_code||'';
+      document.getElementById('client-street').value=company.street||'';
+      document.getElementById('client-address-number').value=company.address_number||'';
+      document.getElementById('client-address-complement').value=company.address_complement||'';
+      document.getElementById('client-neighborhood').value=company.neighborhood||'';
       document.getElementById('client-city').value=company.city;
       document.getElementById('client-state').value=company.state;
       if(company.phone && !document.getElementById('client-phone').value)document.getElementById('client-phone').value=company.phone;
@@ -70,6 +83,42 @@
       msg.className='auth-message error span-2';
     }finally{
       btn.disabled=false;btn.textContent='Consultar CNPJ';
+    }
+  }
+
+  async function lookupCompanyCep(){
+    const input=document.getElementById('client-postal-code');
+    const msg=document.getElementById('client-address-message');
+    const btn=document.getElementById('client-cep-consult');
+    if(!input||!msg||!btn)return;
+    const cep=digits(input.value);
+    if(cep.length!==8){
+      msg.textContent='Informe os 8 dígitos do CEP.';
+      msg.className='auth-message error span-2';
+      return;
+    }
+    btn.disabled=true;btn.textContent='Consultando...';
+    msg.className='auth-message hidden span-2';
+    try{
+      const res=await fetch('/api/cep?cep='+encodeURIComponent(cep),{headers:{Accept:'application/json'}});
+      const data=await res.json().catch(()=>null);
+      if(!res.ok)throw new Error(data?.message||data?.detalhes||'Não foi possível consultar o CEP.');
+      const street=data?.street||data?.logradouro||'';
+      const neighborhood=data?.neighborhood||data?.bairro||'';
+      const city=data?.city||data?.municipio||'';
+      const state=data?.state||data?.uf||'';
+      document.getElementById('client-postal-code').value=cep.replace(/^(\d{5})(\d{3})$/,'$1-$2');
+      if(street)document.getElementById('client-street').value=street;
+      if(neighborhood)document.getElementById('client-neighborhood').value=neighborhood;
+      if(city)document.getElementById('client-city').value=city;
+      if(state)document.getElementById('client-state').value=String(state).toUpperCase();
+      msg.textContent='Endereço localizado pelo CEP. Informe número e complemento quando necessário.';
+      msg.className='auth-message success span-2';
+    }catch(err){
+      msg.textContent=err.message||'Falha na consulta do CEP.';
+      msg.className='auth-message error span-2';
+    }finally{
+      btn.disabled=false;btn.textContent='Consultar CEP';
     }
   }
 
@@ -99,8 +148,27 @@
       <div class="field"><label>Contato</label><input id="client-contact" value="${escHtml(record?.contact_name||'')}"></div>
       <div class="field"><label>E-mail</label><input id="client-email" type="email" value="${escHtml(record?.email||'')}"></div>
       <div class="field"><label>Telefone</label><input id="client-phone" value="${escHtml(record?.phone||'')}"></div>
+
+      <div class="span-2 company-address-title">
+        <strong>Endereço da empresa</strong>
+        <span>Preencha o endereço completo da sede ou estabelecimento principal.</span>
+      </div>
+      <div class="field span-2">
+        <label>CEP</label>
+        <div class="company-cnpj-row">
+          <input id="client-postal-code" inputmode="numeric" placeholder="00000-000" value="${escHtml(record?.postal_code||'')}">
+          <button id="client-cep-consult" class="btn btn-muted" type="button">Consultar CEP</button>
+        </div>
+      </div>
+      <div id="client-address-message" class="auth-message hidden span-2"></div>
+      <div class="field span-2"><label>Logradouro</label><input id="client-street" value="${escHtml(record?.street||'')}" placeholder="Rua, Avenida, Praça..."></div>
+      <div class="field"><label>Número</label><input id="client-address-number" value="${escHtml(record?.address_number||'')}" placeholder="Número"></div>
+      <div class="field"><label>Complemento</label><input id="client-address-complement" value="${escHtml(record?.address_complement||'')}" placeholder="Sala, conjunto, bloco..."></div>
+      <div class="field"><label>Bairro</label><input id="client-neighborhood" value="${escHtml(record?.neighborhood||'')}"></div>
       <div class="field"><label>Cidade</label><input id="client-city" value="${escHtml(record?.city||'')}"></div>
       <div class="field"><label>UF</label><input id="client-state" maxlength="2" value="${escHtml(record?.state||'')}"></div>
+      <div class="field"><label>País</label><input id="client-country" value="${escHtml(record?.country||'Brasil')}"></div>
+      <div class="field span-2"><label>Referência</label><input id="client-address-reference" value="${escHtml(record?.address_reference||'')}" placeholder="Ponto de referência (opcional)"></div>
 
       <div class="modal-actions span-2">
         <button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button>
@@ -164,6 +232,16 @@
       if(!duplicated)lookupCompanyCnpj();
     });
 
+    const cepInput=document.getElementById('client-postal-code');
+    cepInput?.addEventListener('input',()=>{
+      const d=digits(cepInput.value).slice(0,8);
+      cepInput.value=d.length===8?d.replace(/^(\d{5})(\d{3})$/,'$1-$2'):d;
+    });
+    cepInput?.addEventListener('blur',()=>{
+      if(digits(cepInput.value).length===8 && !document.getElementById('client-street')?.value)lookupCompanyCep();
+    });
+    document.getElementById('client-cep-consult')?.addEventListener('click',lookupCompanyCep);
+
     document.getElementById('client-real-form')?.addEventListener('submit',async e=>{
       e.preventDefault();
       const btn=document.getElementById('client-save-btn');
@@ -198,8 +276,15 @@
           contact_name:document.getElementById('client-contact').value.trim()||null,
           email:document.getElementById('client-email').value.trim()||null,
           phone:document.getElementById('client-phone').value.trim()||null,
+          postal_code:digits(document.getElementById('client-postal-code').value).slice(0,8)||null,
+          street:document.getElementById('client-street').value.trim()||null,
+          address_number:document.getElementById('client-address-number').value.trim()||null,
+          address_complement:document.getElementById('client-address-complement').value.trim()||null,
+          neighborhood:document.getElementById('client-neighborhood').value.trim()||null,
           city:document.getElementById('client-city').value.trim()||null,
-          state:document.getElementById('client-state').value.trim().toUpperCase()||null
+          state:document.getElementById('client-state').value.trim().toUpperCase()||null,
+          country:document.getElementById('client-country').value.trim()||'Brasil',
+          address_reference:document.getElementById('client-address-reference').value.trim()||null
         };
 
         const q=id
@@ -231,7 +316,7 @@
       <div class="section-head"><div><h2>Empresas cadastradas</h2><span>${list.length} registro(s)</span></div>${toolbar}</div>
       ${list.length?`<div class="table-wrap"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>IE</th><th>IM</th><th>Cidade/UF</th><th>Contato</th>${canEditOps()?'<th>Ações</th>':''}</tr></thead><tbody>
       ${list.map(c=>`<tr>
-        <td><strong>${escHtml(c.legal_name)}</strong><div class="muted">${escHtml(c.trade_name||'')}</div></td>
+        <td><strong>${escHtml(c.legal_name)}</strong><div class="muted">${escHtml(c.trade_name||'')}</div><div class="muted company-address-inline">${escHtml([c.street,c.address_number,c.address_complement,c.neighborhood,[c.city,c.state].filter(Boolean).join('/'),c.postal_code?String(c.postal_code).replace(/^(\d{5})(\d{3})$/,'$1-$2'):null].filter(Boolean).join(' · ')||'')}</div></td>
         <td>${escHtml(c.tax_id||'—')}</td>
         <td>${escHtml(c.state_registration||'—')}</td>
         <td>${escHtml(c.municipal_registration||'—')}</td>
