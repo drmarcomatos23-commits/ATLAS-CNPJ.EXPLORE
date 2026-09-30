@@ -1,5 +1,5 @@
 /* ATLAS v3.29 — barra lateral acompanha a rolagem */
-@media (min-width:901px){
+@media (min-width:1181px){
   .app-shell{
     display:block!important;
     min-height:100vh;
