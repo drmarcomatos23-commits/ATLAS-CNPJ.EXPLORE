@@ -74,3 +74,22 @@
   max-width:520px;
   line-height:1.4;
 }
+
+/* v3.36 — contagem de processos por empresa */
+.company-process-count{
+  display:inline-flex;
+  min-width:64px;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:2px;
+}
+.company-process-count strong{
+  font-size:17px;
+  line-height:1;
+  color:#0b6f78;
+}
+.company-process-count span{
+  font-size:8.5px;
+  color:#7b8d9c;
+  white-space:nowrap;
+}
