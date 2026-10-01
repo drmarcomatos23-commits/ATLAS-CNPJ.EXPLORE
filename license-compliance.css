@@ -22,3 +22,125 @@
 .license-edit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
 @media(max-width:1200px){.license-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:760px){.license-grid,.license-edit-grid{grid-template-columns:1fr}.license-company-head{align-items:flex-start}.license-company-head .btn{width:100%;margin-top:8px}}
+
+
+/* v3.64 — painel permanente de vencimentos */
+.license-expiry-panel{
+  margin-top:14px;
+  border:1px solid #d8e6ec;
+  background:#fff;
+}
+.license-expiry-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:12px;
+}
+.license-expiry-head h2{
+  margin:3px 0 0;
+  font-size:17px;
+  color:#102c43;
+}
+.license-expiry-head p{
+  margin:4px 0 0;
+  font-size:9.5px;
+  color:#718495;
+}
+.license-expiry-total{
+  flex:0 0 auto;
+  border:1px solid #d7e4ea;
+  border-radius:999px;
+  background:#f8fbfc;
+  padding:7px 10px;
+  color:#486579;
+  font-size:9px;
+  font-weight:900;
+}
+.license-expiry-list{
+  display:grid;
+  gap:8px;
+}
+.license-expiry-row{
+  display:grid;
+  grid-template-columns:minmax(240px,1.5fr) minmax(180px,1fr) 150px 140px auto;
+  gap:12px;
+  align-items:center;
+  padding:11px 12px;
+  border:1px solid #e0e9ee;
+  border-radius:12px;
+  background:#fbfdfe;
+}
+.license-expiry-row.warn{
+  border-color:#efdcb9;
+  background:#fffdf7;
+}
+.license-expiry-row.bad{
+  border-color:#edc8cf;
+  background:#fff9fa;
+}
+.license-expiry-company strong,
+.license-expiry-kind strong{
+  display:block;
+  color:#15354c;
+  font-size:10.5px;
+}
+.license-expiry-company span,
+.license-expiry-kind span{
+  display:block;
+  margin-top:3px;
+  color:#788a99;
+  font-size:8.8px;
+}
+.license-expiry-status{
+  display:flex;
+  justify-content:flex-start;
+}
+.license-expiry-date{
+  text-align:right;
+}
+.license-expiry-date span{
+  display:block;
+  color:#7c8d9c;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.license-expiry-date strong{
+  display:block;
+  margin-top:3px;
+  color:#0e2c44;
+  font-size:14px;
+}
+.license-expiry-row.bad .license-expiry-date strong{
+  color:#ad2c3d;
+}
+.license-expiry-empty{
+  padding:13px 14px;
+  border:1px dashed #d8e6ec;
+  border-radius:10px;
+  color:#6d8191;
+  font-size:10px;
+  background:#fbfdfe;
+}
+@media(max-width:1000px){
+  .license-expiry-row{
+    grid-template-columns:1fr 1fr;
+  }
+  .license-expiry-status,
+  .license-expiry-date{
+    justify-self:start;
+    text-align:left;
+  }
+}
+@media(max-width:760px){
+  .license-expiry-head{
+    flex-direction:column;
+  }
+  .license-expiry-row{
+    grid-template-columns:1fr;
+  }
+  .license-expiry-row .mini-btn{
+    width:100%;
+  }
+}
