@@ -107,12 +107,15 @@
       const neighborhood=data?.neighborhood||data?.bairro||'';
       const city=data?.city||data?.municipio||'';
       const state=data?.state||data?.uf||'';
+      const complement=data?.complement||data?.complemento||'';
       document.getElementById('client-postal-code').value=cep.replace(/^(\d{5})(\d{3})$/,'$1-$2');
       if(street)document.getElementById('client-street').value=street;
       if(neighborhood)document.getElementById('client-neighborhood').value=neighborhood;
       if(city)document.getElementById('client-city').value=city;
       if(state)document.getElementById('client-state').value=String(state).toUpperCase();
-      msg.textContent='Endereço localizado pelo CEP. Informe número e complemento quando necessário.';
+      const complementInput=document.getElementById('client-address-complement');
+      if(complement&&complementInput&&!complementInput.value)complementInput.value=complement;
+      msg.textContent='Endereço localizado pelo CEP'+(data?._atlas_source?' via '+data._atlas_source:'')+'. Informe o número e revise os dados antes de salvar.';
       msg.className='auth-message success span-2';
     }catch(err){
       msg.textContent=err.message||'Falha na consulta do CEP.';
@@ -123,6 +126,7 @@
   }
 
   window.openClientModal = async function(id=''){
+    if(!id)window.atlasLastSavedClientId=null;
     const db=atlasDb();
     let record=null;
     if(id){
