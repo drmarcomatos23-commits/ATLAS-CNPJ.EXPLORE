@@ -1,6 +1,6 @@
 (() => {
   window.dashboard=async function(){
-    setHead('Dashboard','VISÃO GERAL','Acompanhe processos, licenças, empresas, custos e vencimentos em um único painel.');
+    setHead('Dashboard','VISÃO GERAL','Acompanhe processos, licenças, empresas, honorários, taxas e vencimentos em um único painel.');
     page('<div class="loading-box"><span class="spinner"></span><div>Carregando dados operacionais...</div></div>');
     const data=await loadOperationalData();
     const procs=decorateProcesses(data);
@@ -11,7 +11,17 @@
       return exp<=new Date(Date.now()+90*86400000);
     }).length;
     const companies=data.clients.length;
-    const costTotal=data.costs.reduce((s,c)=>s+(Number(c.amount)||0),0);
+
+    const isHonorario=c=>c?.fee_kind==='honorarios'||c?.cost_type==='hourly';
+    const honorarios=data.costs.filter(isHonorario);
+    const taxas=data.costs.filter(c=>!isHonorario(c));
+    const honorariosTotal=honorarios.reduce((s,c)=>s+(Number(c.amount)||0),0);
+    const honorariosRecebidos=honorarios.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+(Number(c.amount)||0),0);
+    const honorariosAReceber=Math.max(0,honorariosTotal-honorariosRecebidos);
+    const taxasTotal=taxas.reduce((s,c)=>s+(Number(c.amount)||0),0);
+    const taxasPagas=taxas.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+(Number(c.amount)||0),0);
+    const taxasAPagar=Math.max(0,taxasTotal-taxasPagas);
+
     const recent=procs.slice(0,6);
     const upcoming=data.licenses
       .filter(l=>l.expires_at&&l.status!=='not_applicable')
@@ -22,7 +32,10 @@
       <div class="surface kpi"><span class="kpi-label">Processos ativos</span><strong>${active.length}</strong><small>Registros reais em andamento</small></div>
       <div class="surface kpi"><span class="kpi-label">Licenças em atenção</span><strong>${licenseAttention}</strong><small>Vencimentos em até 90 dias</small></div>
       <div class="surface kpi"><span class="kpi-label">Empresas cadastradas</span><strong>${companies}</strong><small>Empresas monitoradas</small></div>
-      <div class="surface kpi"><span class="kpi-label">Custos controlados</span><strong>${money(costTotal)}</strong><small>Honorários e taxas cadastrados</small></div>
+      <div class="surface kpi"><span class="kpi-label">Honorários a receber</span><strong>${money(honorariosAReceber)}</strong><small>Recebidos: ${money(honorariosRecebidos)} · Total: ${money(honorariosTotal)}</small></div>
+    </div>
+    <div class="grid kpi-grid" style="margin-top:16px">
+      <div class="surface kpi"><span class="kpi-label">Taxas a pagar</span><strong>${money(taxasAPagar)}</strong><small>Pagas: ${money(taxasPagas)} · Total: ${money(taxasTotal)}</small></div>
     </div>
     <div class="grid two-col" style="margin-top:16px">
       <section class="surface pad"><div class="section-head"><h2>Processos recentes</h2><span>Dados do Supabase</span></div>
