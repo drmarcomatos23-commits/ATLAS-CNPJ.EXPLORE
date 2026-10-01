@@ -67,6 +67,8 @@ function normalizeBrasilApi(b, cnpj) {
     },
     socios: partners.map(p => ({
       nome: p?.nome_socio || p?.nome || '',
+      cpf_cnpj_socio: p?.cnpj_cpf_do_socio || p?.cpf_cnpj_socio || '',
+      tipo: p?.identificador_de_socio || p?.tipo || '',
       qualificacao_socio: { descricao: p?.qualificacao_socio || '' },
       data_entrada_sociedade: p?.data_entrada_sociedade || ''
     }))
