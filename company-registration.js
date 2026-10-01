@@ -134,8 +134,11 @@
       if(error)return alert('Não foi possível carregar a empresa: '+error.message);
       record=data;
     }
-    const {data:groupRows}=await db.from('client_groups').select('id,name').order('name',{ascending:true});
-    const groups=groupRows||[];
+    const canViewGroups=atlasProfile().role==='admin'||window.atlasHasPermission?.('companies.groups.view')===true;
+    const groupQuery=canViewGroups
+      ? await db.from('client_groups').select('id,name').order('name',{ascending:true})
+      : {data:[],error:null};
+    const groups=groupQuery.data||[];
 
     modalShell(id?'Editar empresa':'Nova empresa',`<form id="client-real-form" class="modal-form-grid">
       <div class="field span-2">
@@ -149,7 +152,7 @@
 
       <div class="field span-2"><label>Razão social / nome provisório *</label><input id="client-legal-name" required value="${escHtml(record?.legal_name||'')}" placeholder="Ex.: Empresa em constituição ou razão social pretendida"></div>
       <div class="field"><label>Nome fantasia</label><input id="client-trade-name" value="${escHtml(record?.trade_name||'')}"></div>
-      <div class="field">
+      ${canViewGroups?`<div class="field">
         <label>Grupo empresarial</label>
         <select id="client-group-id">
           <option value="">Sem grupo</option>
@@ -164,7 +167,7 @@
         </div>
         <small class="company-group-help">Use um grupo para reunir várias empresas do mesmo cliente ou estrutura econômica.</small>
       </div>
-      <div id="client-group-message" class="auth-message hidden span-2"></div>
+      <div id="client-group-message" class="auth-message hidden span-2"></div>`:''}
       <div class="field"><label>Inscrição Estadual</label><input id="client-state-registration" value="${escHtml(record?.state_registration||'')}" placeholder="IE"></div>
       <div class="field"><label>Inscrição Municipal</label><input id="client-municipal-registration" value="${escHtml(record?.municipal_registration||'')}" placeholder="IM"></div>
       <div class="field"><label>Contato</label><input id="client-contact" value="${escHtml(record?.contact_name||'')}"></div>
@@ -356,7 +359,6 @@
           organization_id:atlasProfile().organization_id,
           legal_name:document.getElementById('client-legal-name').value.trim(),
           trade_name:document.getElementById('client-trade-name').value.trim()||null,
-          group_id:document.getElementById('client-group-id')?.value||null,
           tax_id:normalizedCnpj,
           state_registration:document.getElementById('client-state-registration').value.trim()||null,
           municipal_registration:document.getElementById('client-municipal-registration').value.trim()||null,
@@ -373,6 +375,9 @@
           country:document.getElementById('client-country').value.trim()||'Brasil',
           address_reference:document.getElementById('client-address-reference').value.trim()||null
         };
+        if(canViewGroups){
+          payload.group_id=document.getElementById('client-group-id')?.value||null;
+        }
 
         let savedClientId=id||null;
         if(id){
