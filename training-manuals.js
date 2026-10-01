@@ -8,7 +8,7 @@
 
   async function loadTrainingManuals(){
     if(trainingManuals.length)return trainingManuals;
-    const res=await fetch('/training-manuals.json?v=1.0',{cache:'no-store'});
+    const res=await fetch('/training-manuals.json?v=1.1',{cache:'no-store'});
     if(!res.ok)throw new Error('Não foi possível carregar os manuais.');
     trainingManuals=await res.json();
     return trainingManuals;
@@ -36,7 +36,7 @@
               ? 'Acesse todos os manuais para integração de novos usuários, reciclagem da equipe e padronização dos procedimentos do ATLAS.'
               : 'Utilize este material para aprender os procedimentos, anexos, boas práticas e soluções correspondentes ao seu acesso.'}</p>
           </div>
-          <span class="training-version">Versão 1.0 · Setembro/2026</span>
+          <span class="training-version">Versão 1.1 · Outubro/2026</span>
         </section>
 
         ${(currentRole==='admin'||currentRole==='financeiro')?`
@@ -44,7 +44,7 @@
             <div class="training-video-copy">
               <span class="training-kicker">VÍDEO DE TREINAMENTO</span>
               <h2>Perfil Financeiro · ATLAS</h2>
-              <p>Treinamento em vídeo para controle de honorários, taxas, recebimentos, vencimentos e relatórios financeiros.</p>
+              <p>Treinamento em vídeo do perfil Financeiro. Consulte também o manual atualizado para pagamento de taxas, datas de pagamento, grupos empresariais e novas permissões.</p>
               <div class="training-video-meta"><span>▶ Aproximadamente 8 minutos</span><span>Perfil: Financeiro</span></div>
               <button class="btn btn-primary" type="button" onclick="openFinanceTrainingVideo()">▶ Assistir treinamento</button>
             </div>
@@ -97,7 +97,7 @@
           <p>${e(m.subtitle)}</p>
           <div class="training-meta">
             <div><span>Sistema</span><strong>ATLAS Legalização e Gerenciamento</strong></div>
-            <div><span>Versão</span><strong>1.0 - Setembro/2026</strong></div>
+            <div><span>Versão</span><strong>1.1 - Outubro/2026</strong></div>
             <div><span>Finalidade</span><strong>Treinamento, integração e consulta operacional</strong></div>
           </div>
         </div>
