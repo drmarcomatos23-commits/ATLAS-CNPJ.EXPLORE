@@ -2,6 +2,12 @@
   function escA(v){
     return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+  function sortCompaniesAlpha(list){
+    return [...(list||[])].sort((a,b)=>String(a?.legal_name||'').localeCompare(String(b?.legal_name||''),'pt-BR',{sensitivity:'base',numeric:true}));
+  }
+  function sortGroupsAlpha(list){
+    return [...(list||[])].sort((a,b)=>String(a?.name||'').localeCompare(String(b?.name||''),'pt-BR',{sensitivity:'base',numeric:true}));
+  }
 
   window.archiveClient=async function(id){
     if(!confirm('Arquivar esta empresa? Ela sairá das telas operacionais, mas todos os dados e vínculos serão preservados e poderão ser restaurados.')) return;
@@ -68,8 +74,8 @@
       return;
     }
 
-    const list=clientsRes.data||[];
-    const groups=groupsRes.error?[]:(groupsRes.data||[]);
+    const list=sortCompaniesAlpha(clientsRes.data||[]);
+    const groups=sortGroupsAlpha(groupsRes.error?[]:(groupsRes.data||[]));
     const processCounts=new Map();
     (processesRes.data||[]).forEach(p=>{
       const current=processCounts.get(p.client_id)||{total:0,active:0};
@@ -90,6 +96,7 @@
 
     const groupBlocks=[...grouped.values()]
       .filter(x=>x.clients.length)
+      .sort((a,b)=>String(a.group.name||'').localeCompare(String(b.group.name||''),'pt-BR',{sensitivity:'base',numeric:true}))
       .map(({group,clients})=>`
         <section class="company-group-block">
           <div class="company-group-head">
@@ -99,7 +106,7 @@
             </div>
             <div class="company-group-count">${clients.length} ${clients.length===1?'empresa':'empresas'}</div>
           </div>
-          ${companyTable(clients,processCounts,role)}
+          ${companyTable(sortCompaniesAlpha(clients),processCounts,role)}
         </section>`).join('');
 
     const ungroupedBlock=ungrouped.length?`
@@ -111,7 +118,7 @@
           </div>
           <div class="company-group-count">${ungrouped.length} ${ungrouped.length===1?'empresa':'empresas'}</div>
         </div>
-        ${companyTable(ungrouped,processCounts,role)}
+        ${companyTable(sortCompaniesAlpha(ungrouped),processCounts,role)}
       </section>`:'';
 
     page(`<section class="surface pad">
@@ -134,7 +141,7 @@
             </div>
             <div class="source-note" style="margin-bottom:12px"><strong>Nenhum dado é apagado.</strong> Processos, documentos, custos, sócios e licenças permanecem preservados.</div>
             <div class="table-wrap"><table><thead><tr><th>Empresa</th><th>CNPJ</th><th>Arquivada em</th><th>Ação</th></tr></thead><tbody>
-              ${archived.map(c=>`<tr>
+              ${sortCompaniesAlpha(archived).map(c=>`<tr>
                 <td><strong>${escA(c.legal_name)}</strong></td>
                 <td>${escA(c.tax_id||'—')}</td>
                 <td>${c.deleted_at?new Date(c.deleted_at).toLocaleString('pt-BR'):'—'}</td>
