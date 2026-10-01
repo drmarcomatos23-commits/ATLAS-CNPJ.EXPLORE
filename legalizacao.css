@@ -262,3 +262,65 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
   color:#7d8ea0;
   margin-left:4px;
 }
+
+
+/* v3.50 — agrupamento empresarial */
+.company-group-help{
+  display:block;
+  margin-top:6px;
+  color:#718495;
+  font-size:9.5px;
+  line-height:1.4;
+}
+.company-groups-list{
+  display:grid;
+  gap:16px;
+  margin-top:14px;
+}
+.company-group-block{
+  border:1px solid #d9e7ed;
+  border-radius:16px;
+  overflow:hidden;
+  background:#fff;
+}
+.company-group-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:14px 16px;
+  background:linear-gradient(180deg,#f5fbfb 0%,#f9fcfd 100%);
+  border-bottom:1px solid #e1eaef;
+}
+.company-group-head h3{
+  margin:2px 0 0;
+  color:#17394f;
+  font-size:15px;
+}
+.company-group-kicker{
+  font-size:8.5px;
+  letter-spacing:.08em;
+  font-weight:900;
+  color:#078987;
+}
+.company-group-count{
+  flex:0 0 auto;
+  border:1px solid #d5e6e9;
+  border-radius:999px;
+  padding:6px 9px;
+  font-size:9px;
+  font-weight:800;
+  color:#496779;
+  background:#fff;
+}
+.company-group-block .table-wrap{
+  border:0;
+  border-radius:0;
+}
+.company-group-ungrouped .company-group-head{
+  background:#f7f9fb;
+}
+@media(max-width:760px){
+  .company-group-head{align-items:flex-start;flex-direction:column}
+  .company-group-count{align-self:flex-start}
+}
