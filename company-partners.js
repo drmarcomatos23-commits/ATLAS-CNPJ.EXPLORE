@@ -56,6 +56,7 @@
     const db=atlasDb();
     for(let i=0;i<12;i++){
       await new Promise(r=>setTimeout(r,200));
+      if(window.atlasLastSavedClientId)return window.atlasLastSavedClientId;
       let q=db.from('clients').select('id,legal_name,tax_id').eq('organization_id',atlasProfile().organization_id).order('created_at',{ascending:false}).limit(20);
       const {data}=await q;
       const d=String(taxId||'').replace(/\D/g,'');
