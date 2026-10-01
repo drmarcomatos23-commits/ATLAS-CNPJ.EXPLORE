@@ -9,7 +9,7 @@
   const MODULES = [
     {name:'Dashboard', rows:[['dashboard.view','Acessar']]},
     {name:'Processos', rows:[['processes.view','Visualizar'],['processes.create','Criar'],['processes.edit','Editar'],['processes.archive','Arquivar']]},
-    {name:'Empresas', rows:[['companies.view','Visualizar'],['companies.create','Criar'],['companies.edit','Editar'],['companies.archive','Arquivar']]},
+    {name:'Empresas', rows:[['companies.view','Visualizar'],['companies.groups.view','Visualizar grupos empresariais'],['companies.create','Criar'],['companies.edit','Editar'],['companies.archive','Arquivar']]},
     {name:'Documentos', rows:[['documents.view','Visualizar'],['documents.upload','Anexar'],['documents.delete','Excluir']]},
     {name:'Custos', rows:[['costs.view','Visualizar'],['costs.edit','Editar / receber honorários']]},
     {name:'Licenças', rows:[['licenses.view','Visualizar'],['licenses.edit','Editar']]},
