@@ -164,6 +164,8 @@
     setHead('Empresas e clientes','CADASTRO','Cadastre empresas e utilize o filtro por grupo quando precisar visualizar uma estrutura empresarial.');
     page('<div class="loading-box"><span class="spinner"></span><div>Carregando empresas...</div></div>');
     const db=atlasDb();
+    const role=atlasProfile().role;
+    const canViewGroups=role==='admin'||window.atlasHasPermission?.('companies.groups.view')===true;
 
     const [clientsRes,processesRes,groupsRes]=await Promise.all([
       db.from('clients')
@@ -173,9 +175,9 @@
       db.from('processes')
         .select('id,client_id,status')
         .is('deleted_at',null),
-      db.from('client_groups')
-        .select('id,name,description')
-        .order('name',{ascending:true})
+      canViewGroups
+        ? db.from('client_groups').select('id,name,description').order('name',{ascending:true})
+        : Promise.resolve({data:[],error:null})
     ]);
 
     if(clientsRes.error){
@@ -193,10 +195,9 @@
       processCounts.set(p.client_id,current);
     });
 
-    const role=atlasProfile().role;
     const toolbar=`
       <div class="company-page-actions">
-        <button id="company-groups-report-btn" class="btn btn-muted" type="button">Imprimir relatório de grupos</button>
+        ${canViewGroups?'<button id="company-groups-report-btn" class="btn btn-muted" type="button">Imprimir relatório de grupos</button>':''}
         ${canEditOps()?'<button class="btn btn-primary" onclick="openClientModal()">＋ Nova empresa</button>':''}
       </div>`;
 
@@ -204,10 +205,10 @@
 
     page(`<section class="surface pad">
       <div class="section-head company-section-head">
-        <div><h2>Empresas cadastradas</h2><span>${list.length} empresa(s) · ${groups.length} grupo(s)</span></div>
+        <div><h2>Empresas cadastradas</h2><span>${list.length} empresa(s)${canViewGroups?' · '+groups.length+' grupo(s)':''}</span></div>
         ${toolbar}
       </div>
-      <div class="company-filter-bar">
+      ${canViewGroups?`<div class="company-filter-bar">
         <div class="field company-group-filter-field">
           <label>Filtrar por grupo</label>
           <select id="company-group-filter">
@@ -220,7 +221,7 @@
           ${role==='admin'?'<button id="company-group-rename-btn" class="btn btn-muted hidden" type="button" disabled>Editar nome do grupo</button>':''}
           <div class="company-filter-note">A visualização por bloco de grupo aparece somente quando um grupo é selecionado.</div>
         </div>
-      </div>
+      </div>`:''}
       <div id="company-list-view">
         ${list.length
           ? companyTable(list,processCounts,role)
