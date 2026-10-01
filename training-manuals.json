@@ -2,8 +2,8 @@
   {
     "role": "admin",
     "title": "Manual de Treinamento - Administrador",
-    "subtitle": "Gestão completa do sistema, usuários, permissões e governança operacional",
-    "objective": "Governar o ATLAS, administrar usuários e permissões, supervisionar cadastros, processos, documentos, financeiro, licenças, relatórios e Base de Conhecimento.",
+    "subtitle": "Gestão completa do sistema, usuários, permissões, grupos empresariais e governança operacional",
+    "objective": "Governar o ATLAS, administrar usuários e permissões, supervisionar empresas e grupos empresariais, processos, documentos, financeiro, licenças, relatórios, Cartilhas, Base de Conhecimento e treinamento.",
     "modules": [
       "Dashboard",
       "Processos",
@@ -14,7 +14,8 @@
       "Relatórios",
       "Base de Conhecimento",
       "Usuários",
-      "Configurações"
+      "Configurações",
+      "Treinamento"
     ],
     "procedures": [
       {
@@ -31,6 +32,8 @@
         "steps": [
           "Acesse Configurações.",
           "Marque ou desmarque funções de Operação, Financeiro, Auditoria e Cliente.",
+          "Em Empresas, use “Visualizar grupos empresariais” para controlar o acesso aos grupos.",
+          "Em Custos, use “Editar financeiro / registrar pagamentos” para controlar ações financeiras.",
           "Salve e valide com um usuário de teste."
         ]
       },
@@ -38,19 +41,42 @@
         "title": "Cadastrar e manter empresas",
         "steps": [
           "Acesse Empresas > + Nova empresa.",
-          "Informe o CNPJ e use a consulta automática.",
-          "Revise Razão Social, IE, IM, cidade, UF e contatos.",
+          "Se houver CNPJ, informe-o e use a consulta automática. Se a empresa estiver em constituição, deixe o CNPJ vazio.",
+          "Use Consultar CEP para preencher endereço e revise número/complemento.",
+          "Vincule a empresa a um Grupo empresarial quando aplicável; o Administrador pode renomear grupos.",
           "Cadastre sócios e administradores.",
           "Use Arquivar em vez de exclusão física."
+        ]
+      },
+      {
+        "title": "Supervisionar grupos empresariais",
+        "steps": [
+          "Acesse Empresas.",
+          "Use Filtrar por grupo para consultar uma estrutura empresarial.",
+          "Selecione o grupo e use Editar nome do grupo quando necessário.",
+          "Use Imprimir relatório de grupos para consolidar empresas, CNPJs e processos.",
+          "Controle a visualização por perfil em Configurações > Empresas > Visualizar grupos empresariais."
         ]
       },
       {
         "title": "Criar e supervisionar processos",
         "steps": [
           "Crie o processo com empresa, tipo, etapa, responsável, prioridade e prazo.",
+          "Para ABERTURA, ALTERAÇÃO e BAIXA, confira o valor sugerido de honorários e ajuste livremente quando necessário.",
           "Preencha honorários, taxa de Junta/Cartório, vencimentos e pagador.",
           "Anexe documentos do processo.",
-          "Acompanhe o pipeline e mantenha dados atualizados."
+          "Processos concluídos podem ser reabertos e movidos para qualquer etapa/status.",
+          "Quando aplicável, emita a Cartilha de conclusão."
+        ]
+      },
+      {
+        "title": "Supervisionar pagamentos de taxas",
+        "steps": [
+          "Acesse Custos > Taxas dos processos.",
+          "Administrador e Financeiro podem usar PAGO quando a taxa for quitada.",
+          "O ATLAS registra a data do pagamento automaticamente.",
+          "A situação e a data refletem no processo, Dashboard e relatórios.",
+          "Honorários e taxas permanecem controles independentes."
         ]
       },
       {
@@ -97,18 +123,21 @@
     ],
     "checklist": [
       "Criar usuário de treinamento.",
-      "Alterar uma permissão.",
-      "Cadastrar empresa e sócio.",
-      "Criar processo completo com anexos e financeiro.",
+      "Alterar uma permissão, incluindo Visualizar grupos empresariais.",
+      "Cadastrar empresa com CNPJ e empresa em constituição sem CNPJ.",
+      "Criar/vincular grupo empresarial e emitir relatório de grupos.",
+      "Criar processo completo com honorários sugeridos, taxa, anexos e financeiro.",
+      "Concluir e reabrir um processo.",
+      "Registrar pagamento de uma taxa e conferir a data no processo.",
+      "Emitir Cartilha e relatórios.",
       "Cadastrar licenças.",
-      "Emitir relatórios.",
       "Criar artigo na Base de Conhecimento."
     ]
   },
   {
     "role": "operacao",
     "title": "Manual de Treinamento - Operação",
-    "subtitle": "Execução dos processos de legalização, cadastros, documentos, custos e licenças",
+    "subtitle": "Execução dos processos de legalização, cadastros, grupos empresariais, documentos, custos e licenças",
     "objective": "Executar o fluxo diário de legalização, manter empresas e sócios, movimentar processos, anexar documentos, controlar prazos, custos e licenças.",
     "modules": [
       "Dashboard",
@@ -123,13 +152,23 @@
     ],
     "procedures": [
       {
-        "title": "Cadastrar empresa por CNPJ",
+        "title": "Cadastrar empresa com ou sem CNPJ",
         "steps": [
           "Acesse Empresas > + Nova empresa.",
-          "Digite o CNPJ e aguarde a consulta.",
-          "Revise dados cadastrais e complemente IE/IM quando necessário.",
-          "Cadastre sócios e administradores.",
-          "Salve."
+          "Se houver CNPJ, informe-o e use a consulta automática.",
+          "Para empresa em constituição, deixe o CNPJ vazio e informe a razão social/nome provisório.",
+          "Use Consultar CEP e revise endereço, número e complemento.",
+          "Selecione o Grupo empresarial quando aplicável e quando seu perfil tiver permissão.",
+          "Cadastre sócios e administradores e salve."
+        ]
+      },
+      {
+        "title": "Consultar grupos empresariais",
+        "steps": [
+          "Acesse Empresas.",
+          "Se a permissão estiver habilitada, use Filtrar por grupo.",
+          "Selecione o grupo para visualizar somente as empresas daquela estrutura.",
+          "Use Imprimir relatório de grupos quando disponível para o perfil."
         ]
       },
       {
@@ -137,6 +176,7 @@
         "steps": [
           "Acesse Processos > + Novo processo.",
           "Informe título, empresa, tipo de serviço, etapa, responsável, prioridade, status e prazo.",
+          "Para ABERTURA, ALTERAÇÃO e BAIXA, confira o honorário sugerido; o valor pode ser alterado livremente.",
           "Preencha financeiro quando aplicável.",
           "Anexe documentos e salve."
         ]
@@ -147,7 +187,9 @@
           "Localize o processo no Kanban.",
           "Use Editar para atualizar dados.",
           "Use Avançar para mover à próxima etapa.",
-          "Mantenha responsável e prazo atualizados."
+          "Mantenha responsável e prazo atualizados.",
+          "Processos concluídos podem ser reabertos e enviados para qualquer etapa/status.",
+          "Quando o processo estiver concluído, emita a Cartilha quando aplicável."
         ]
       },
       {
@@ -182,32 +224,39 @@
         "solution": "Confirme se foi salva e não está arquivada."
       },
       {
-        "issue": "CNPJ não preenche",
-        "solution": "Use Consultar CNPJ e complete manualmente o que não retornar."
-      },
-      {
         "issue": "Arquivo não aparece",
         "solution": "Confirme que o processo foi salvo."
       },
       {
         "issue": "Não consigo editar",
         "solution": "A permissão pode ter sido retirada pelo Administrador."
+      },
+      {
+        "issue": "CEP não preenche o endereço",
+        "solution": "Revise os 8 dígitos, use Consultar CEP novamente e, se necessário, complete o endereço manualmente."
+      },
+      {
+        "issue": "Filtro de grupos não aparece",
+        "solution": "O Administrador deve liberar Empresas > Visualizar grupos empresariais."
       }
     ],
     "checklist": [
-      "Cadastrar empresa e sócio.",
-      "Criar processo completo.",
-      "Avançar etapa.",
+      "Cadastrar empresa com CNPJ.",
+      "Cadastrar empresa em constituição sem CNPJ.",
+      "Consultar CEP e revisar endereço.",
+      "Selecionar grupo empresarial quando aplicável.",
+      "Criar processo completo e conferir honorário sugerido.",
+      "Avançar etapa e reabrir um processo concluído.",
       "Anexar documentos.",
-      "Cadastrar licença com vencimento.",
-      "Registrar honorários e taxa."
+      "Emitir Cartilha de conclusão.",
+      "Cadastrar licença com vencimento."
     ]
   },
   {
     "role": "financeiro",
     "title": "Manual de Treinamento - Financeiro",
-    "subtitle": "Controle de honorários, taxas, recebimentos, vencimentos e relatórios financeiros",
-    "objective": "Controlar honorários faturados e recebidos, taxas, vencimentos, pagadores, boletos e relatórios financeiros.",
+    "subtitle": "Controle de honorários, taxas, pagamentos, grupos empresariais, vencimentos e relatórios financeiros",
+    "objective": "Controlar honorários faturados e recebidos, taxas a pagar e pagas, datas de pagamento, pagadores, boletos, grupos empresariais permitidos e relatórios financeiros.",
     "modules": [
       "Dashboard",
       "Empresas",
@@ -221,8 +270,18 @@
         "title": "Conferir lançamentos financeiros",
         "steps": [
           "Acesse Custos.",
-          "Confira Total lançado, Pago, Pendente e Vencidos.",
-          "No Controle de honorários recebidos, confira faturado, recebido, a receber e vencido."
+          "Confira separadamente Honorários faturados/recebidos/a receber/vencidos.",
+          "Confira separadamente Taxas lançadas/pagas/a pagar/vencidas.",
+          "Não some honorários e taxas como uma única categoria."
+        ]
+      },
+      {
+        "title": "Consultar grupos empresariais",
+        "steps": [
+          "Acesse Empresas.",
+          "Se a permissão Visualizar grupos empresariais estiver habilitada, use Filtrar por grupo.",
+          "Selecione um grupo para consultar suas empresas.",
+          "Use Imprimir relatório de grupos para obter a composição consolidada quando disponível."
         ]
       },
       {
@@ -235,11 +294,15 @@
         ]
       },
       {
-        "title": "Conferir taxas",
+        "title": "Registrar pagamento de taxas",
         "steps": [
-          "Confira os lançamentos Junta / Cartório.",
-          "Valide valor, status, vencimento e responsável.",
-          "Abra a guia ou boleto quando houver."
+          "Acesse Custos > Taxas dos processos.",
+          "Confira valor, vencimento, responsável e guia/boleto.",
+          "Quando a taxa for quitada, clique em PAGO na coluna Ações.",
+          "Confirme o pagamento.",
+          "O ATLAS registra automaticamente a data do pagamento.",
+          "Confira a situação Paga e a coluna Pago em.",
+          "A mesma informação é refletida no processo, Dashboard e relatórios."
         ]
       },
       {
@@ -260,7 +323,7 @@
     "troubles": [
       {
         "issue": "Honorário não aparece em Custos",
-        "solution": "Confirme se o processo possui valor/hora e horas e se foi salvo."
+        "solution": "Confirme se o processo possui valor em Honorários do serviço e se foi salvo."
       },
       {
         "issue": "Valor continua pendente",
@@ -273,14 +336,25 @@
       {
         "issue": "Boleto não abre",
         "solution": "Confira a permissão de Documentos."
+      },
+      {
+        "issue": "Botão PAGO não aparece",
+        "solution": "Confirme se o usuário está no perfil Financeiro e se a permissão Custos > Editar financeiro / registrar pagamentos está habilitada."
+      },
+      {
+        "issue": "Grupo empresarial não aparece",
+        "solution": "O Administrador deve habilitar Empresas > Visualizar grupos empresariais para o perfil Financeiro."
       }
     ],
     "checklist": [
       "Identificar honorários pendentes.",
       "Marcar honorário recebido.",
-      "Abrir boleto.",
-      "Conferir taxa de Junta/Cartório.",
-      "Emitir relatório HONORÁRIOS."
+      "Conferir taxas a pagar.",
+      "Registrar uma taxa como PAGO.",
+      "Conferir a data do pagamento no processo.",
+      "Abrir boleto/guia.",
+      "Filtrar empresas por grupo quando permitido.",
+      "Emitir relatório HONORÁRIOS e conferir informações financeiras."
     ]
   },
   {
@@ -308,6 +382,14 @@
         ]
       },
       {
+        "title": "Consultar grupos empresariais",
+        "steps": [
+          "Acesse Empresas.",
+          "Se a permissão Visualizar grupos empresariais estiver habilitada, utilize Filtrar por grupo.",
+          "Confira a composição empresarial e, quando disponível, emita o relatório de grupos."
+        ]
+      },
+      {
         "title": "Conferir documentos",
         "steps": [
           "Acesse Documentos ou o processo.",
@@ -318,7 +400,8 @@
         "title": "Conferir custos",
         "steps": [
           "Acesse Custos.",
-          "Confira valores, pagamento, vencimento e pagador.",
+          "Confira honorários e taxas em controles separados.",
+          "Valide situação, vencimento, pagador e, nas taxas pagas, a data de pagamento.",
           "Abra boletos/guias quando disponíveis."
         ]
       },
@@ -359,6 +442,10 @@
       {
         "issue": "Relatório não abre",
         "solution": "Permita pop-ups para o domínio do ATLAS."
+      },
+      {
+        "issue": "Filtro de grupos não aparece",
+        "solution": "A visualização depende da permissão Empresas > Visualizar grupos empresariais."
       }
     ],
     "checklist": [
@@ -366,7 +453,8 @@
       "Abrir documentos.",
       "Conferir lançamento financeiro.",
       "Identificar licença em atenção.",
-      "Emitir relatório para evidência."
+      "Emitir relatório para evidência.",
+      "Conferir data de pagamento de uma taxa."
     ]
   },
   {
@@ -420,7 +508,8 @@
         "steps": [
           "Acesse Base de Conhecimento.",
           "Pesquise sua dúvida.",
-          "Abra artigos destinados ao perfil Cliente."
+          "O ATLAS exibe artigos compatíveis com o perfil Cliente.",
+          "Abra o artigo e siga o passo a passo."
         ]
       }
     ],
