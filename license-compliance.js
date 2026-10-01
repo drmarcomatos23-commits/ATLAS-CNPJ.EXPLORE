@@ -39,6 +39,61 @@
     return {clients:clientsRes.data||[],licenses:licensesRes.data||[]};
   }
 
+  function expiryPriority(record){
+    const a=alertInfo(record);
+    if(!record?.expires_at||record.status==='not_applicable')return 999999;
+    return a.days==null?999999:a.days;
+  }
+
+  function expiryStatusText(record){
+    const a=alertInfo(record);
+    if(a.label==='Vencida')return 'VENCIDA';
+    if(a.days===0)return 'VENCE HOJE';
+    if(a.days===1)return 'VENCE AMANHÃ';
+    if(a.days!=null&&a.days>0)return 'VENCE EM '+a.days+' DIAS';
+    return String(a.label||'').toUpperCase();
+  }
+
+  function expiringLicensesPanel(assignments){
+    const items=assignments
+      .filter(x=>x.record?.expires_at&&x.record.status!=='not_applicable')
+      .map(x=>({...x,alert:alertInfo(x.record)}))
+      .filter(x=>x.alert.days!=null&&x.alert.days<=90)
+      .sort((a,b)=>expiryPriority(a.record)-expiryPriority(b.record)||String(a.client.legal_name).localeCompare(String(b.client.legal_name),'pt-BR',{sensitivity:'base'}));
+
+    if(!items.length){
+      return `<section class="surface pad license-expiry-panel">
+        <div class="license-expiry-head">
+          <div><span class="eyebrow">VENCIMENTOS</span><h2>Licenças a vencer</h2></div>
+          <span class="pill ok">Nenhuma em até 90 dias</span>
+        </div>
+        <div class="license-expiry-empty">Não há licenças cadastradas com vencimento nos próximos 90 dias.</div>
+      </section>`;
+    }
+
+    return `<section class="surface pad license-expiry-panel">
+      <div class="license-expiry-head">
+        <div><span class="eyebrow">VENCIMENTOS</span><h2>Licenças vencendo ou vencidas</h2><p>Prioridade automática pela data final de validade.</p></div>
+        <span class="license-expiry-total">${items.length} alerta(s)</span>
+      </div>
+      <div class="license-expiry-list">
+        ${items.map(x=>`<div class="license-expiry-row ${x.alert.cls}">
+          <div class="license-expiry-company">
+            <strong>${ee(x.client.legal_name)}</strong>
+            <span>${ee(x.client.tax_id||'CNPJ não informado')}</span>
+          </div>
+          <div class="license-expiry-kind">
+            <strong>${ee(x.def.name)}</strong>
+            <span>${ee(x.record.agency||x.def.agency)}</span>
+          </div>
+          <div class="license-expiry-status"><span class="pill ${x.alert.cls}">${ee(expiryStatusText(x.record))}</span></div>
+          <div class="license-expiry-date"><span>DATA FINAL</span><strong>${dateBR(x.record.expires_at)}</strong></div>
+          ${canEditOps()? `<button class="mini-btn" onclick="openCompanyLicenses('${x.client.id}')">Abrir</button>` : ''}
+        </div>`).join('')}
+      </div>
+    </section>`;
+  }
+
   function licenseCard(client,def,record){
     const a=alertInfo(record);
     return `<article class="license-card ${a.cls}">
@@ -81,6 +136,7 @@
           <div class="surface kpi"><span class="kpi-label">Renovação / atenção</span><strong>${attention}</strong><small>Até 90 dias ou sem vencimento</small></div>
           <div class="surface kpi"><span class="kpi-label">Vencidas</span><strong>${expired}</strong><small>Exigem ação imediata</small></div>
         </div>
+        ${expiringLicensesPanel(allAssignments)}
         ${missing ? `<div class="source-note" style="margin-top:14px"><strong>${missing} atribuição(ões) ainda sem cadastro.</strong> Empresas novas aparecem automaticamente com os quatro controles padrão.</div>` : ''}
         <div class="license-company-list">${companies || '<section class="surface pad"><div class="empty-state"><h3>Nenhuma empresa cadastrada</h3><p>Cadastre uma empresa para iniciar o controle de licenças.</p></div></section>'}</div>
       `);
