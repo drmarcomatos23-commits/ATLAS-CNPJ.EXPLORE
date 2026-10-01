@@ -43,7 +43,7 @@
       +'</table>';
   }
   function brand(){
-    return '<div class="model-brand official-letterhead"><img src="/assets/oea-cartilha-header.webp" alt="OEA - Timbrado oficial"></div>';
+    return '<div class="model-brand official-letterhead"><img src="/assets/oea-cartilha-logo.png?v=3.57" alt="OEA"></div>';
   }
   function styles(){
     return '<style>'
@@ -56,7 +56,7 @@
       +'.shape-b{left:-45px;top:180px;width:320px;height:16px;background:#eff8ca;transform:rotate(-48deg);opacity:.8}'
       +'.shape-c{right:-135px;bottom:-110px;width:420px;height:290px;background:linear-gradient(145deg,#f8f6bd 0 22%,#cfeaf4 23% 55%,#e4effb 56%);transform:rotate(-18deg);opacity:.72}'
       +'.shape-d{right:-125px;bottom:90px;width:250px;height:16px;background:#d8eff7;transform:rotate(-30deg)}'
-      +'.content{position:relative;z-index:2;padding:18mm 16mm}.model-brand{height:34mm;display:flex;justify-content:center;align-items:flex-start;margin-bottom:1mm}.official-letterhead img{width:104mm;max-width:100%;height:auto;display:block;object-fit:contain}'
+      +'.content{position:relative;z-index:2;padding:18mm 16mm}.model-brand{height:34mm;display:flex;justify-content:center;align-items:center;margin-bottom:3mm}.official-letterhead img{height:30mm;width:auto;max-width:58mm;display:block;object-fit:contain}'
       +'.oea-mark{display:none}'
       +'.oea-mark:before{display:none}'
       +'.model-names{display:none}h1{text-align:center;margin:0;color:#284f77;font-size:18pt;letter-spacing:.4px}'
