@@ -5,8 +5,9 @@
   function m(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
   function d(v){if(!v)return '—'; const x=new Date(v+'T12:00:00'); return Number.isNaN(x.getTime())?'—':x.toLocaleDateString('pt-BR')}
   function paymentLabel(v){return v==='paid'?'Pago':'Não pago'}
+  function isHonorario(c){return c?.fee_kind==='honorarios'||c?.cost_type==='hourly'}
   function typeLabel(c){
-    if(c.fee_kind==='honorarios'||c.cost_type==='hourly')return 'Honorários';
+    if(isHonorario(c))return 'Honorários';
     if(c.fee_kind==='junta_cartorio'||c.cost_type==='registry_fee')return 'Junta / Cartório';
     return c.cost_type||'Custo';
   }
@@ -28,7 +29,7 @@
   }
 
   function attachmentFor(data,cost){
-    const category=(cost.fee_kind==='honorarios'||cost.cost_type==='hourly')
+    const category=isHonorario(cost)
       ? 'Financeiro · Honorários'
       : 'Financeiro · Taxa Junta/Cartório';
     return data.docs.find(x=>x.process_id===cost.process_id&&x.category===category)||null;
@@ -41,16 +42,17 @@
     const data=await loadFinance();
     const pm=new Map(data.processes.map(p=>[p.id,p]));
     const cm=new Map(data.clients.map(c=>[c.id,c]));
-    const total=data.costs.reduce((s,c)=>s+Number(c.amount||0),0);
-    const paid=data.costs.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+Number(c.amount||0),0);
-    const pending=total-paid;
-    const overdue=data.costs.filter(c=>c.payment_status!=='paid'&&c.due_date&&new Date(c.due_date+'T23:59:59')<new Date()).length;
-
-    const honorarios=data.costs.filter(c=>c.fee_kind==='honorarios'||c.cost_type==='hourly');
+    const honorarios=data.costs.filter(isHonorario);
     const honorariosTotal=honorarios.reduce((s,c)=>s+Number(c.amount||0),0);
     const honorariosRecebidos=honorarios.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+Number(c.amount||0),0);
     const honorariosAReceber=honorariosTotal-honorariosRecebidos;
     const honorariosVencidos=honorarios.filter(c=>c.payment_status!=='paid'&&c.due_date&&new Date(c.due_date+'T23:59:59')<new Date()).reduce((s,c)=>s+Number(c.amount||0),0);
+
+    const taxas=data.costs.filter(c=>!isHonorario(c));
+    const taxasTotal=taxas.reduce((s,c)=>s+Number(c.amount||0),0);
+    const taxasPagas=taxas.filter(c=>c.payment_status==='paid').reduce((s,c)=>s+Number(c.amount||0),0);
+    const taxasAPagar=taxasTotal-taxasPagas;
+    const taxasVencidas=taxas.filter(c=>c.payment_status!=='paid'&&c.due_date&&new Date(c.due_date+'T23:59:59')<new Date()).reduce((s,c)=>s+Number(c.amount||0),0);
 
     const honorariosRows=honorarios.map(c=>{
       const p=pm.get(c.process_id)||{};
@@ -76,7 +78,7 @@
       </tr>`;
     }).join('');
 
-    const rows=data.costs.map(c=>{
+    const rows=taxas.map(c=>{
       const p=pm.get(c.process_id)||{};
       const client=cm.get(p.client_id)||{};
       const doc=attachmentFor(data,c);
@@ -85,7 +87,7 @@
         <td><strong>${e(client.legal_name||'—')}</strong><div class="muted">${e(client.tax_id||'')}</div></td>
         <td>${e(typeLabel(c))}<div class="muted">${e(c.description||'')}</div></td>
         <td>${c.hourly_rate?'<span class="muted">'+m(c.hourly_rate)+'/h · '+e(c.hours||0)+'h</span><br>':''}<strong>${m(c.amount)}</strong></td>
-        <td>${c.payment_status==='paid'?'<span class="pill ok">Pago</span>':'<span class="pill warn">Não pago</span>'}</td>
+        <td>${c.payment_status==='paid'?'<span class="pill ok">Paga</span>':'<span class="pill warn">A pagar</span>'}</td>
         <td>${d(c.due_date)}</td>
         <td><strong>${e(c.payer_name||'—')}</strong><div class="muted">${e([c.payer_type,c.payer_document].filter(Boolean).join(' · ')||'')}</div></td>
         <td>${doc?`<button class="mini-btn" onclick="openStoredDocument('${doc.id}')">Abrir anexo</button><div class="muted" style="margin-top:4px">${e(doc.name)}</div>`:'<span class="muted">Sem anexo</span>'}</td>
@@ -110,19 +112,19 @@
       </section>
 
       <div class="grid kpi-grid finance-kpis" style="margin-top:16px">
-        <div class="surface kpi"><span class="kpi-label">Total lançado</span><strong>${m(total)}</strong><small>Honorários e taxas</small></div>
-        <div class="surface kpi"><span class="kpi-label">Pago</span><strong>${m(paid)}</strong><small>Valores quitados</small></div>
-        <div class="surface kpi"><span class="kpi-label">Pendente</span><strong>${m(pending)}</strong><small>Aguardando pagamento</small></div>
-        <div class="surface kpi"><span class="kpi-label">Vencidos</span><strong>${overdue}</strong><small>Pagamentos em atraso</small></div>
+        <div class="surface kpi"><span class="kpi-label">Taxas lançadas</span><strong>${m(taxasTotal)}</strong><small>Total de despesas cadastradas</small></div>
+        <div class="surface kpi"><span class="kpi-label">Taxas pagas</span><strong>${m(taxasPagas)}</strong><small>Despesas já quitadas</small></div>
+        <div class="surface kpi"><span class="kpi-label">Taxas a pagar</span><strong>${m(taxasAPagar)}</strong><small>Obrigações pendentes</small></div>
+        <div class="surface kpi"><span class="kpi-label">Taxas vencidas</span><strong>${m(taxasVencidas)}</strong><small>Despesas em atraso</small></div>
       </div>
       <section class="surface pad" style="margin-top:16px">
         <div class="section-head">
-          <div><h2>Custos dos processos</h2><span>${data.costs.length} lançamento(s)</span></div>
+          <div><h2>Taxas dos processos</h2><span>${taxas.length} lançamento(s)</span></div>
           <button class="btn btn-primary" onclick="openProcessModal()">＋ Novo processo</button>
         </div>
-        ${data.costs.length
-          ? `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Tipo</th><th>Valor</th><th>Pagamento</th><th>Vencimento</th><th>Responsável</th><th>Guia / boleto</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`
-          : '<div class="empty-state"><div class="empty-icon">R$</div><h3>Nenhum custo cadastrado</h3><p>Preencha honorários ou taxas dentro de um processo. O lançamento aparecerá aqui automaticamente.</p></div>'
+        ${taxas.length
+          ? `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Vencimento</th><th>Responsável</th><th>Guia / boleto</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`
+          : '<div class="empty-state"><div class="empty-icon">R$</div><h3>Nenhuma taxa cadastrada</h3><p>Cadastre as taxas dentro dos processos. Elas serão tratadas como valores a pagar.</p></div>'
         }
       </section>
     `);
