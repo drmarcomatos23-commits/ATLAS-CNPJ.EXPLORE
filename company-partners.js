@@ -5,7 +5,7 @@
       <div class="partner-card-head"><strong>Sócio / Administrador</strong><button type="button" class="mini-btn danger partner-remove">Remover</button></div>
       <div class="partner-grid">
         <div class="field span-2"><label>Nome completo *</label><input class="partner-name" value="${e(p.full_name||'')}" placeholder="Nome completo"></div>
-        <div class="field"><label>CPF</label><input class="partner-cpf" value="${e(p.cpf||'')}"></div>
+        <div class="field"><label>CPF / CNPJ</label><input class="partner-cpf" value="${e(p.cpf||'')}"></div>
         <div class="field"><label>RG</label><input class="partner-rg" value="${e(p.rg||'')}"></div>
         <div class="field"><label>Data de nascimento</label><input type="date" class="partner-birth" value="${e(p.birth_date||'')}"></div>
         <div class="field"><label>Nacionalidade</label><input class="partner-nationality" value="${e(p.nationality||'Brasileira')}"></div>
@@ -16,6 +16,8 @@
         <div class="field"><label>Participação (%)</label><input inputmode="decimal" class="partner-percent" value="${p.ownership_percentage??''}" placeholder="0,00"></div>
         <div class="field span-2"><label>Endereço</label><input class="partner-address" value="${e(p.address||'')}"></div>
         <div class="field span-2 partner-check"><label><input type="checkbox" class="partner-admin" ${p.is_administrator?'checked':''}> Administrador da sociedade</label></div>
+        <input type="hidden" class="partner-notes" value="${e(p.notes||'')}">
+        ${p.notes?`<div class="span-2 partner-import-note">${e(p.notes)}</div>`:''}
       </div>
     </div>`;
   }
@@ -23,6 +25,61 @@
   function bindPartnerButtons(){
     document.querySelectorAll('.partner-remove').forEach(btn=>btn.onclick=()=>btn.closest('.partner-card')?.remove());
   }
+
+  function normalizePartnerName(v){
+    return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+  }
+
+  function applyPartnerSourceNote(card,notes){
+    if(!card||!notes)return;
+    let hidden=card.querySelector('.partner-notes');
+    if(!hidden){
+      hidden=document.createElement('input');
+      hidden.type='hidden';
+      hidden.className='partner-notes';
+      card.querySelector('.partner-grid')?.appendChild(hidden);
+    }
+    hidden.value=notes;
+    let note=card.querySelector('.partner-import-note');
+    if(!note){
+      note=document.createElement('div');
+      note.className='span-2 partner-import-note';
+      card.querySelector('.partner-grid')?.appendChild(note);
+    }
+    note.textContent=notes;
+  }
+
+  function importPartnersFromCnpj(partners=[],source='Consulta pública'){
+    const list=document.getElementById('partners-list');
+    const summary=document.querySelector('.partner-summary');
+    if(!list)return;
+    let added=0,updated=0;
+    partners.forEach(p=>{
+      const key=normalizePartnerName(p.full_name);
+      let card=[...list.querySelectorAll('.partner-card')].find(x=>normalizePartnerName(x.querySelector('.partner-name')?.value)===key);
+      if(card){
+        const cpf=card.querySelector('.partner-cpf');
+        const nationality=card.querySelector('.partner-nationality');
+        const admin=card.querySelector('.partner-admin');
+        if(cpf&&!cpf.value&&p.cpf)cpf.value=p.cpf;
+        if(nationality&&!nationality.value&&p.nationality)nationality.value=p.nationality;
+        if(admin&&p.is_administrator)admin.checked=true;
+        if(p.notes)applyPartnerSourceNote(card,p.notes);
+        updated++;
+        return;
+      }
+      list.insertAdjacentHTML('beforeend',rowHtml(p));
+      added++;
+    });
+    bindPartnerButtons();
+    if(summary){
+      const total=partners.length;
+      summary.innerHTML=total
+        ? '<strong>'+total+' sócio(s)/administrador(es) encontrados via '+e(source)+'.</strong> '+added+' incluído(s) e '+updated+' conciliado(s) com dados já existentes. Complete CPF/CNPJ, RG, participação e demais campos quando a fonte pública não fornecer.'
+        : 'Nenhum sócio foi retornado pela fonte pública para este CNPJ.';
+    }
+  }
+
 
   function collectPartners(){
     return [...document.querySelectorAll('.partner-card')].map(card=>({
@@ -37,7 +94,8 @@
       phone:card.querySelector('.partner-phone')?.value.trim()||null,
       address:card.querySelector('.partner-address')?.value.trim()||null,
       ownership_percentage:Number(String(card.querySelector('.partner-percent')?.value||'0').replace(',','.'))||null,
-      is_administrator:!!card.querySelector('.partner-admin')?.checked
+      is_administrator:!!card.querySelector('.partner-admin')?.checked,
+      notes:card.querySelector('.partner-notes')?.value.trim()||null
     })).filter(p=>p.full_name);
   }
 
@@ -65,6 +123,11 @@
     }
     return null;
   }
+
+  window.addEventListener('atlas:cnpj-partners-loaded',event=>{
+    const detail=event?.detail||{};
+    importPartnersFromCnpj(detail.partners||[],detail.source||'Consulta pública');
+  });
 
   const prev=window.openClientModal;
   window.openClientModal=async function(id=''){
