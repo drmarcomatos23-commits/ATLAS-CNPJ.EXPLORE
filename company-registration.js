@@ -46,6 +46,46 @@
     }).filter(p=>p.full_name);
   }
 
+  function normalizePartnerKey(v){
+    return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toLowerCase();
+  }
+
+  function ensurePartnersVisible(partners=[]){
+    const list=document.getElementById('partners-list');
+    if(!list||!partners.length)return;
+    const existingNames=()=>[...list.querySelectorAll('.partner-name')].map(x=>normalizePartnerKey(x.value));
+    partners.forEach(p=>{
+      const key=normalizePartnerKey(p.full_name);
+      if(!key||existingNames().includes(key))return;
+      const card=document.createElement('div');
+      card.className='partner-card';
+      card.innerHTML=`
+        <div class="partner-card-head"><strong>Sócio / Administrador</strong><button type="button" class="mini-btn danger partner-remove">Remover</button></div>
+        <div class="partner-grid">
+          <div class="field span-2"><label>Nome completo *</label><input class="partner-name" value="${escHtml(p.full_name||'')}" placeholder="Nome completo"></div>
+          <div class="field"><label>CPF / CNPJ</label><input class="partner-cpf" value="${escHtml(p.cpf||'')}" placeholder="Preenchimento manual quando não disponível"></div>
+          <div class="field"><label>RG</label><input class="partner-rg" value="" placeholder="Preenchimento manual"></div>
+          <div class="field"><label>Data de nascimento</label><input type="date" class="partner-birth" value=""></div>
+          <div class="field"><label>Nacionalidade</label><input class="partner-nationality" value="${escHtml(p.nationality||'Brasileira')}"></div>
+          <div class="field"><label>Estado civil</label><input class="partner-marital" value=""></div>
+          <div class="field"><label>Profissão</label><input class="partner-profession" value=""></div>
+          <div class="field"><label>E-mail</label><input type="email" class="partner-email" value=""></div>
+          <div class="field"><label>Telefone</label><input class="partner-phone" value=""></div>
+          <div class="field"><label>Participação (%)</label><input inputmode="decimal" class="partner-percent" value="" placeholder="0,00"></div>
+          <div class="field span-2"><label>Endereço</label><input class="partner-address" value=""></div>
+          <div class="field span-2 partner-check"><label><input type="checkbox" class="partner-admin" ${p.is_administrator?'checked':''}> Administrador da sociedade</label></div>
+          <input type="hidden" class="partner-notes" value="${escHtml(p.notes||'')}">
+          ${p.notes?`<div class="span-2 partner-import-note">${escHtml(p.notes)}</div>`:''}
+        </div>`;
+      card.querySelector('.partner-remove')?.addEventListener('click',()=>card.remove());
+      list.appendChild(card);
+    });
+    const summary=document.querySelector('.partner-summary');
+    if(summary){
+      summary.innerHTML='<strong>Quadro societário importado automaticamente.</strong> Os nomes e a qualificação disponíveis foram preenchidos. Complete manualmente CPF/CNPJ, RG, participação, estado civil, profissão, contatos e endereço quando a fonte pública não disponibilizar esses dados.';
+    }
+  }
+
   function companyFromPayload(d){
     const e=d?.estabelecimento||{};
     const city=typeof e.cidade==='object'?e.cidade?.nome:e.cidade;
@@ -105,6 +145,9 @@
       window.dispatchEvent(new CustomEvent('atlas:cnpj-partners-loaded',{
         detail:{cnpj,partners,source:data?._atlas_source||'Consulta pública'}
       }));
+      // Fallback robusto: garante o preenchimento dos nomes mesmo se o módulo de sócios
+      // estiver em uma versão anterior no cache/navegador.
+      setTimeout(()=>ensurePartnersVisible(partners),0);
       const partnerInfo=partners.length?' '+partners.length+' sócio(s)/administrador(es) também foram localizados e incluídos para revisão.':'';
       msg.textContent=(company.state_registration
         ? 'Dados cadastrais e Inscrição Estadual carregados.'
