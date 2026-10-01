@@ -113,3 +113,25 @@
   font-size:9px!important;
   color:#6f8394!important;
 }
+
+
+/* v3.46 — honorários sugeridos por serviço, sempre editáveis */
+.honorario-preset-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.honorario-preset-row input{min-width:0}
+.honorario-preset-row .mini-btn{white-space:nowrap;padding:10px 12px}
+.finance-preset-hint{
+  display:block;
+  margin-top:6px;
+  color:#718495;
+  font-size:9.5px;
+  line-height:1.4;
+}
+@media(max-width:760px){
+  .honorario-preset-row{grid-template-columns:1fr}
+  .honorario-preset-row .mini-btn{width:100%}
+}
