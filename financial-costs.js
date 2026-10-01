@@ -5,6 +5,13 @@
   function m(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}
   function d(v){if(!v)return '—'; const x=new Date(v+'T12:00:00'); return Number.isNaN(x.getTime())?'—':x.toLocaleDateString('pt-BR')}
   function paymentLabel(v){return v==='paid'?'Pago':'Não pago'}
+  function localIsoDate(){
+    const now=new Date();
+    const y=now.getFullYear();
+    const m=String(now.getMonth()+1).padStart(2,'0');
+    const day=String(now.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
   function isHonorario(c){return c?.fee_kind==='honorarios'||c?.cost_type==='hourly'}
   function typeLabel(c){
     if(isHonorario(c))return 'Honorários';
@@ -89,9 +96,19 @@
         <td>${c.hourly_rate?'<span class="muted">'+m(c.hourly_rate)+'/h · '+e(c.hours||0)+'h</span><br>':''}<strong>${m(c.amount)}</strong></td>
         <td>${c.payment_status==='paid'?'<span class="pill ok">Paga</span>':'<span class="pill warn">A pagar</span>'}</td>
         <td>${d(c.due_date)}</td>
+        <td>${c.paid_at?'<strong>'+d(c.paid_at)+'</strong>':'—'}</td>
         <td><strong>${e(c.payer_name||'—')}</strong><div class="muted">${e([c.payer_type,c.payer_document].filter(Boolean).join(' · ')||'')}</div></td>
         <td>${doc?`<button class="mini-btn" onclick="openStoredDocument('${doc.id}')">Abrir anexo</button><div class="muted" style="margin-top:4px">${e(doc.name)}</div>`:'<span class="muted">Sem anexo</span>'}</td>
-        <td><button class="mini-btn" onclick="openProcessModal('${c.process_id}')">Editar processo</button></td>
+        <td>
+          <div class="row-actions">
+            ${(['admin','financeiro'].includes(atlasProfile().role)&&window.atlasHasPermission?.('costs.edit')!==false)
+              ? (c.payment_status==='paid'
+                  ? `<button class="mini-btn payment-confirm-btn" type="button" disabled>✓ PAGO</button>`
+                  : `<button class="mini-btn payment-confirm-btn" type="button" onclick="setTaxaPaga('${c.id}')">PAGO</button>`)
+              : ''}
+            <button class="mini-btn" onclick="openProcessModal('${c.process_id}')">Editar processo</button>
+          </div>
+        </td>
       </tr>`;
     }).join('');
 
@@ -123,7 +140,7 @@
           <button class="btn btn-primary" onclick="openProcessModal()">＋ Novo processo</button>
         </div>
         ${taxas.length
-          ? `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Vencimento</th><th>Responsável</th><th>Guia / boleto</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`
+          ? `<div class="table-wrap"><table><thead><tr><th>Processo</th><th>Empresa</th><th>Tipo</th><th>Valor</th><th>Situação</th><th>Vencimento</th><th>Pago em</th><th>Responsável</th><th>Guia / boleto</th><th>Ações</th></tr></thead><tbody>${rows}</tbody></table></div>`
           : '<div class="empty-state"><div class="empty-icon">R$</div><h3>Nenhuma taxa cadastrada</h3><p>Cadastre as taxas dentro dos processos. Elas serão tratadas como valores a pagar.</p></div>'
         }
       </section>
@@ -143,6 +160,44 @@
       alert('Não foi possível atualizar o recebimento: '+error.message);
       return;
     }
+    await window.costPage();
+  };
+
+  window.setTaxaPaga=async function(costId){
+    const db=atlasDb();
+    const role=atlasProfile().role;
+    if(!['admin','financeiro'].includes(role)){
+      alert('Somente o Administrador ou o perfil Financeiro pode registrar o pagamento da taxa.');
+      return;
+    }
+    if(window.atlasHasPermission&&window.atlasHasPermission('costs.edit')===false){
+      alert('Seu perfil não possui permissão para registrar pagamentos.');
+      return;
+    }
+
+    const {data:cost,error:loadError}=await db.from('costs').select('id,process_id,description,amount,fee_kind,cost_type,payment_status,paid_at').eq('id',costId).single();
+    if(loadError||!cost){
+      alert('Não foi possível localizar a taxa.');
+      return;
+    }
+    if(isHonorario(cost)){
+      alert('Este lançamento é de honorários, não de taxa.');
+      return;
+    }
+    if(cost.payment_status==='paid'){
+      await window.costPage();
+      return;
+    }
+
+    if(!confirm('Confirmar o pagamento desta taxa no valor de '+m(cost.amount)+'?'))return;
+    const paidAt=localIsoDate();
+    const {error}=await db.from('costs').update({payment_status:'paid',paid_at:paidAt}).eq('id',costId);
+    if(error){
+      alert('Não foi possível registrar o pagamento: '+error.message);
+      return;
+    }
+
+    window.dispatchEvent(new CustomEvent('atlas:financial-payment-updated',{detail:{costId,processId:cost.process_id,paymentStatus:'paid',paidAt}}));
     await window.costPage();
   };
 
