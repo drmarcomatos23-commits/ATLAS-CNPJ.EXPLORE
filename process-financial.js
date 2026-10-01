@@ -320,8 +320,8 @@
       existing=costsRes.data||[];
       processDocs=docsRes.data||[];
     }
-    injectFinance(form,existing);
-
+    // Clona primeiro para remover o submit original e só depois injeta o financeiro.
+    // Assim, os listeners de tipo de serviço/honorários ficam vinculados ao formulário real.
     const cloned=form.cloneNode(true);
     form.replaceWith(cloned);
     injectFinance(cloned,existing);
