@@ -10,29 +10,69 @@
   function num(v){ return Number(v||0)||0; }
   function fmt(v){ return num(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
+  const SERVICE_FEE_PRESETS={
+    abertura:3242.00,
+    alteracao_societaria:2431.50,
+    alteracao:2431.50,
+    baixa:4052.50,
+    encerramento:4052.50
+  };
+
+  function normalizeService(v){
+    return String(v||'')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLowerCase().trim();
+  }
+
+  function servicePreset(v){
+    const s=normalizeService(v);
+    if(!s)return null;
+    if(s.includes('abertura'))return SERVICE_FEE_PRESETS.abertura;
+    if(s.includes('alteracao'))return SERVICE_FEE_PRESETS.alteracao_societaria;
+    if(s.includes('baixa')||s.includes('encerramento'))return SERVICE_FEE_PRESETS.baixa;
+    return null;
+  }
+
+  function servicePresetLabel(v){
+    const s=normalizeService(v);
+    if(s.includes('abertura'))return 'Abertura';
+    if(s.includes('alteracao'))return 'Alteração';
+    if(s.includes('baixa')||s.includes('encerramento'))return 'Baixa';
+    return '';
+  }
+
   function injectFinance(form, existingCosts=[]){
     if(!form || form.querySelector('#proc-finance-section')) return;
-    const hourly=existingCosts.find(c=>c.metadata?.source==='process_form'&&c.metadata?.kind==='hourly')||{};
+    const honorario=existingCosts.find(c=>c.fee_kind==='honorarios'||c.metadata?.kind==='service_fee'||c.metadata?.kind==='hourly'||c.cost_type==='hourly')||{};
     const fee=existingCosts.find(c=>c.metadata?.source==='process_form'&&c.metadata?.kind==='registry_fee')||{};
-    const base=hourly.id?hourly:fee;
+    const base=honorario.id?honorario:fee;
 
     const wrap=document.createElement('div');
     wrap.id='proc-finance-section';
     wrap.className='span-2 process-finance-box';
+    const serviceField=form.querySelector('#proc-service');
+    const initialPreset=servicePreset(serviceField?.value);
+    const initialHonorario=honorario.id?Number(honorario.amount||0):initialPreset;
+
     wrap.innerHTML=`
       <div class="finance-title"><div><strong>Financeiro do processo</strong><span>Honorários, taxas e responsável pelo pagamento</span></div></div>
       <div class="finance-grid">
-        <div class="field"><label>Valor por hora (R$)</label><input id="proc-hourly-rate" inputmode="decimal" value="${hourly.hourly_rate?fmt(hourly.hourly_rate):''}" placeholder="0,00"></div>
-        <div class="field"><label>Horas previstas</label><input id="proc-hours" inputmode="decimal" value="${hourly.hours||''}" placeholder="0"></div>
-        <div class="field"><label>Total honorários (R$)</label><input id="proc-hourly-total" value="${hourly.amount?fmt(hourly.amount):'0,00'}" readonly></div>
+        <div class="field span-2">
+          <label>Honorários do serviço (R$)</label>
+          <div class="honorario-preset-row">
+            <input id="proc-honorario-total" inputmode="decimal" value="${initialHonorario?fmt(initialHonorario):''}" placeholder="0,00">
+            <button id="proc-apply-fee-preset" class="mini-btn" type="button">Usar valor sugerido</button>
+          </div>
+          <small id="proc-fee-preset-hint" class="finance-preset-hint"></small>
+        </div>
         <div class="field"><label>Taxa Junta / Cartório (R$)</label><input id="proc-registry-fee" inputmode="decimal" value="${fee.amount?fmt(fee.amount):''}" placeholder="0,00"></div>
-        <div class="field finance-status-field honor-status"><label>Honorários recebidos?</label><select id="proc-hourly-payment-status"><option value="pending" ${hourly.payment_status!=='paid'?'selected':''}>A receber</option><option value="paid" ${hourly.payment_status==='paid'?'selected':''}>Recebido</option></select></div>
-        <div class="field finance-status-field honor-due"><label>Vencimento dos honorários</label><input id="proc-hourly-due" type="date" value="${hourly.due_date||''}"></div>
+        <div class="field finance-status-field honor-status"><label>Honorários recebidos?</label><select id="proc-hourly-payment-status"><option value="pending" ${honorario.payment_status!=='paid'?'selected':''}>A receber</option><option value="paid" ${honorario.payment_status==='paid'?'selected':''}>Recebido</option></select></div>
+        <div class="field finance-status-field honor-due"><label>Vencimento dos honorários</label><input id="proc-hourly-due" type="date" value="${honorario.due_date||''}"></div>
         <div class="field finance-status-field fee-status"><label>Taxa Junta / Cartório paga?</label><select id="proc-fee-payment-status"><option value="pending" ${fee.payment_status!=='paid'?'selected':''}>Não paga</option><option value="paid" ${fee.payment_status==='paid'?'selected':''}>Paga</option></select></div>
         <div class="field finance-status-field fee-due"><label>Vencimento da taxa</label><input id="proc-fee-due" type="date" value="${fee.due_date||''}"></div>
-        <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String((hourly.payer_name||fee.payer_name||'')).replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
-        <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${(hourly.payer_type||fee.payer_type)!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${(hourly.payer_type||fee.payer_type)==='CPF'?'selected':''}>CPF</option></select></div>
-        <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String((hourly.payer_document||fee.payer_document||'')).replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
+        <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String((honorario.payer_name||fee.payer_name||'')).replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
+        <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${(honorario.payer_type||fee.payer_type)!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${(honorario.payer_type||fee.payer_type)==='CPF'?'selected':''}>CPF</option></select></div>
+        <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String((honorario.payer_document||fee.payer_document||'')).replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
         <div class="field"><label>Guia / boleto de honorários</label><input id="proc-hourly-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
         <div class="field"><label>Guia / boleto da taxa Junta / Cartório</label><input id="proc-fee-attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp"></div>
       </div>`;
@@ -40,14 +80,39 @@
     const actions=form.querySelector('.modal-actions');
     form.insertBefore(wrap,actions);
 
-    const calc=()=>{
-      const rate=brMoneyToNumber(document.getElementById('proc-hourly-rate')?.value);
-      const hours=brMoneyToNumber(document.getElementById('proc-hours')?.value);
-      const total=document.getElementById('proc-hourly-total');
-      if(total)total.value=fmt(rate*hours);
+    const honorarioInput=document.getElementById('proc-honorario-total');
+    const presetButton=document.getElementById('proc-apply-fee-preset');
+    const presetHint=document.getElementById('proc-fee-preset-hint');
+    let honorarioManuallyEdited=!!honorario.id;
+
+    const refreshPreset=(apply=false)=>{
+      const preset=servicePreset(serviceField?.value);
+      const label=servicePresetLabel(serviceField?.value);
+      if(presetHint){
+        presetHint.textContent=preset
+          ? `Valor sugerido para ${label}: R$ ${fmt(preset)}. Você pode alterar livremente este valor.`
+          : 'Sem valor sugerido para este serviço. Digite o valor de honorários.';
+      }
+      if(presetButton)presetButton.disabled=!preset;
+      if(apply&&preset&&honorarioInput){
+        honorarioInput.value=fmt(preset);
+        honorarioManuallyEdited=false;
+      }
     };
-    document.getElementById('proc-hourly-rate')?.addEventListener('input',calc);
-    document.getElementById('proc-hours')?.addEventListener('input',calc);
+
+    refreshPreset(!honorario.id&&!!initialPreset);
+    honorarioInput?.addEventListener('input',()=>{honorarioManuallyEdited=true;});
+    presetButton?.addEventListener('click',()=>refreshPreset(true));
+    serviceField?.addEventListener('change',()=>{
+      const preset=servicePreset(serviceField.value);
+      if(!honorarioManuallyEdited&&preset&&honorarioInput)honorarioInput.value=fmt(preset);
+      refreshPreset(false);
+    });
+    serviceField?.addEventListener('input',()=>{
+      const preset=servicePreset(serviceField.value);
+      if(!honorarioManuallyEdited&&preset&&honorarioInput)honorarioInput.value=fmt(preset);
+      refreshPreset(false);
+    });
   }
 
 
@@ -177,8 +242,7 @@
 
   async function saveFinance(processId){
     const db=atlasDb();
-    const hourlyRate=brMoneyToNumber(document.getElementById('proc-hourly-rate')?.value);
-    const hours=brMoneyToNumber(document.getElementById('proc-hours')?.value);
+    const honorarioAmount=brMoneyToNumber(document.getElementById('proc-honorario-total')?.value);
     const feeAmount=brMoneyToNumber(document.getElementById('proc-registry-fee')?.value);
     const hourlyPaymentStatus=document.getElementById('proc-hourly-payment-status')?.value||'pending';
     const hourlyDueDate=document.getElementById('proc-hourly-due')?.value||null;
@@ -189,28 +253,29 @@
     const payerDocument=document.getElementById('proc-payer-document')?.value.trim()||null;
     const hourlyPaidAt=hourlyPaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
     const feePaidAt=feePaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
+    const serviceType=document.getElementById('proc-service')?.value||'';
 
     const {data:old}=await db.from('costs').select('id,metadata').eq('process_id',processId);
     const ids=(old||[]).filter(c=>c.metadata?.source==='process_form').map(c=>c.id);
     if(ids.length) await db.from('costs').delete().in('id',ids);
 
     const rows=[];
-    if(hourlyRate>0 || hours>0){
+    if(honorarioAmount>0){
       rows.push({
         process_id:processId,
-        description:'Honorários por hora',
+        description:'Honorários do serviço',
         cost_type:'hourly',
         fee_kind:'honorarios',
-        hourly_rate:hourlyRate,
-        hours,
-        amount:hourlyRate*hours,
+        hourly_rate:null,
+        hours:null,
+        amount:honorarioAmount,
         payment_status:hourlyPaymentStatus,
         paid_at:hourlyPaidAt,
         due_date:hourlyDueDate,
         payer_name:payerName,
         payer_type:payerType,
         payer_document:payerDocument,
-        metadata:{source:'process_form',kind:'hourly'}
+        metadata:{source:'process_form',kind:'service_fee',service_type:serviceType,preset_amount:servicePreset(serviceType)}
       });
     }
     if(feeAmount>0){
