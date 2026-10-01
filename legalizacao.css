@@ -404,3 +404,26 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
     width:100%;
   }
 }
+
+
+/* v3.58 — confirmação de pagamento de taxas */
+.payment-confirm-btn{
+  color:#087a58!important;
+  background:#e8f7ef!important;
+  border-color:#bfe6d2!important;
+  font-weight:900!important;
+  min-width:58px;
+}
+.payment-confirm-btn:hover{
+  background:#dff3e8!important;
+}
+.payment-confirm-btn:disabled{
+  opacity:1!important;
+  cursor:default!important;
+  color:#087a58!important;
+  background:#e8f7ef!important;
+}
+#proc-fee-paid-at[readonly]{
+  background:#f5f8fa;
+  color:#496276;
+}
