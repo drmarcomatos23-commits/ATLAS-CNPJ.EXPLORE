@@ -134,6 +134,8 @@
       if(error)return alert('Não foi possível carregar a empresa: '+error.message);
       record=data;
     }
+    const {data:groupRows}=await db.from('client_groups').select('id,name').order('name',{ascending:true});
+    const groups=groupRows||[];
 
     modalShell(id?'Editar empresa':'Nova empresa',`<form id="client-real-form" class="modal-form-grid">
       <div class="field span-2">
@@ -147,6 +149,22 @@
 
       <div class="field span-2"><label>Razão social / nome provisório *</label><input id="client-legal-name" required value="${escHtml(record?.legal_name||'')}" placeholder="Ex.: Empresa em constituição ou razão social pretendida"></div>
       <div class="field"><label>Nome fantasia</label><input id="client-trade-name" value="${escHtml(record?.trade_name||'')}"></div>
+      <div class="field">
+        <label>Grupo empresarial</label>
+        <select id="client-group-id">
+          <option value="">Sem grupo</option>
+          ${groups.map(g=>`<option value="${g.id}" ${record?.group_id===g.id?'selected':''}>${escHtml(g.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field span-2">
+        <label>Novo grupo <span class="field-optional">(opcional)</span></label>
+        <div class="company-cnpj-row">
+          <input id="client-new-group-name" placeholder="Ex.: Sorriso Maroto, Grupo Seven, Reliance...">
+          <button id="client-group-create" class="btn btn-muted" type="button">＋ Criar grupo</button>
+        </div>
+        <small class="company-group-help">Use um grupo para reunir várias empresas do mesmo cliente ou estrutura econômica.</small>
+      </div>
+      <div id="client-group-message" class="auth-message hidden span-2"></div>
       <div class="field"><label>Inscrição Estadual</label><input id="client-state-registration" value="${escHtml(record?.state_registration||'')}" placeholder="IE"></div>
       <div class="field"><label>Inscrição Municipal</label><input id="client-municipal-registration" value="${escHtml(record?.municipal_registration||'')}" placeholder="IM"></div>
       <div class="field"><label>Contato</label><input id="client-contact" value="${escHtml(record?.contact_name||'')}"></div>
@@ -254,6 +272,49 @@
       if(!duplicated)lookupCompanyCnpj();
     });
 
+    document.getElementById('client-group-create')?.addEventListener('click',async ()=>{
+      const input=document.getElementById('client-new-group-name');
+      const select=document.getElementById('client-group-id');
+      const msg=document.getElementById('client-group-message');
+      const btn=document.getElementById('client-group-create');
+      const name=input?.value.trim()||'';
+      if(!name){
+        msg.textContent='Informe o nome do grupo.';
+        msg.className='auth-message error span-2';
+        return;
+      }
+      btn.disabled=true;btn.textContent='Criando...';
+      msg.className='auth-message hidden span-2';
+      try{
+        const {data:existing}=await db.from('client_groups')
+          .select('id,name')
+          .eq('organization_id',atlasProfile().organization_id)
+          .ilike('name',name)
+          .limit(1);
+        let group=(existing||[])[0]||null;
+        if(!group){
+          const {data:created,error}=await db.from('client_groups')
+            .insert({organization_id:atlasProfile().organization_id,name})
+            .select('id,name')
+            .single();
+          if(error)throw error;
+          group=created;
+        }
+        if(group&&select){
+          if(![...select.options].some(o=>o.value===group.id))select.add(new Option(group.name,group.id));
+          select.value=group.id;
+        }
+        if(input)input.value='';
+        msg.textContent='Grupo selecionado para esta empresa.';
+        msg.className='auth-message success span-2';
+      }catch(err){
+        msg.textContent=err.message||'Não foi possível criar o grupo.';
+        msg.className='auth-message error span-2';
+      }finally{
+        btn.disabled=false;btn.textContent='＋ Criar grupo';
+      }
+    });
+
     const cepInput=document.getElementById('client-postal-code');
     cepInput?.addEventListener('input',()=>{
       const d=digits(cepInput.value).slice(0,8);
@@ -295,6 +356,7 @@
           organization_id:atlasProfile().organization_id,
           legal_name:document.getElementById('client-legal-name').value.trim(),
           trade_name:document.getElementById('client-trade-name').value.trim()||null,
+          group_id:document.getElementById('client-group-id')?.value||null,
           tax_id:normalizedCnpj,
           state_registration:document.getElementById('client-state-registration').value.trim()||null,
           municipal_registration:document.getElementById('client-municipal-registration').value.trim()||null,
