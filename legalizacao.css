@@ -253,3 +253,12 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
   .dashboard-kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
   .dashboard-kpi-grid .kpi strong{font-size:27px}
 }
+
+
+/* v3.47 — cadastro de empresa em constituição */
+.field-optional{
+  font-size:9px;
+  font-weight:600;
+  color:#7d8ea0;
+  margin-left:4px;
+}
