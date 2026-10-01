@@ -28,13 +28,11 @@
       .sort((a,b)=>String(a.expires_at).localeCompare(String(b.expires_at)))
       .slice(0,5);
 
-    page(`<div class="grid kpi-grid">
+    page(`<div class="grid kpi-grid dashboard-kpi-grid">
       <div class="surface kpi"><span class="kpi-label">Processos ativos</span><strong>${active.length}</strong><small>Registros reais em andamento</small></div>
       <div class="surface kpi"><span class="kpi-label">Licenças em atenção</span><strong>${licenseAttention}</strong><small>Vencimentos em até 90 dias</small></div>
       <div class="surface kpi"><span class="kpi-label">Empresas cadastradas</span><strong>${companies}</strong><small>Empresas monitoradas</small></div>
       <div class="surface kpi"><span class="kpi-label">Honorários a receber</span><strong>${money(honorariosAReceber)}</strong><small>Recebidos: ${money(honorariosRecebidos)} · Total: ${money(honorariosTotal)}</small></div>
-    </div>
-    <div class="grid kpi-grid" style="margin-top:16px">
       <div class="surface kpi"><span class="kpi-label">Taxas a pagar</span><strong>${money(taxasAPagar)}</strong><small>Pagas: ${money(taxasPagas)} · Total: ${money(taxasTotal)}</small></div>
     </div>
     <div class="grid two-col" style="margin-top:16px">
