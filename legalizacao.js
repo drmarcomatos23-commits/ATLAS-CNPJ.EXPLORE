@@ -448,9 +448,10 @@ async function safeTable(table,queryBuilder){
 
 async function loadOperationalData(){
  const db=atlasDb();
- if(!db) return {clients:[],processes:[],templates:[],stages:[],profiles:[],protocols:[],costs:[],licenses:[]};
+ if(!db) return {clients:[],groups:[],processes:[],templates:[],stages:[],profiles:[],protocols:[],costs:[],licenses:[]};
  const results=await Promise.all([
    db.from('clients').select('*').order('legal_name',{ascending:true}),
+   db.from('client_groups').select('*').order('name',{ascending:true}),
    db.from('processes').select('*').order('created_at',{ascending:false}),
    db.from('workflow_templates').select('*').eq('active',true).order('name',{ascending:true}),
    db.from('workflow_stages').select('*').order('position',{ascending:true}),
@@ -459,7 +460,7 @@ async function loadOperationalData(){
    db.from('costs').select('*'),
    db.from('licenses').select('*').order('expires_at',{ascending:true})
  ]);
- const keys=['clients','processes','templates','stages','profiles','protocols','costs','licenses'];
+ const keys=['clients','groups','processes','templates','stages','profiles','protocols','costs','licenses'];
  const out={};
  results.forEach((r,i)=>{out[keys[i]]=r.error?[]:(r.data||[]);});
  return out;
@@ -501,6 +502,28 @@ async function dashboard(){
 }
 
 function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_name||'Empresa'}
+function clientSelectOptions(data,selectedId=''){
+ const clients=data?.clients||[];
+ const groups=data?.groups||[];
+ const gm=new Map(groups.map(g=>[g.id,g]));
+ const grouped=new Map();
+ const ungrouped=[];
+ clients.forEach(c=>{
+   const g=gm.get(c.group_id);
+   if(g){
+     if(!grouped.has(g.id))grouped.set(g.id,{group:g,clients:[]});
+     grouped.get(g.id).clients.push(c);
+   }else ungrouped.push(c);
+ });
+ const blocks=[...grouped.values()]
+   .sort((a,b)=>String(a.group.name).localeCompare(String(b.group.name),'pt-BR'))
+   .map(({group,clients})=>`<optgroup label="${esc(group.name)}">${clients.map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
+ if(ungrouped.length){
+   blocks.push(`<optgroup label="Sem grupo">${ungrouped.map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
+ }
+ return blocks.join('');
+}
+window.clientSelectOptions=clientSelectOptions;
 
 function processActionButtons(p){
  const id=String(p?.id||'');
@@ -657,7 +680,7 @@ async function openProcessModal(id=''){
  const firstStage=stagesFor[0];
  modalShell(id?'Editar processo':'Novo processo',`<form id="process-real-form" class="modal-form-grid">
    <div class="field span-2"><label>Título do processo *</label><input id="proc-title" required value="${esc(rec?.title||'')}"></div>
-   <div class="field"><label>Empresa *</label><select id="proc-client" required>${data.clients.map(c=>`<option value="${c.id}" ${rec?.client_id===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</select></div>
+   <div class="field"><label>Empresa *</label><select id="proc-client" required>${clientSelectOptions(data,rec?.client_id||'')}</select></div>
    <div class="field"><label>Tipo de serviço</label><input id="proc-service" value="${esc(rec?.service_type||'legalizacao_empresarial')}"></div>
    <div class="field"><label>Etapa atual *</label><select id="proc-stage" required>${stagesFor.map(s=>`<option value="${s.id}" ${(rec?.current_stage_id||firstStage?.id)===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
    <div class="field"><label>Responsável</label><select id="proc-owner"><option value="">Não atribuído</option>${data.profiles.filter(p=>['admin','operacao'].includes(p.role)).map(p=>`<option value="${p.id}" ${rec?.owner_id===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('')}</select></div>
