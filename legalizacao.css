@@ -324,3 +324,59 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
   .company-group-head{align-items:flex-start;flex-direction:column}
   .company-group-count{align-self:flex-start}
 }
+
+
+/* v3.52 — filtro por grupo e relatório empresarial */
+.company-page-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:9px;
+  flex-wrap:wrap;
+}
+.company-filter-bar{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:16px;
+  margin:4px 0 16px;
+  padding:12px 14px;
+  border:1px solid #dce8ee;
+  border-radius:14px;
+  background:#f8fbfd;
+}
+.company-group-filter-field{
+  width:min(360px,100%);
+  margin:0;
+}
+.company-filter-note{
+  color:#728497;
+  font-size:9.5px;
+  line-height:1.45;
+  text-align:right;
+  max-width:480px;
+}
+#company-list-view{
+  margin-top:2px;
+}
+@media(max-width:760px){
+  .company-section-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .company-page-actions{
+    width:100%;
+    justify-content:stretch;
+  }
+  .company-page-actions .btn{
+    flex:1 1 100%;
+  }
+  .company-filter-bar{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .company-filter-note{
+    text-align:left;
+    max-width:none;
+  }
+}
