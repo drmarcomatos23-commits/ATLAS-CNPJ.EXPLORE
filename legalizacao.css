@@ -380,3 +380,27 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
     max-width:none;
   }
 }
+
+
+/* v3.53 — administração de grupos empresariais */
+.company-filter-actions{
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.company-filter-actions .btn:disabled{
+  opacity:.48;
+  cursor:not-allowed;
+  transform:none;
+}
+@media(max-width:760px){
+  .company-filter-actions{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .company-filter-actions .btn{
+    width:100%;
+  }
+}
