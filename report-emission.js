@@ -72,10 +72,10 @@
     return `
       <h2>Financeiro</h2>
       <div class="summary-grid"><div><b>Total</b><span>${moneyR(total)}</span></div><div><b>Pago</b><span>${moneyR(paid)}</span></div><div><b>Pendente</b><span>${moneyR(pending)}</span></div></div>
-      <table><thead><tr><th>Processo</th><th>Descrição</th><th>Valor</th><th>Pagamento</th><th>Vencimento</th><th>Responsável</th><th>CPF/CNPJ</th></tr></thead><tbody>${
+      <table><thead><tr><th>Processo</th><th>Descrição</th><th>Valor</th><th>Pagamento</th><th>Vencimento</th><th>Pago em</th><th>Responsável</th><th>CPF/CNPJ</th></tr></thead><tbody>${
         data.costs.length
-        ? data.costs.map(c=>`<tr><td>${escR(pm.get(c.process_id)?.public_code||'—')}</td><td>${escR(c.description)}</td><td>${moneyR(c.amount)}</td><td>${c.payment_status==='paid'?'Pago':'Não pago'}</td><td>${fmtDate(c.due_date)}</td><td>${escR(c.payer_name||'—')}</td><td>${escR(c.payer_document||'—')}</td></tr>`).join('')
-        : '<tr><td colspan="7">Nenhum lançamento financeiro.</td></tr>'
+        ? data.costs.map(c=>`<tr><td>${escR(pm.get(c.process_id)?.public_code||'—')}</td><td>${escR(c.description)}</td><td>${moneyR(c.amount)}</td><td>${c.payment_status==='paid'?'Pago':'Não pago'}</td><td>${fmtDate(c.due_date)}</td><td>${fmtDate(c.paid_at)}</td><td>${escR(c.payer_name||'—')}</td><td>${escR(c.payer_document||'—')}</td></tr>`).join('')
+        : '<tr><td colspan="8">Nenhum lançamento financeiro.</td></tr>'
       }</tbody></table>`;
   }
 
