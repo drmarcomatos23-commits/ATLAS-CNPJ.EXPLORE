@@ -27,7 +27,14 @@
       .order('sort_order',{ascending:true})
       .order('title',{ascending:true});
     if(error)throw error;
-    kbArticles=data||[];
+    const profile=atlasProfile();
+    const role=profile?.role||'cliente';
+    kbArticles=(data||[]).filter(a=>{
+      if(role==='admin')return true;
+      if(a.active===false)return false;
+      const roles=a.audience_roles||['all'];
+      return roles.includes('all')||roles.includes(role);
+    });
   }
 
   function card(a){
