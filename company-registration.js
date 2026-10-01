@@ -19,6 +19,33 @@
     }) || active[0] || list[0];
     return match?.inscricao_estadual ? String(match.inscricao_estadual) : '';
   }
+  function partnersFromPayload(d){
+    const list=Array.isArray(d?.socios)?d.socios:(Array.isArray(d?.qsa)?d.qsa:[]);
+    return list.map(p=>{
+      const qualification=p?.qualificacao_socio?.descricao||p?.qualificacao_socio||p?.qualificacao||'';
+      const publicDocument=String(p?.cpf_cnpj_socio||p?.cnpj_cpf_do_socio||p?.cpf_cnpj||'').trim();
+      const docDigits=digits(publicDocument);
+      const fullDocument=/^\d{11}$/.test(docDigits)||/^\d{14}$/.test(docDigits) ? docDigits : '';
+      const countryName=p?.pais?.nome||p?.pais||'';
+      const entryDate=p?.data_entrada||p?.data_entrada_sociedade||'';
+      const notes=[
+        'Importado automaticamente da consulta pública do CNPJ',
+        qualification?'Qualificação: '+qualification.trim():'',
+        entryDate?'Entrada na sociedade: '+entryDate:'',
+        publicDocument&&!fullDocument?'CPF/CNPJ disponibilizado de forma parcial pela fonte: '+publicDocument:''
+      ].filter(Boolean).join(' | ');
+      return {
+        full_name:String(p?.nome||p?.nome_socio||'').trim(),
+        cpf:fullDocument,
+        nationality:/brasil/i.test(String(countryName))?'Brasileira':'',
+        is_administrator:/administrador/i.test(String(qualification)),
+        notes,
+        source_qualification:String(qualification||'').trim(),
+        source_document:publicDocument
+      };
+    }).filter(p=>p.full_name);
+  }
+
   function companyFromPayload(d){
     const e=d?.estabelecimento||{};
     const city=typeof e.cidade==='object'?e.cidade?.nome:e.cidade;
@@ -74,9 +101,14 @@
       document.getElementById('client-state').value=company.state;
       if(company.phone && !document.getElementById('client-phone').value)document.getElementById('client-phone').value=company.phone;
       if(company.email && !document.getElementById('client-email').value)document.getElementById('client-email').value=company.email;
-      msg.textContent=company.state_registration
-        ? 'Dados cadastrais e Inscrição Estadual carregados. Revise antes de salvar.'
-        : 'Dados cadastrais carregados. A Inscrição Estadual não foi encontrada na fonte consultada.';
+      const partners=partnersFromPayload(data);
+      window.dispatchEvent(new CustomEvent('atlas:cnpj-partners-loaded',{
+        detail:{cnpj,partners,source:data?._atlas_source||'Consulta pública'}
+      }));
+      const partnerInfo=partners.length?' '+partners.length+' sócio(s)/administrador(es) também foram localizados e incluídos para revisão.':'';
+      msg.textContent=(company.state_registration
+        ? 'Dados cadastrais e Inscrição Estadual carregados.'
+        : 'Dados cadastrais carregados. A Inscrição Estadual não foi encontrada na fonte consultada.')+partnerInfo+' Revise antes de salvar.';
       msg.className='auth-message success span-2';
     }catch(err){
       msg.textContent=err.message||'Falha na consulta do CNPJ.';
