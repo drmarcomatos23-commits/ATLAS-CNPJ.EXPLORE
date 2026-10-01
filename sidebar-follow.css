@@ -1,8 +1,12 @@
 /* ATLAS v3.29 — barra lateral acompanha a rolagem */
 @media (min-width:1181px){
-  .app-shell{
+  .app-shell:not(.hidden){
     display:block!important;
     min-height:100vh;
+  }
+
+  #app-shell.hidden{
+    display:none!important;
   }
 
   .sidebar{
