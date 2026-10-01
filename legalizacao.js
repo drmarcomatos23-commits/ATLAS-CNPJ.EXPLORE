@@ -503,8 +503,9 @@ async function dashboard(){
 
 function clientNameById(clients,id){return clients.find(c=>c.id===id)?.legal_name||'Empresa'}
 function clientSelectOptions(data,selectedId=''){
- const clients=data?.clients||[];
- const groups=data?.groups||[];
+ const alpha=(a,b)=>String(a||'').localeCompare(String(b||''),'pt-BR',{sensitivity:'base',numeric:true});
+ const clients=[...(data?.clients||[])].sort((a,b)=>alpha(a?.legal_name,b?.legal_name));
+ const groups=[...(data?.groups||[])].sort((a,b)=>alpha(a?.name,b?.name));
  const gm=new Map(groups.map(g=>[g.id,g]));
  const grouped=new Map();
  const ungrouped=[];
@@ -517,9 +518,9 @@ function clientSelectOptions(data,selectedId=''){
  });
  const blocks=[...grouped.values()]
    .sort((a,b)=>String(a.group.name).localeCompare(String(b.group.name),'pt-BR'))
-   .map(({group,clients})=>`<optgroup label="${esc(group.name)}">${clients.map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
+   .map(({group,clients})=>`<optgroup label="${esc(group.name)}">${clients.sort((a,b)=>alpha(a?.legal_name,b?.legal_name)).map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
  if(ungrouped.length){
-   blocks.push(`<optgroup label="Sem grupo">${ungrouped.map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
+   blocks.push(`<optgroup label="Sem grupo">${ungrouped.sort((a,b)=>alpha(a?.legal_name,b?.legal_name)).map(c=>`<option value="${c.id}" ${selectedId===c.id?'selected':''}>${esc(c.legal_name)}</option>`).join('')}</optgroup>`);
  }
  return blocks.join('');
 }
