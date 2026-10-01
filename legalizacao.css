@@ -246,3 +246,10 @@ button,input,select{font:inherit}.hidden{display:none!important}button{cursor:po
     font-size:9px;
   }
 }
+
+
+/* v3.44 — dashboard: cinco indicadores na mesma linha em telas largas */
+@media (min-width:1181px){
+  .dashboard-kpi-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .dashboard-kpi-grid .kpi strong{font-size:27px}
+}
