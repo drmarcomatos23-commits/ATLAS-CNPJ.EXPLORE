@@ -213,6 +213,7 @@
           <option value="alteracao_societaria">Alteração societária</option>
           <option value="regularizacao">Regularização</option>
           <option value="licenciamento">Licenciamento</option>
+          <option value="baixa">Baixa</option>
           <option value="encerramento">Encerramento</option>
         </select>
       </div>
