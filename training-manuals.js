@@ -1,6 +1,6 @@
 (() => {
   let trainingManuals=[];
-  const FINANCE_VIDEO_URL='https://share.descript.com/view/AWRHQxeKbBc';
+  const FINANCE_VIDEO_URL='https://share.descript.com/view/5xM685dvpb4';
 
   function e(v){
     return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
