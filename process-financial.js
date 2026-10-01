@@ -9,6 +9,13 @@
   }
   function num(v){ return Number(v||0)||0; }
   function fmt(v){ return num(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function localIsoDate(){
+    const now=new Date();
+    const y=now.getFullYear();
+    const m=String(now.getMonth()+1).padStart(2,'0');
+    const d=String(now.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+d;
+  }
 
   const SERVICE_FEE_PRESETS={
     abertura:3242.00,
@@ -70,6 +77,7 @@
         <div class="field finance-status-field honor-due"><label>Vencimento dos honorários</label><input id="proc-hourly-due" type="date" value="${honorario.due_date||''}"></div>
         <div class="field finance-status-field fee-status"><label>Taxa Junta / Cartório paga?</label><select id="proc-fee-payment-status"><option value="pending" ${fee.payment_status!=='paid'?'selected':''}>Não paga</option><option value="paid" ${fee.payment_status==='paid'?'selected':''}>Paga</option></select></div>
         <div class="field finance-status-field fee-due"><label>Vencimento da taxa</label><input id="proc-fee-due" type="date" value="${fee.due_date||''}"></div>
+        <div class="field finance-status-field fee-paid-at"><label>Data do pagamento da taxa</label><input id="proc-fee-paid-at" type="date" value="${fee.paid_at||''}" readonly></div>
         <div class="field"><label>Responsável pelo pagamento</label><input id="proc-payer-name" value="${String((honorario.payer_name||fee.payer_name||'')).replace(/"/g,'&quot;')}" placeholder="Empresa ou sócio"></div>
         <div class="field"><label>Tipo do documento</label><select id="proc-payer-type"><option value="CNPJ" ${(honorario.payer_type||fee.payer_type)!=='CPF'?'selected':''}>CNPJ</option><option value="CPF" ${(honorario.payer_type||fee.payer_type)==='CPF'?'selected':''}>CPF</option></select></div>
         <div class="field span-2"><label>CPF / CNPJ do responsável</label><input id="proc-payer-document" value="${String((honorario.payer_document||fee.payer_document||'')).replace(/"/g,'&quot;')}" placeholder="Somente números ou formatado"></div>
@@ -99,6 +107,14 @@
         honorarioManuallyEdited=false;
       }
     };
+
+    const feeStatusField=document.getElementById('proc-fee-payment-status');
+    const feePaidAtField=document.getElementById('proc-fee-paid-at');
+    feeStatusField?.addEventListener('change',()=>{
+      if(!feePaidAtField)return;
+      if(feeStatusField.value==='paid'&&!feePaidAtField.value)feePaidAtField.value=localIsoDate();
+      if(feeStatusField.value!=='paid')feePaidAtField.value='';
+    });
 
     refreshPreset(!honorario.id&&!!initialPreset);
     honorarioInput?.addEventListener('input',()=>{honorarioManuallyEdited=true;});
@@ -251,11 +267,17 @@
     const payerName=document.getElementById('proc-payer-name')?.value.trim()||null;
     const payerType=document.getElementById('proc-payer-type')?.value||null;
     const payerDocument=document.getElementById('proc-payer-document')?.value.trim()||null;
-    const hourlyPaidAt=hourlyPaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
-    const feePaidAt=feePaymentStatus==='paid'?new Date().toISOString().slice(0,10):null;
     const serviceType=document.getElementById('proc-service')?.value||'';
 
-    const {data:old}=await db.from('costs').select('id,metadata').eq('process_id',processId);
+    const {data:old}=await db.from('costs').select('*').eq('process_id',processId);
+    const oldHonorario=(old||[]).find(c=>c.fee_kind==='honorarios'||c.metadata?.kind==='service_fee'||c.metadata?.kind==='hourly'||c.cost_type==='hourly')||{};
+    const oldFee=(old||[]).find(c=>c.metadata?.source==='process_form'&&c.metadata?.kind==='registry_fee')||{};
+    const hourlyPaidAt=hourlyPaymentStatus==='paid'
+      ? (oldHonorario.payment_status==='paid'&&oldHonorario.paid_at?oldHonorario.paid_at:localIsoDate())
+      : null;
+    const feePaidAt=feePaymentStatus==='paid'
+      ? (oldFee.payment_status==='paid'&&oldFee.paid_at?oldFee.paid_at:(document.getElementById('proc-fee-paid-at')?.value||localIsoDate()))
+      : null;
     const ids=(old||[]).filter(c=>c.metadata?.source==='process_form').map(c=>c.id);
     if(ids.length) await db.from('costs').delete().in('id',ids);
 
