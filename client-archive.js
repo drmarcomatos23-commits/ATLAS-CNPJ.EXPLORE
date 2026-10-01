@@ -216,7 +216,10 @@
             <option value="__ungrouped__">Sem grupo</option>
           </select>
         </div>
-        <div class="company-filter-note">A visualização por bloco de grupo aparece somente quando um grupo é selecionado.</div>
+        <div class="company-filter-actions">
+          ${role==='admin'?'<button id="company-group-rename-btn" class="btn btn-muted" type="button" disabled>Editar nome do grupo</button>':''}
+          <div class="company-filter-note">A visualização por bloco de grupo aparece somente quando um grupo é selecionado.</div>
+        </div>
       </div>
       <div id="company-list-view">
         ${list.length
@@ -227,9 +230,17 @@
 
     const filter=document.getElementById('company-group-filter');
     const view=document.getElementById('company-list-view');
+    const renameBtn=document.getElementById('company-group-rename-btn');
+
+    const syncGroupAdminAction=()=>{
+      if(!renameBtn||!filter)return;
+      renameBtn.disabled=!groups.some(g=>g.id===filter.value);
+    };
+    syncGroupAdminAction();
 
     filter?.addEventListener('change',()=>{
       const value=filter.value;
+      syncGroupAdminAction();
       if(value==='__all__'){
         view.innerHTML=companyTable(list,processCounts,role);
         return;
@@ -246,6 +257,45 @@
       view.innerHTML=group&&rows.length
         ? groupBlock(group,rows,processCounts,role)
         : '<div class="empty-state"><div class="empty-icon">↳</div><h3>Nenhuma empresa neste grupo</h3><p>Vincule empresas ao grupo no cadastro ou edição da empresa.</p></div>';
+    });
+
+    renameBtn?.addEventListener('click',async ()=>{
+      if(role!=='admin'||!filter)return;
+      const group=groups.find(g=>g.id===filter.value);
+      if(!group)return;
+      const nextName=prompt('Novo nome do grupo empresarial:',group.name);
+      if(nextName===null)return;
+      const normalized=nextName.trim();
+      if(!normalized){
+        alert('O nome do grupo não pode ficar vazio.');
+        return;
+      }
+      if(normalized===group.name)return;
+
+      renameBtn.disabled=true;
+      const originalText=renameBtn.textContent;
+      renameBtn.textContent='Salvando...';
+      try{
+        const {error}=await db
+          .from('client_groups')
+          .update({name:normalized,updated_at:new Date().toISOString()})
+          .eq('id',group.id);
+        if(error)throw error;
+        group.name=normalized;
+        const option=[...filter.options].find(o=>o.value===group.id);
+        if(option)option.textContent=normalized;
+        filter.value=group.id;
+        view.innerHTML=groupBlock(group,list.filter(c=>c.group_id===group.id),processCounts,role);
+        alert('Nome do grupo atualizado com sucesso.');
+      }catch(err){
+        const raw=String(err?.message||err||'');
+        alert(/duplicate key|uq_client_groups_org_name/i.test(raw)
+          ? 'Já existe um grupo com esse nome.'
+          : 'Não foi possível alterar o nome do grupo: '+raw);
+      }finally{
+        renameBtn.textContent=originalText;
+        syncGroupAdminAction();
+      }
     });
 
     document.getElementById('company-groups-report-btn')?.addEventListener('click',()=>{
