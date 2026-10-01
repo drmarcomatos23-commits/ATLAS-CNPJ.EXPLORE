@@ -1,6 +1,6 @@
 (() => {
   let trainingManuals=[];
-  const FINANCE_VIDEO_URL='https://share.descript.com/view/OQT2WeVV1hp';
+  const FINANCE_VIDEO_URL='https://share.descript.com/view/AWRHQxeKbBc';
 
   function e(v){
     return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -44,8 +44,8 @@
             <div class="training-video-copy">
               <span class="training-kicker">VÍDEO DE TREINAMENTO</span>
               <h2>Perfil Financeiro · ATLAS</h2>
-              <p>Treinamento em vídeo do perfil Financeiro. Consulte também o manual atualizado para pagamento de taxas, datas de pagamento, grupos empresariais e novas permissões.</p>
-              <div class="training-video-meta"><span>▶ Aproximadamente 8 minutos</span><span>Perfil: Financeiro</span></div>
+              <p>Treinamento atualizado do Perfil Financeiro, com controle de honorários, taxas, pagamentos, datas de pagamento, grupos empresariais e permissões.</p>
+              <div class="training-video-meta"><span>▶ Aproximadamente 7 minutos</span><span>Perfil: Financeiro</span></div>
               <button class="btn btn-primary" type="button" onclick="openFinanceTrainingVideo()">▶ Assistir treinamento</button>
             </div>
             <div class="training-video-preview">
