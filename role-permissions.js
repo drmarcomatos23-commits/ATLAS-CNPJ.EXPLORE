@@ -11,7 +11,7 @@
     {name:'Processos', rows:[['processes.view','Visualizar'],['processes.create','Criar'],['processes.edit','Editar'],['processes.archive','Arquivar']]},
     {name:'Empresas', rows:[['companies.view','Visualizar'],['companies.groups.view','Visualizar grupos empresariais'],['companies.create','Criar'],['companies.edit','Editar'],['companies.archive','Arquivar']]},
     {name:'Documentos', rows:[['documents.view','Visualizar'],['documents.upload','Anexar'],['documents.delete','Excluir']]},
-    {name:'Custos', rows:[['costs.view','Visualizar'],['costs.edit','Editar / receber honorários']]},
+    {name:'Custos', rows:[['costs.view','Visualizar'],['costs.edit','Editar financeiro / registrar pagamentos']]},
     {name:'Licenças', rows:[['licenses.view','Visualizar'],['licenses.edit','Editar']]},
     {name:'Integrações', rows:[['integrations.view','Visualizar']]},
     {name:'Relatórios', rows:[['reports.view','Visualizar']]},
@@ -130,6 +130,7 @@
 
     if(p==='custos'){
       toggleByOnclick('[onclick^="setHonorarioRecebido"]','costs.edit');
+      toggleByOnclick('[onclick^="setTaxaPaga"]','costs.edit');
       document.querySelectorAll('[onclick^="openProcessModal"]').forEach(el=>{
         el.classList.toggle('hidden',!(window.atlasHasPermission('costs.edit')&&window.atlasHasPermission('processes.edit')));
       });
