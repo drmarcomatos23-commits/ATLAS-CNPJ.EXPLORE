@@ -135,3 +135,21 @@
   .honorario-preset-row{grid-template-columns:1fr}
   .honorario-preset-row .mini-btn{width:100%}
 }
+
+
+/* v3.61 — sócios importados automaticamente do CNPJ */
+.partner-import-note{
+  margin-top:2px;
+  padding:8px 10px;
+  border:1px solid #d8e8eb;
+  border-radius:9px;
+  background:#f5fbfb;
+  color:#637b8b;
+  font-size:8.8px;
+  line-height:1.45;
+}
+.partner-import-note::before{
+  content:"Consulta CNPJ · ";
+  font-weight:900;
+  color:#078987;
+}
