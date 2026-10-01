@@ -133,7 +133,7 @@
 
     modalShell(id?'Editar empresa':'Nova empresa',`<form id="client-real-form" class="modal-form-grid">
       <div class="field span-2">
-        <label>CNPJ</label>
+        <label>CNPJ <span class="field-optional">(opcional para empresa em constituição)</span></label>
         <div class="company-cnpj-row">
           <input id="client-tax-id" inputmode="numeric" placeholder="00.000.000/0000-00" value="${escHtml(record?.tax_id||'')}">
           <button id="client-cnpj-consult" class="btn btn-muted" type="button">Consultar CNPJ</button>
@@ -141,7 +141,7 @@
       </div>
       <div id="client-cnpj-message" class="auth-message hidden span-2"></div>
 
-      <div class="field span-2"><label>Razão social *</label><input id="client-legal-name" required value="${escHtml(record?.legal_name||'')}"></div>
+      <div class="field span-2"><label>Razão social / nome provisório *</label><input id="client-legal-name" required value="${escHtml(record?.legal_name||'')}" placeholder="Ex.: Empresa em constituição ou razão social pretendida"></div>
       <div class="field"><label>Nome fantasia</label><input id="client-trade-name" value="${escHtml(record?.trade_name||'')}"></div>
       <div class="field"><label>Inscrição Estadual</label><input id="client-state-registration" value="${escHtml(record?.state_registration||'')}" placeholder="IE"></div>
       <div class="field"><label>Inscrição Municipal</label><input id="client-municipal-registration" value="${escHtml(record?.municipal_registration||'')}" placeholder="IM"></div>
@@ -214,6 +214,14 @@
     }
 
     const cnpjInput=document.getElementById('client-tax-id');
+    const cnpjMsg=document.getElementById('client-cnpj-message');
+    const showNoCnpjState=()=>{
+      const d=digits(cnpjInput?.value||'');
+      if(d.length===0 && cnpjMsg){
+        cnpjMsg.textContent='Empresa em constituição: o cadastro pode ser salvo sem CNPJ e atualizado posteriormente.';
+        cnpjMsg.className='auth-message info span-2';
+      }
+    };
     cnpjInput?.addEventListener('input',async ()=>{
       const d=digits(cnpjInput.value);
       cnpjInput.value=d.length===14?formatCnpj(d):d;
@@ -224,9 +232,19 @@
         duplicateClient=null;
         const saveBtn=document.getElementById('client-save-btn');
         if(saveBtn)saveBtn.disabled=false;
+        if(d.length===0)showNoCnpjState();
+        else if(cnpjMsg){
+          cnpjMsg.textContent='CNPJ incompleto. Complete os 14 dígitos ou deixe o campo vazio para empresa em constituição.';
+          cnpjMsg.className='auth-message info span-2';
+        }
       }
     });
-    cnpjInput?.addEventListener('blur',checkDuplicateCnpj);
+    cnpjInput?.addEventListener('blur',async ()=>{
+      const d=digits(cnpjInput?.value||'');
+      if(d.length===14) await checkDuplicateCnpj();
+      else if(d.length===0) showNoCnpjState();
+    });
+    if(!id && !digits(cnpjInput?.value||''))showNoCnpjState();
     document.getElementById('client-cnpj-consult')?.addEventListener('click',async ()=>{
       const duplicated=await checkDuplicateCnpj();
       if(!duplicated)lookupCompanyCnpj();
@@ -251,9 +269,12 @@
 
       const rawCnpj=document.getElementById('client-tax-id').value.trim();
       const cnpjDigits=digits(rawCnpj);
-      const normalizedCnpj=cnpjDigits.length===14?formatCnpj(cnpjDigits):(rawCnpj||null);
+      const normalizedCnpj=cnpjDigits.length===14?formatCnpj(cnpjDigits):null;
 
       try{
+        if(cnpjDigits.length>0 && cnpjDigits.length!==14){
+          throw new Error('CNPJ incompleto. Informe os 14 dígitos ou deixe o campo vazio para cadastrar empresa em constituição.');
+        }
         if(cnpjDigits.length===14){
           const {data:existing,error:existError}=await db.rpc('atlas_find_client_by_cnpj',{
             p_cnpj:cnpjDigits,
@@ -287,17 +308,28 @@
           address_reference:document.getElementById('client-address-reference').value.trim()||null
         };
 
-        const q=id
-          ? db.from('clients').update(payload).eq('id',id)
-          : db.from('clients').insert(payload);
-        const {error}=await q;
-        if(error)throw error;
+        let savedClientId=id||null;
+        if(id){
+          const {error}=await db.from('clients').update(payload).eq('id',id);
+          if(error)throw error;
+        }else{
+          const {data:created,error}=await db.from('clients').insert(payload).select('id').single();
+          if(error)throw error;
+          savedClientId=created?.id||null;
+        }
 
+        window.atlasLastSavedClientId=savedClientId;
+        if(savedClientId){
+          window.dispatchEvent(new CustomEvent('atlas:client-saved',{detail:{clientId:savedClientId,taxId:normalizedCnpj,legalName:payload.legal_name}}));
+        }
         closeAtlasModal();
         await clientPage();
         window.atlasRealtime?.refreshCompanies?.();
       }catch(err){
-        msg.textContent=err.message||'Não foi possível salvar a empresa.';
+        const raw=String(err?.message||err||'');
+        msg.textContent=/row-level security|permission denied/i.test(raw)
+          ? 'Não foi possível salvar por falta de permissão ou sessão expirada. Atualize a página e entre novamente no ATLAS.'
+          : (raw||'Não foi possível salvar a empresa.');
         msg.className='auth-message error span-2';
         btn.disabled=false;btn.textContent='Salvar empresa';
       }
