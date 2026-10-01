@@ -217,7 +217,7 @@
           </select>
         </div>
         <div class="company-filter-actions">
-          ${role==='admin'?'<button id="company-group-rename-btn" class="btn btn-muted" type="button" disabled>Editar nome do grupo</button>':''}
+          ${role==='admin'?'<button id="company-group-rename-btn" class="btn btn-muted hidden" type="button" disabled>Editar nome do grupo</button>':''}
           <div class="company-filter-note">A visualização por bloco de grupo aparece somente quando um grupo é selecionado.</div>
         </div>
       </div>
@@ -234,7 +234,9 @@
 
     const syncGroupAdminAction=()=>{
       if(!renameBtn||!filter)return;
-      renameBtn.disabled=!groups.some(g=>g.id===filter.value);
+      const hasSelectedGroup=groups.some(g=>g.id===filter.value);
+      renameBtn.disabled=!hasSelectedGroup;
+      renameBtn.classList.toggle('hidden',!hasSelectedGroup);
     };
     syncGroupAdminAction();
 
