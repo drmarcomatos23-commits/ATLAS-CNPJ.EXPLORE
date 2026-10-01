@@ -93,6 +93,7 @@
     const email = document.getElementById('quick-company-email')?.value.trim() || null;
     const stateRegistration = document.getElementById('quick-company-ie')?.value.trim() || null;
     const municipalRegistration = document.getElementById('quick-company-im')?.value.trim() || null;
+    const groupId = document.getElementById('quick-company-group')?.value || null;
 
     if (!legalName) {
       msg.textContent = 'Informe a razão social.';
@@ -135,6 +136,7 @@
           legal_name: legalName,
           trade_name: tradeName,
           tax_id: taxId,
+          group_id: groupId,
           city,
           state,
           contact_name: contactName,
@@ -198,7 +200,7 @@
         <div class="company-select-row">
           <select id="proc-client" required>
             ${data.clients.length
-              ? data.clients.map(c => `<option value="${c.id}">${esc(c.legal_name)}</option>`).join('')
+              ? clientSelectOptions(data)
               : '<option value="">Nenhuma empresa cadastrada</option>'}
           </select>
           <button id="quick-company-toggle" class="btn btn-muted company-add-btn" type="button">＋ Nova empresa</button>
@@ -250,6 +252,13 @@
           <div class="field">
             <label>Inscrição Municipal</label>
             <input id="quick-company-im" placeholder="IM">
+          </div>
+          <div class="field">
+            <label>Grupo empresarial</label>
+            <select id="quick-company-group">
+              <option value="">Sem grupo</option>
+              ${(data.groups||[]).map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('')}
+            </select>
           </div>
           <div class="field">
             <label>Cidade</label>
