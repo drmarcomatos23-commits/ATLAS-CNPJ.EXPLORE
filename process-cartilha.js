@@ -74,7 +74,7 @@
     var rest=(partners||[]).slice(2);
     while(first.length<2)first.push({});
     var summary=proc.completion_summary||proc.title||'';
-    var d=proc.completed_at?new Date(proc.completed_at):new Date();
+    var d=new Date();
     var dateText=d.getDate()+' de '+d.toLocaleDateString('pt-BR',{month:'long'})+' de '+d.getFullYear();
     var ie=company.state_registration?'( X ) Possui   (   ) Não Possui - nº '+esc(company.state_registration):'(   ) Possui   (   ) Não Possui - nº';
     var im=company.municipal_registration?'( X ) Possui   (   ) Não Possui - nº '+esc(company.municipal_registration):'(   ) Possui   (   ) Não Possui - nº';
