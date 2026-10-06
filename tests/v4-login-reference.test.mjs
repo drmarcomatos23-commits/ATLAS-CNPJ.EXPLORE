@@ -14,4 +14,5 @@ test('login reproduz a referencia aprovada sem depender de imagem quebravel',()=
   assert.match(css,/\.auth-main-btn\s*\{[^}]*#064775/s);
   assert.match(css,/\.login-logo\s*\{[^}]*content:url\("data:image\/svg\+xml/s);
   assert.match(css,/@media\(max-width:900px\)[\s\S]*?\.login-screen\s*\{[^}]*grid-template-columns:1fr/s);
+  assert.match(css,/\.login-screen:not\(\.hidden\)\s*~\s*\.app-shell\s*\{[^}]*display:none!important/s);
 });
