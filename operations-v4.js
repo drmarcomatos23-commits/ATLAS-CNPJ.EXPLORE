@@ -15,5 +15,14 @@
  function bind(data,procs){document.querySelectorAll('[data-v4-view]').forEach(b=>b.onclick=()=>{mode=b.dataset.v4View;renderBody(data,procs)});const sf=document.querySelector('#v4-status-filter'),of=document.querySelector('#v4-owner-filter');const apply=()=>{document.querySelectorAll('.v4-process-row').forEach(r=>{const okS=!sf?.value||(sf.value==='pending'?/pend/i.test(r.textContent):r.dataset.deadline===sf.value);const okO=!of?.value||r.dataset.owner===of.value;r.hidden=!(okS&&okO);});};sf?.addEventListener('change',apply);of?.addEventListener('change',apply);}
  function renderBody(data,procs){const host=document.querySelector('#v4-process-body');if(!host)return;host.innerHTML=filters(procs)+(mode==='list'?list(data,procs):pipeline(data,procs));bind(data,procs);}
  window.processPage=async function(){setHead('Processos','OPERAÇÃO','Gerencie prazos, responsáveis, etapas e próximas ações.');page('<div class="loading-box"><span class="spinner"></span><div>Carregando processos...</div></div>');const raw=await loadOperationalData();const procs=decorateProcesses(raw);page('<section class="v4-card"><div class="v4-section-head"><div><h2>Operação de Legalização</h2><span>Lista operacional e Pipeline</span></div></div><div id="v4-process-body"></div></section>');renderBody({...raw,processes:procs},procs);};
+ async function exigenciasPage(){
+  setHead('Exigências','OPERAÇÃO','Acompanhe exigências e pendências formais registradas nos processos.');
+  page('<div class="loading-box"><span class="spinner"></span><div>Carregando exigências...</div></div>');
+  const raw=await loadOperationalData(); const procs=decorateProcesses(raw);
+  const items=procs.filter(p=>/exig|pend/i.test([p.status,p.status_label,p.notes,p.title,p.next_action,p.pending_action].filter(Boolean).join(' ')));
+  page(`<section class="v4-card"><div class="v4-section-head"><div><h2>Central de Exigências</h2><span>${items.length} registro(s) identificado(s)</span></div></div>${items.length?`<div class="v4-exigencias">${items.map(p=>`<article class="v4-exigencia-item"><div><strong>${e(p.public_code||p.id||'—')} · ${e(company(raw,p))}</strong><small>${e(p.status_label||p.status||'Pendência')} · ${e(p.title||p.service_type||'')}</small></div><div>${canEditForRole(role())?`<button class="mini-btn" onclick="openAtlasV4Process('${e(p.id)}')">Abrir</button>`:'<span class="muted">Consulta</span>'}</div></article>`).join('')}</div>`:'<div class="v4-empty">Nenhuma exigência ou pendência formal identificada nos dados atuais.</div>'}</section>`);
+ }
+ const legacyRender=window.render;
+ if(typeof legacyRender==='function'){window.render=function(pageName){if(pageName==='exigencias')return exigenciasPage();return legacyRender(pageName);};}
  window.AtlasV4Operations={canEditForRole};
 })();
