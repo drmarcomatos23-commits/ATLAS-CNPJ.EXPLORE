@@ -52,7 +52,6 @@
   <div class="login-panel">
     <div class="login-card auth-card">
       <span class="eyebrow">ATLAS LEGALIZAÇÃO E GERENCIAMENTO</span>
-
       <div id="auth-login-view">
         <h2>Acessar sistema</h2>
         <p class="sub">Entre com seu e-mail e senha cadastrados.</p>
@@ -65,7 +64,6 @@
         <div id="login-message" class="auth-message hidden"></div>
         <button id="first-access-btn" class="first-access-btn hidden" type="button"><span>Primeira configuração</span><strong>Ativar conta Administrador →</strong></button>
       </div>
-
       <div id="auth-bootstrap-view" class="hidden">
         <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
         <h2>Primeiro acesso</h2>
@@ -80,7 +78,6 @@
         </form>
         <div id="bootstrap-message" class="auth-message hidden"></div>
       </div>
-
       <div id="auth-reset-view" class="hidden">
         <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
         <h2>Recuperar senha</h2>
@@ -91,7 +88,6 @@
         </form>
         <div id="reset-message" class="auth-message hidden"></div>
       </div>
-
       <div id="auth-new-password-view" class="hidden">
         <h2>Definir nova senha</h2>
         <p class="sub">Crie uma nova senha para concluir a recuperação da conta.</p>
@@ -102,12 +98,10 @@
         </form>
         <div id="new-password-message" class="auth-message hidden"></div>
       </div>
-
       <div class="auth-footer"><span id="auth-status-dot"></span><span id="auth-status-text">Conectando ao ambiente seguro...</span></div>
     </div>
   </div>
 </section>
-
 <div id="app-shell" class="app-shell hidden">
   <aside class="sidebar">
     <div class="brand-box"><img class="brand-logo" src="/logo-atlas-legalizacao.png?v=3.6" alt="ATLAS" onerror="this.style.display='none';this.parentElement.classList.add('logo-fallback')"></div>
@@ -118,6 +112,7 @@
       <button class="nav-item" data-page="processos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">▤</span><span>Processos</span></button>
       <button class="nav-item" data-page="clientes" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Empresas</span></button>
       <button class="nav-item" data-page="licencas" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">✓</span><span>Licenças</span></button>
+      <button class="nav-item" data-page="exigencias" data-roles="admin,operacao,auditoria"><span class="nav-ico">!</span><span>Exigências</span></button>
       <button class="nav-item" data-page="documentos" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">□</span><span>Documentos</span></button>
       <button class="nav-item" data-page="integracoes" data-roles="admin,operacao"><span class="nav-ico">⌘</span><span>Integrações</span></button>
       <div class="nav-group-title">Gestão</div>
@@ -139,23 +134,15 @@
       <div class="global-search"><input id="global-search" placeholder="Buscar empresa, processo, documento..."></div>
       <div class="top-actions">
         <button class="bell" aria-label="Notificações">♧</button>
-        <div class="user-block">
-          <div id="user-avatar" class="avatar">--</div>
-          <div><strong id="user-name">Usuário</strong><small id="user-role">Perfil</small></div>
-        </div>
+        <div class="user-block"><div id="user-avatar" class="avatar">--</div><div><strong id="user-name">Usuário</strong><small id="user-role">Perfil</small></div></div>
         <button id="logout-btn" class="logout-btn" type="button" title="Sair">↪</button>
       </div>
     </header>
     <main class="main">
-      <div class="page-head">
-        <div><span id="page-kicker" class="eyebrow">VISÃO GERAL</span><h1 id="page-title">Dashboard</h1><p id="page-desc"></p></div>
-        <button id="new-process-btn" class="btn btn-primary" type="button">＋ Novo processo</button>
-      </div>
+      <div class="page-head"><div><span id="page-kicker" class="eyebrow">VISÃO GERAL</span><h1 id="page-title">Dashboard</h1><p id="page-desc"></p></div><button id="new-process-btn" class="btn btn-primary" type="button">＋ Novo processo</button></div>
       <div id="page-content"></div>
     </main>
-    <footer class="system-legal-footer">
-      <span>© 2026 Marco Matos. Este programa é de propriedade de Marco Matos. Proibida a reprodução, distribuição ou utilização não autorizada. Todos os direitos reservados.</span>
-    </footer>
+    <footer class="system-legal-footer"><span>© 2026 Marco Matos. Este programa é de propriedade de Marco Matos. Proibida a reprodução, distribuição ou utilização não autorizada. Todos os direitos reservados.</span></footer>
   </div>
 </div>
 <div id="atlas-modal-root"></div>
