@@ -85,3 +85,51 @@
   function canEditForRole(role){return ['admin','operacao','financeiro'].includes(String(role||''));}
   root.AtlasV4Core={classifyDeadline,buildDashboardMetrics,buildTodayQueue,bucketLicenses,buildPendingSummary,canEditForRole,safeAmount};
 })(typeof window!=='undefined'?window:globalThis);
+
+// Auth gate 4.3: impede Dashboard/sidebar antes de uma autenticação autorizada.
+(function(root){
+  if(typeof document==='undefined')return;
+  const REMEMBER_KEY='atlas.rememberSession';
+  const TAB_KEY='atlas.currentLogin';
+  const login=document.getElementById('login-screen');
+  const app=document.getElementById('app-shell');
+  const style=document.createElement('style');
+  style.id='atlas-auth-visibility-gate';
+  style.textContent='.login-screen.hidden,.app-shell.hidden{display:none!important}';
+  document.head.appendChild(style);
+
+  const rememberEnabled=()=>localStorage.getItem(REMEMBER_KEY)==='1';
+  const tabAuthorized=()=>sessionStorage.getItem(TAB_KEY)==='1';
+  const canOpenApp=()=>rememberEnabled()||tabAuthorized();
+  const lockToLogin=()=>{app?.classList.add('hidden');login?.classList.remove('hidden');};
+  const clearAuthorization=()=>{sessionStorage.removeItem(TAB_KEY);localStorage.removeItem(REMEMBER_KEY);};
+
+  lockToLogin();
+
+  const originalShowApp=root.showApp;
+  if(typeof originalShowApp==='function'){
+    root.showApp=function guardedShowApp(profile){
+      if(!canOpenApp()){lockToLogin();return;}
+      return originalShowApp(profile);
+    };
+  }
+
+  document.getElementById('login-form')?.addEventListener('submit',()=>{
+    sessionStorage.setItem(TAB_KEY,'1');
+    const remember=!!document.getElementById('remember-session')?.checked;
+    if(remember)localStorage.setItem(REMEMBER_KEY,'1');
+    else localStorage.removeItem(REMEMBER_KEY);
+  },true);
+  document.getElementById('bootstrap-form')?.addEventListener('submit',()=>sessionStorage.setItem(TAB_KEY,'1'),true);
+  document.getElementById('logout-btn')?.addEventListener('click',clearAuthorization,true);
+
+  Promise.resolve(root.atlasAuth?.client?.auth?.getSession?.()).then(async result=>{
+    const session=result?.data?.session;
+    if(session&&!canOpenApp()){
+      await root.atlasAuth?.client?.auth?.signOut?.({scope:'local'});
+      lockToLogin();
+    }else if(!session){
+      lockToLogin();
+    }
+  }).catch(lockToLogin);
+})(typeof window!=='undefined'?window:globalThis);
