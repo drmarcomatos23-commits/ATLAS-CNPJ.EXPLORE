@@ -12,13 +12,17 @@
  const owner=p=>entityText(p.owner_name||p.responsible_name||p.owner,['full_name','name','label'])||'—';
  const next=p=>entityText(p.next_action||p.next_step||p.pending_action,['name','label','title'])||'Definir próxima ação';
  const BRAND='/atlas-sidebar-brand.svg?v=4.4';
+ const DASHBOARD_BRAND='/atlas-dashboard-brand.svg?v=4.2';
+ const isDashboardActive=()=>!!document.querySelector('[data-page="dashboard"].active');
  function normalizeBrands(root=document){
    const scope=root?.querySelectorAll?root:document;
    scope.querySelectorAll?.('img').forEach(img=>{
      const src=img.getAttribute('src')||'';
      const alt=(img.getAttribute('alt')||'').toLowerCase();
-     if(src.includes('logo-atlas-legalizacao')||src.includes('atlas-sidebar-brand')||(alt==='atlas'&&src&&!src.includes('oea'))){
-       if(img.getAttribute('src')!==BRAND)img.setAttribute('src',BRAND);
+     const dashboardSidebar=img.classList?.contains('brand-logo')&&isDashboardActive();
+     const desired=dashboardSidebar?DASHBOARD_BRAND:BRAND;
+     if(src.includes('logo-atlas-legalizacao')||src.includes('atlas-sidebar-brand')||src.includes('atlas-dashboard-brand')||(alt==='atlas'&&src&&!src.includes('oea'))){
+       if(img.getAttribute('src')!==desired)img.setAttribute('src',desired);
        img.style.objectFit='contain';img.style.filter='none';
      }
    });
