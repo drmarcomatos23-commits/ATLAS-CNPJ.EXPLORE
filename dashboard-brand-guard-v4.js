@@ -14,10 +14,10 @@
   };
   const ensureCertificates = () => {
     if (!document.querySelector('link[href^="/certificates-v4.css"]')) {
-      const css=document.createElement('link');css.rel='stylesheet';css.href='/certificates-v4.css?v=4.1';document.head.appendChild(css);
+      const css=document.createElement('link');css.rel='stylesheet';css.href='/certificates-v4.css?v=4.2';document.head.appendChild(css);
     }
     if (!document.querySelector('script[src^="/certificates-v4.js"]')) {
-      const js=document.createElement('script');js.src='/certificates-v4.js?v=4.1';document.head.appendChild(js);
+      const js=document.createElement('script');js.src='/certificates-v4.js?v=4.2';document.head.appendChild(js);
     }
     const nav=document.querySelector('#nav');
     if(nav&&!nav.querySelector('[data-page="certidoes"]')){
