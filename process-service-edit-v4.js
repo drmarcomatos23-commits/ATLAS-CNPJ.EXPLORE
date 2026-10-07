@@ -12,7 +12,15 @@
 
     shell('Alterar serviço',`<form id="process-service-form" class="modal-form-grid">
       <div class="field span-2"><label>Processo</label><input value="${escape(rec.public_code||rec.title||id)}" disabled></div>
-      <div class="field span-2"><label>Serviço</label><input id="process-service-value" required value="${escape(rec.service_type||'')}" placeholder="Informe o serviço"></div>
+      <div class="field span-2"><label>Serviço</label><select id="process-service-value" required>
+        <option value="legalizacao_empresarial" ${rec.service_type==='legalizacao_empresarial'?'selected':''}>Legalização empresarial</option>
+        <option value="abertura" ${rec.service_type==='abertura'?'selected':''}>Abertura</option>
+        <option value="alteracao_societaria" ${rec.service_type==='alteracao_societaria'?'selected':''}>Alteração societária</option>
+        <option value="regularizacao" ${rec.service_type==='regularizacao'?'selected':''}>Regularização</option>
+        <option value="licenciamento" ${rec.service_type==='licenciamento'?'selected':''}>Licenciamento</option>
+        <option value="baixa" ${rec.service_type==='baixa'?'selected':''}>Baixa</option>
+        <option value="encerramento" ${rec.service_type==='encerramento'?'selected':''}>Encerramento</option>
+      </select></div>
       <div class="modal-actions span-2"><button type="button" class="btn btn-muted" id="process-service-cancel">Cancelar</button><button id="process-service-save" class="btn btn-primary" type="submit">Salvar serviço</button></div>
       <div id="process-service-message" class="auth-message hidden span-2"></div>
     </form>`,true);
