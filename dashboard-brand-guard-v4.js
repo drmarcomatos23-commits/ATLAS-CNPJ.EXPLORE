@@ -21,6 +21,23 @@
     });
   };
 
+  const ensureNotificationAssets = () => {
+    if (!document.querySelector('link[data-atlas-notifications]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = '/notifications-v4.css?v=4.0';
+      link.dataset.atlasNotifications = 'css';
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('script[data-atlas-notifications]')) {
+      const script = document.createElement('script');
+      script.src = '/notifications-v4.js?v=4.0';
+      script.defer = true;
+      script.dataset.atlasNotifications = 'js';
+      document.head.appendChild(script);
+    }
+  };
+
   const sync = () => {
     const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
@@ -38,6 +55,7 @@
   });
 
   document.addEventListener('DOMContentLoaded', () => {
+    ensureNotificationAssets();
     sync();
     const img = document.querySelector('.brand-logo');
     if (img) new MutationObserver(sync).observe(img, { attributes: true, attributeFilter: ['src'] });
