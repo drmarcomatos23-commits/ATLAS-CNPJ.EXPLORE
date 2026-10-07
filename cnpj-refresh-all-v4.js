@@ -35,22 +35,55 @@
     return Object.fromEntries(Object.entries(source).filter(([,value])=>value!==undefined&&value!==null&&String(value).trim()!==''));
   }
 
+  function sourceUpdatedAt(payload){
+    const raw=payload?.atualizado_em||payload?.ultima_atualizacao||payload?.estabelecimento?.atualizado_em||payload?.estabelecimento?.ultima_atualizacao||'';
+    const time=raw?Date.parse(raw):NaN;
+    return Number.isFinite(time)?new Date(time).toISOString():null;
+  }
+
+  function shouldApplyRemotePatch(client,payload){
+    const sync=client?.metadata?.cnpj_sync||{};
+    if(!sync?.official_verified)return true;
+    const verified=Date.parse(sync?.verified_at||'');
+    const remote=Date.parse(sourceUpdatedAt(payload)||'');
+    if(!Number.isFinite(verified))return true;
+    if(!Number.isFinite(remote))return false;
+    return remote>verified;
+  }
+
   async function refreshAllRegisteredCnpjs(){
     if(running)return null;
     running=true;
     try{
       const db=atlasDb();
-      const {data,error}=await db.from('clients').select('id,tax_id');
+      const {data,error}=await db.from('clients').select('id,tax_id,metadata');
       if(error)throw new Error(error.message||'Falha ao carregar empresas.');
       const clients=(data||[]).filter(client=>digits(client?.tax_id).length===14);
-      let updated=0,failed=0;
+      let updated=0,failed=0,protectedCount=0;
       for(const client of clients){
         const cnpj=digits(client.tax_id);
         try{
-          const res=await fetch('/api/cnpj?cnpj='+encodeURIComponent(cnpj),{headers:{Accept:'application/json'}});
+          const fresh=Date.now();
+          const res=await fetch('/api/cnpj?cnpj='+encodeURIComponent(cnpj)+'&fresh='+fresh,{headers:{Accept:'application/json'},cache:'no-store'});
           const payload=await res.json().catch(()=>null);
           if(!res.ok)throw new Error(payload?.detalhes||payload?.titulo||'Falha na consulta');
+          if(!shouldApplyRemotePatch(client,payload)){
+            protectedCount++;
+            updated++;
+            continue;
+          }
           const patch=officialCompanyPatch(payload);
+          const remoteUpdatedAt=sourceUpdatedAt(payload);
+          patch.metadata={
+            ...(client.metadata||{}),
+            cnpj_sync:{
+              ...(client.metadata?.cnpj_sync||{}),
+              source:payload?._atlas_source||'Consulta CNPJ',
+              synced_at:new Date().toISOString(),
+              source_updated_at:remoteUpdatedAt,
+              official_verified:false
+            }
+          };
           if(Object.keys(patch).length){
             const {error:updateError}=await db.from('clients').update(patch).eq('id',client.id);
             if(updateError)throw updateError;
@@ -61,7 +94,7 @@
           console.warn('[ATLAS] Falha ao atualizar CNPJ',cnpj,err?.message||err);
         }
       }
-      return {total:clients.length,updated,failed};
+      return {total:clients.length,updated,failed,protected:protectedCount};
     } finally {
       running=false;
     }
@@ -79,8 +112,9 @@
     try{
       const result=await refreshAllRegisteredCnpjs();
       if(!result)return;
+      const protectedInfo=result.protected?`; ${result.protected} cadastro(s) oficial(is) mais recente(s) preservado(s)`:'';
       const info=result.total
-        ? ` Base atualizada: ${result.updated} de ${result.total} CNPJ(s) consultado(s)${result.failed?`; ${result.failed} com falha`:''}.`
+        ? ` Base atualizada: ${result.updated} de ${result.total} CNPJ(s) consultado(s)${result.failed?`; ${result.failed} com falha`:''}${protectedInfo}.`
         : ' Não há CNPJs válidos cadastrados para atualização.';
       msg.textContent=String(msg.textContent||'').replace(/\s*Base atualizada:.*$/,'').trim()+info;
       msg.className='auth-message success span-2';
@@ -103,5 +137,5 @@
     queueMicrotask(()=>afterIndividualLookup(btn,msg));
   });
 
-  window.AtlasCnpjRefreshAll={refreshAllRegisteredCnpjs,officialCompanyPatch};
+  window.AtlasCnpjRefreshAll={refreshAllRegisteredCnpjs,officialCompanyPatch,shouldApplyRemotePatch,sourceUpdatedAt};
 })();
