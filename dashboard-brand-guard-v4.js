@@ -38,6 +38,15 @@
     }
   };
 
+  const ensureReportVisualV4 = () => {
+    if (document.querySelector('script[data-atlas-report-v4]')) return;
+    const script = document.createElement('script');
+    script.src = '/report-emission-v4.js?v=4.0';
+    script.defer = true;
+    script.dataset.atlasReportV4 = '1';
+    document.head.appendChild(script);
+  };
+
   const sync = () => {
     const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
@@ -56,6 +65,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     ensureNotificationAssets();
+    ensureReportVisualV4();
     sync();
     const img = document.querySelector('.brand-logo');
     if (img) new MutationObserver(sync).observe(img, { attributes: true, attributeFilter: ['src'] });
