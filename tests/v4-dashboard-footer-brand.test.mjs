@@ -16,7 +16,7 @@ test('Dashboard oculta somente o subtitulo inferior e mantem o logo', () => {
     querySelector(selector){
       if(selector === '[data-page="dashboard"].active') return dashboardActive ? {} : null;
       if(selector === '.brand-logo') return img;
-      if(selector === '.sidebar-footer span[data-sidebar-subtitle]') return subtitle;
+      if(selector === '.sidebar-footer span:first-of-type') return subtitle;
       return null;
     },
     addEventListener(type, cb){ handlers[type]=cb; }
