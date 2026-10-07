@@ -5,7 +5,7 @@ const CONNECTORS={
   estadual:{label:'Estadual SP',portal:'https://www.dividaativa.pge.sp.gov.br/sc/pages/crda/emitirCrda.jsf'},
   municipal:{label:'Municipal Santos',portal:'https://egov.santos.sp.gov.br/tribusweb/CertidaoGeral/Certidao'}
 };
-module.exports=async function handler(req,res){
+export default async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   const type=String(req.query?.type||'').toLowerCase();
   const cnpj=String(req.query?.cnpj||'').replace(/\D/g,'');
