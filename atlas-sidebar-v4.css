@@ -4,6 +4,7 @@
 .app-shell{grid-template-columns:190px minmax(0,1fr)!important;}
 .sidebar{width:190px!important;background:#021732!important;border-right:1px solid rgba(255,255,255,.06)!important;box-shadow:3px 0 14px rgba(3,18,32,.10)!important;padding:6px 8px 12px!important;}
 .sidebar::after{display:none!important;content:none!important;}
+.brand-box::after{display:none!important;content:none!important;}
 .brand-box{background:transparent!important;border:0!important;border-bottom:0!important;box-shadow:none!important;border-radius:0!important;padding:4px 9px 11px!important;min-height:52px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;}
 .brand-logo{width:148px!important;max-width:100%!important;height:48px!important;object-fit:contain!important;object-position:left center!important;filter:none!important;margin:0!important;}
 .nav-list{gap:1px!important;padding:7px 2px 10px!important;}
