@@ -19,6 +19,9 @@
     if (!document.querySelector('script[src^="/certificates-v4.js"]')) {
       const js=document.createElement('script');js.src='/certificates-v4.js?v=4.2';document.head.appendChild(js);
     }
+    if (!document.querySelector('script[src^="/certificates-auto-v4.js"]')) {
+      const auto=document.createElement('script');auto.src='/certificates-auto-v4.js?v=4.1';document.head.appendChild(auto);
+    }
     const nav=document.querySelector('#nav');
     if(nav&&!nav.querySelector('[data-page="certidoes"]')){
       const licenses=nav.querySelector('[data-page="licencas"]');
