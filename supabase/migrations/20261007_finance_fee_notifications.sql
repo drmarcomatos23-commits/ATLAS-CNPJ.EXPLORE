@@ -61,7 +61,8 @@ declare
   v_due_text text;
   v_body text;
 begin
-  if not (new.fee_kind = 'junta_cartorio' or new.cost_type = 'registry_fee') then
+  if coalesce(new.fee_kind, '') <> 'junta_cartorio'
+     and coalesce(new.cost_type, '') <> 'registry_fee' then
     return new;
   end if;
 
