@@ -3,10 +3,14 @@
   const FULL = '/atlas-sidebar-brand.svg?v=4.4';
   const isDashboard = () => !!document.querySelector('[data-page="dashboard"].active');
   const sync = () => {
+    const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
-    if (!img) return;
-    const desired = isDashboard() ? SHORT : FULL;
-    if (img.getAttribute('src') !== desired) img.setAttribute('src', desired);
+    const subtitle = document.querySelector('.sidebar-footer span[data-sidebar-subtitle]');
+    if (img) {
+      const desired = dashboard ? SHORT : FULL;
+      if (img.getAttribute('src') !== desired) img.setAttribute('src', desired);
+    }
+    if (subtitle) subtitle.hidden = dashboard;
   };
   document.addEventListener('click', (e) => {
     if (e.target.closest?.('[data-page]')) queueMicrotask(sync);
