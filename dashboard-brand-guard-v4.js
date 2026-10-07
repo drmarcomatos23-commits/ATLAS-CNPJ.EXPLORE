@@ -5,7 +5,7 @@
   const sync = () => {
     const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
-    const subtitle = document.querySelector('.sidebar-footer span[data-sidebar-subtitle]');
+    const subtitle = document.querySelector('.sidebar-footer span:first-of-type');
     if (img) {
       const desired = dashboard ? SHORT : FULL;
       if (img.getAttribute('src') !== desired) img.setAttribute('src', desired);
