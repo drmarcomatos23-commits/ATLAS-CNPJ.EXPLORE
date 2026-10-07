@@ -10,8 +10,8 @@ test('migration cria notificacoes financeiras de taxa com RLS, deduplicacao e re
   assert.match(sql,/create\s+table\s+(if\s+not\s+exists\s+)?public\.atlas_notifications/i);
   assert.match(sql,/unique\s*\(\s*recipient_profile_id\s*,\s*event_type\s*,\s*cost_id\s*\)/i);
   assert.match(sql,/atlas_notify_finance_fee_created/i);
-  assert.match(sql,/fee_kind\s*=\s*'junta_cartorio'/i);
-  assert.match(sql,/cost_type\s*=\s*'registry_fee'/i);
+  assert.match(sql,/coalesce\(new\.fee_kind,\s*''\)\s*<>\s*'junta_cartorio'/i);
+  assert.match(sql,/coalesce\(new\.cost_type,\s*''\)\s*<>\s*'registry_fee'/i);
   assert.match(sql,/role\s*=\s*'financeiro'/i);
   assert.match(sql,/active\s*=\s*true/i);
   assert.match(sql,/atlas_notifications_fee_process_once_idx/i);
