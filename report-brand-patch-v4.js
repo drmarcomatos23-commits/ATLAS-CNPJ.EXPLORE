@@ -1,8 +1,8 @@
 (() => {
   const OLD_LOGO = 'logo-atlas-legalizacao.png';
-  const NEW_LOGO = 'atlas-brand-final.svg?v=4.0';
+  const NEW_LOGO = 'atlas-report-brand.svg?v=4.1';
   const OLD_STYLE = '.report-logo{width:74px;height:68px;object-fit:contain}';
-  const NEW_STYLE = '.report-logo{width:190px;height:64px;object-fit:contain;border-radius:10px;box-shadow:0 4px 14px rgba(11,41,69,.12)}';
+  const NEW_STYLE = '.report-logo{width:210px;height:66px;object-fit:contain}';
 
   function patchPopupDocument(popup){
     if (!popup?.document?.write) return popup;
