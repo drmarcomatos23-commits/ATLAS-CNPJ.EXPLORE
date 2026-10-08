@@ -41,7 +41,7 @@
   const ensureReportBrandPatchV4 = () => {
     if (document.querySelector('script[data-atlas-report-brand-v4]')) return;
     const patch = document.createElement('script');
-    patch.src = '/report-brand-patch-v4.js?v=4.5';
+    patch.src = '/report-brand-patch-v4.js?v=4.6';
     patch.defer = true;
     patch.dataset.atlasReportBrandV4 = '1';
     document.head.appendChild(patch);
