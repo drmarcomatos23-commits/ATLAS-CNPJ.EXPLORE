@@ -71,6 +71,23 @@
     document.head.appendChild(completion);
   };
 
+  const ensureMobileAppV4 = () => {
+    if (!document.querySelector('link[data-atlas-mobile-app-v4]')) {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet';
+      css.href = '/mobile-app-v4.css?v=4.3';
+      css.dataset.atlasMobileAppV4 = 'css';
+      document.head.appendChild(css);
+    }
+    if (!document.querySelector('script[data-atlas-mobile-app-v4]')) {
+      const script = document.createElement('script');
+      script.src = '/mobile-app-v4.js?v=4.3';
+      script.defer = true;
+      script.dataset.atlasMobileAppV4 = 'js';
+      document.head.appendChild(script);
+    }
+  };
+
   const sync = () => {
     const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
@@ -91,6 +108,7 @@
     ensureNotificationAssets();
     ensureReportVisualV4();
     ensureCompletionDateV4();
+    ensureMobileAppV4();
     sync();
     const img = document.querySelector('.brand-logo');
     if (img) new MutationObserver(sync).observe(img, { attributes: true, attributeFilter: ['src'] });
