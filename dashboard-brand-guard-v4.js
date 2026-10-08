@@ -38,12 +38,27 @@
     }
   };
 
+  const ensureReportBrandPatchV4 = () => {
+    if (document.querySelector('script[data-atlas-report-brand-v4]')) return;
+    const patch = document.createElement('script');
+    patch.src = '/report-brand-patch-v4.js?v=4.0';
+    patch.defer = true;
+    patch.dataset.atlasReportBrandV4 = '1';
+    document.head.appendChild(patch);
+  };
+
   const ensureReportVisualV4 = () => {
-    if (document.querySelector('script[data-atlas-report-v4]')) return;
+    const existing = document.querySelector('script[data-atlas-report-v4]');
+    if (existing) {
+      if (window.emitAtlasReportV4) ensureReportBrandPatchV4();
+      else existing.addEventListener('load', ensureReportBrandPatchV4, { once: true });
+      return;
+    }
     const script = document.createElement('script');
     script.src = '/report-emission-v4.js?v=4.0';
     script.defer = true;
     script.dataset.atlasReportV4 = '1';
+    script.addEventListener('load', ensureReportBrandPatchV4, { once: true });
     document.head.appendChild(script);
   };
 
