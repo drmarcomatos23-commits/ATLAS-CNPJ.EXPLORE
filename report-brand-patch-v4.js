@@ -1,21 +1,29 @@
 (() => {
   const OLD_LOGO = 'logo-atlas-legalizacao.png';
-  const NEW_LOGO = 'atlas-report-brand.svg?v=4.1';
+  const OEA_LOGO = 'oea-report-logo.png?v=1.0';
   const OLD_STYLE = '.report-logo{width:74px;height:68px;object-fit:contain}';
-  const NEW_STYLE = '.report-logo{width:210px;height:66px;object-fit:contain}';
+  const NEW_STYLE = '.report-logo{width:92px;height:68px;object-fit:contain}';
+
+  function patchReportHtml(html){
+    return String(html)
+      .replaceAll(OLD_LOGO, OEA_LOGO)
+      .replaceAll(OLD_STYLE, NEW_STYLE)
+      .replace('<div class="eyebrow">RELATÓRIO INSTITUCIONAL</div><h1>ATLAS Legalização e Gerenciamento</h1>', '<div class="eyebrow">OEA · ORGANIZAÇÃO EXCELÊNCIA ASSESSORIA</div><h1>Relatório Gerencial</h1>')
+      .replaceAll('<span>ATLAS Legalização e Gerenciamento</span>', '<span>OEA · Organização Excelência Assessoria</span>')
+      .replaceAll('<title>Relatório ATLAS</title>', '<title>Relatório Institucional</title>')
+      .replaceAll('alt="ATLAS"', 'alt="OEA"')
+      .replaceAll('ATLAS Legalização e Gerenciamento', 'Organização Excelência Assessoria')
+      .replaceAll('Relatório ATLAS', 'Relatório Institucional');
+  }
 
   function patchPopupDocument(popup){
     if (!popup?.document?.write) return popup;
     const nativeWrite = popup.document.write.bind(popup.document);
-    popup.document.write = (html) => nativeWrite(
-      String(html)
-        .replaceAll(OLD_LOGO, NEW_LOGO)
-        .replaceAll(OLD_STYLE, NEW_STYLE)
-    );
+    popup.document.write = (html) => nativeWrite(patchReportHtml(html));
     return popup;
   }
 
-  function emitWithNewBrand(period, composition){
+  function emitWithOeaBrand(period, composition){
     if (typeof window.emitAtlasReportV4 !== 'function') return;
     const nativeOpen = window.open;
     window.open = (...args) => patchPopupDocument(nativeOpen.apply(window, args));
@@ -35,13 +43,13 @@
     btn.dataset.atlasReportBrandV4 = '1';
     oldBtn.replaceWith(btn);
     btn.addEventListener('click', () => {
-      emitWithNewBrand(
+      emitWithOeaBrand(
         document.getElementById('report-period')?.value || 'monthly',
         document.getElementById('report-composition')?.value || 'processes'
       );
     });
   };
 
-  window.emitAtlasReport = emitWithNewBrand;
-  window.emitAtlasReportBrandedV4 = emitWithNewBrand;
+  window.emitAtlasReport = emitWithOeaBrand;
+  window.emitAtlasReportBrandedV4 = emitWithOeaBrand;
 })();
