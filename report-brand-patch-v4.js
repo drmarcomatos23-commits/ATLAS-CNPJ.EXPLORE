@@ -17,39 +17,22 @@
   }
 
   function patchPopupDocument(popup){
-    if (!popup?.document?.write) return popup;
+    if (!popup?.document?.write || popup.document.__oeaReportPatchedV4) return popup;
     const nativeWrite = popup.document.write.bind(popup.document);
-    popup.document.write = (html) => nativeWrite(patchReportHtml(html));
+    popup.document.write = (html) => {
+      const text = String(html);
+      const isReport = text.includes('Relatório ATLAS') || text.includes('ATLAS Legalização e Gerenciamento') || text.includes(OLD_LOGO);
+      return nativeWrite(isReport ? patchReportHtml(text) : text);
+    };
+    popup.document.__oeaReportPatchedV4 = true;
     return popup;
   }
 
-  function emitWithOeaBrand(period, composition){
-    if (typeof window.emitAtlasReportV4 !== 'function') return;
-    const nativeOpen = window.open;
-    window.open = (...args) => patchPopupDocument(nativeOpen.apply(window, args));
-    try {
-      return window.emitAtlasReportV4(period, composition);
-    } finally {
-      window.open = nativeOpen;
-    }
+  if (!window.__oeaReportWindowOpenPatchedV4) {
+    const nativeOpen = window.open.bind(window);
+    window.open = function(...args){
+      return patchPopupDocument(nativeOpen(...args));
+    };
+    window.__oeaReportWindowOpenPatchedV4 = true;
   }
-
-  const previousReportsPage = window.reportsPage;
-  window.reportsPage = async function(){
-    if (typeof previousReportsPage === 'function') await previousReportsPage();
-    const oldBtn = document.getElementById('report-emit-btn');
-    if (!oldBtn || oldBtn.dataset.atlasReportBrandV4 === '1') return;
-    const btn = oldBtn.cloneNode(true);
-    btn.dataset.atlasReportBrandV4 = '1';
-    oldBtn.replaceWith(btn);
-    btn.addEventListener('click', () => {
-      emitWithOeaBrand(
-        document.getElementById('report-period')?.value || 'monthly',
-        document.getElementById('report-composition')?.value || 'processes'
-      );
-    });
-  };
-
-  window.emitAtlasReport = emitWithOeaBrand;
-  window.emitAtlasReportBrandedV4 = emitWithOeaBrand;
 })();
