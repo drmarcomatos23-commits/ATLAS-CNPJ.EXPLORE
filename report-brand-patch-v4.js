@@ -1,8 +1,8 @@
 (() => {
   const OLD_LOGO = 'logo-atlas-legalizacao.png';
-  const OEA_LOGO = 'oea-report-logo.png?v=1.0';
+  const OEA_LOGO = 'oea-report-logo-correct.png?v=1.1';
   const OLD_STYLE = '.report-logo{width:74px;height:68px;object-fit:contain}';
-  const NEW_STYLE = '.report-logo{width:92px;height:68px;object-fit:contain}';
+  const NEW_STYLE = '.report-logo{width:118px;height:72px;object-fit:contain;object-position:center center;display:block;flex:0 0 auto}';
 
   function patchReportHtml(html){
     return String(html)
