@@ -4,14 +4,14 @@ import fs from 'node:fs';
 
 test('relatorios usam OEA e removem ATLAS do conteudo visivel',()=>{
   const patch=fs.readFileSync('report-brand-patch-v4.js','utf8');
-  assert.match(patch,/oea-report-logo-full\.png\?v=1\.1/);
+  assert.match(patch,/oea-report-logo-correct\.png\?v=1\.1/);
   assert.match(patch,/OEA · ORGANIZAÇÃO EXCELÊNCIA ASSESSORIA/);
   assert.match(patch,/Relatório Gerencial/);
   assert.match(patch,/Relatório Institucional/);
   assert.match(patch,/replaceAll\('ATLAS Legalização e Gerenciamento'/);
   assert.match(patch,/replaceAll\('Relatório ATLAS'/);
-  assert.match(patch,/width:132px;height:76px/);
-  assert.match(patch,/object-position:left center/);
+  assert.match(patch,/width:118px;height:72px/);
+  assert.match(patch,/object-position:center center/);
 });
 
 test('patch intercepta qualquer popup do gerador de relatorios',()=>{
@@ -23,6 +23,6 @@ test('patch intercepta qualquer popup do gerador de relatorios',()=>{
 
 test('guard carrega a versão atualizada do patch de marca',()=>{
   const guard=fs.readFileSync('dashboard-brand-guard-v4.js','utf8');
-  assert.match(guard,/report-brand-patch-v4\.js\?v=4\.4/);
+  assert.match(guard,/report-brand-patch-v4\.js\?v=4\.5/);
   assert.match(guard,/addEventListener\('load', ensureReportBrandPatchV4/);
 });
