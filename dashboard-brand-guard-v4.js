@@ -62,6 +62,23 @@
     document.head.appendChild(script);
   };
 
+  const ensureOperationalEnhancementsV4 = () => {
+    if (!document.querySelector('script[data-atlas-completion-date-v4]')) {
+      const completion = document.createElement('script');
+      completion.src = '/completion-date-v4.js?v=4.1';
+      completion.defer = true;
+      completion.dataset.atlasCompletionDateV4 = '1';
+      document.head.appendChild(completion);
+    }
+    if (!document.querySelector('script[data-atlas-sidebar-accordion-v4]')) {
+      const sidebar = document.createElement('script');
+      sidebar.src = '/sidebar-accordion-v4.js?v=4.1';
+      sidebar.defer = true;
+      sidebar.dataset.atlasSidebarAccordionV4 = '1';
+      document.head.appendChild(sidebar);
+    }
+  };
+
   const sync = () => {
     const dashboard = isDashboard();
     const img = document.querySelector('.brand-logo');
@@ -81,6 +98,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     ensureNotificationAssets();
     ensureReportVisualV4();
+    ensureOperationalEnhancementsV4();
     sync();
     const img = document.querySelector('.brand-logo');
     if (img) new MutationObserver(sync).observe(img, { attributes: true, attributeFilter: ['src'] });
