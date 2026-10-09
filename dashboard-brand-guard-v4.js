@@ -83,7 +83,7 @@
   const ensureProcessActionsV4 = () => {
     if (document.querySelector('script[data-atlas-process-actions-v4]')) return;
     const script = document.createElement('script');
-    script.src = '/process-actions-v4.js?v=4.1';
+    script.src = '/process-actions-v4.js?v=4.2';
     script.defer = true;
     script.dataset.atlasProcessActionsV4 = '1';
     document.head.appendChild(script);
