@@ -2,6 +2,7 @@
   const SHORT = '/atlas-dashboard-brand.svg?v=4.2';
   const FULL = '/atlas-sidebar-brand.svg?v=4.4';
   const isDashboard = () => !!document.querySelector('[data-page="dashboard"].active');
+  const isPhone = () => window.matchMedia('(max-width:760px)').matches;
 
   const syncProcessOpenButtons = (root = document) => {
     const rows = [];
@@ -9,7 +10,13 @@
     if (root?.querySelectorAll) rows.push(...root.querySelectorAll('.v4-process-row'));
     rows.forEach((row) => {
       const firstCell = row.firstElementChild;
-      if (!firstCell || firstCell.querySelector('.v4-process-cell-open')) return;
+      if (!firstCell) return;
+      if (isPhone()) {
+        firstCell.querySelectorAll('.v4-process-cell-open').forEach(btn => btn.remove());
+        firstCell.classList.remove('v4-process-cell');
+        return;
+      }
+      if (firstCell.querySelector('.v4-process-cell-open')) return;
       const source = row.querySelector('.v4-row-actions .mini-btn');
       if (!source || source.textContent.trim() !== 'Abrir') return;
       const button = source.cloneNode(true);
@@ -75,9 +82,16 @@
     if (!document.querySelector('link[data-atlas-mobile-app-v4]')) {
       const css = document.createElement('link');
       css.rel = 'stylesheet';
-      css.href = '/mobile-app-v4.css?v=4.3';
+      css.href = '/mobile-app-v4.css?v=4.4';
       css.dataset.atlasMobileAppV4 = 'css';
       document.head.appendChild(css);
+    }
+    if (!document.querySelector('link[data-atlas-process-mobile-fix-v4]')) {
+      const fix = document.createElement('link');
+      fix.rel = 'stylesheet';
+      fix.href = '/process-mobile-fix-v4.css?v=4.4';
+      fix.dataset.atlasProcessMobileFixV4 = 'css';
+      document.head.appendChild(fix);
     }
     if (!document.querySelector('script[data-atlas-mobile-app-v4]')) {
       const script = document.createElement('script');
@@ -103,6 +117,8 @@
   document.addEventListener('click', (e) => {
     if (e.target.closest?.('[data-page]')) queueMicrotask(sync);
   });
+
+  window.addEventListener('resize', () => queueMicrotask(sync));
 
   document.addEventListener('DOMContentLoaded', () => {
     ensureNotificationAssets();
