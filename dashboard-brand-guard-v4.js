@@ -18,8 +18,10 @@
       }
       if (firstCell.querySelector('.v4-process-cell-open')) return;
       const source = row.querySelector('.v4-row-actions .mini-btn');
-      if (!source || source.textContent.trim() !== 'Abrir') return;
+      if (!source || !/^(Abrir|Editar)$/i.test(source.textContent.trim())) return;
       const button = source.cloneNode(true);
+      button.textContent = 'Editar';
+      button.setAttribute('aria-label', 'Editar processo');
       button.classList.add('v4-process-cell-open');
       button.style.marginLeft = '8px';
       button.style.whiteSpace = 'nowrap';
@@ -78,6 +80,15 @@
     document.head.appendChild(completion);
   };
 
+  const ensureProcessActionsV4 = () => {
+    if (document.querySelector('script[data-atlas-process-actions-v4]')) return;
+    const script = document.createElement('script');
+    script.src = '/process-actions-v4.js?v=4.1';
+    script.defer = true;
+    script.dataset.atlasProcessActionsV4 = '1';
+    document.head.appendChild(script);
+  };
+
   const ensureMobileAppV4 = () => {
     if (!document.querySelector('link[data-atlas-mobile-app-v4]')) {
       const css = document.createElement('link');
@@ -124,6 +135,7 @@
     ensureNotificationAssets();
     ensureReportVisualV4();
     ensureCompletionDateV4();
+    ensureProcessActionsV4();
     ensureMobileAppV4();
     sync();
     const img = document.querySelector('.brand-logo');
