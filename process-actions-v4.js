@@ -1,11 +1,18 @@
 (() => {
   const profile = () => window.atlasCurrentProfile || window.atlasAuth?.getProfile?.() || {};
   const canManage = () => ['admin', 'operacao'].includes(String(profile().role || '').toLowerCase());
+  let decorateQueued = false;
 
   function processIdFrom(container) {
     const trigger = [...container.querySelectorAll('button')].find(btn => /openAtlasV4Process\(/.test(btn.getAttribute('onclick') || ''));
     const match = trigger?.getAttribute('onclick')?.match(/openAtlasV4Process\(['"]([^'"]+)['"]\)/);
     return match?.[1] || '';
+  }
+
+  function setEditButton(button) {
+    if (!button) return;
+    if (button.textContent.trim() !== 'Editar') button.textContent = 'Editar';
+    if (button.getAttribute('aria-label') !== 'Editar processo') button.setAttribute('aria-label', 'Editar processo');
   }
 
   function decorate(root = document) {
@@ -14,8 +21,7 @@
         button.remove();
         return;
       }
-      button.textContent = 'Editar';
-      button.setAttribute('aria-label', 'Editar processo');
+      setEditButton(button);
     });
 
     root.querySelectorAll?.('.v4-row-actions').forEach(container => {
@@ -23,12 +29,13 @@
       if (!openBtn) return;
 
       if (!canManage()) {
-        container.innerHTML = '<span class="muted">Consulta</span>';
+        if (!container.querySelector('.v4-process-consult-only')) {
+          container.innerHTML = '<span class="muted v4-process-consult-only">Consulta</span>';
+        }
         return;
       }
 
-      openBtn.textContent = 'Editar';
-      openBtn.setAttribute('aria-label', 'Editar processo');
+      setEditButton(openBtn);
 
       const id = processIdFrom(container);
       if (!id || container.querySelector('.v4-delete-process-btn')) return;
@@ -42,7 +49,22 @@
     });
   }
 
-  const observer = new MutationObserver(() => decorate(document));
+  function queueDecorate() {
+    if (decorateQueued) return;
+    decorateQueued = true;
+    queueMicrotask(() => {
+      decorateQueued = false;
+      decorate(document);
+    });
+  }
+
+  const observer = new MutationObserver((mutations) => {
+    const hasElementAdded = mutations.some(mutation =>
+      [...mutation.addedNodes].some(node => node.nodeType === 1)
+    );
+    if (hasElementAdded) queueDecorate();
+  });
+
   const start = () => {
     decorate(document);
     observer.observe(document.body, { childList: true, subtree: true });
