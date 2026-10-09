@@ -14,6 +14,14 @@ test('process action patch exposes explicit edit and delete controls only for au
   assert.match(src, /Consulta/);
 });
 
+test('process action observer is idempotent and ignores text-only mutations', () => {
+  const src = read('process-actions-v4.js');
+  assert.match(src, /textContent\.trim\(\)\s*!==\s*['"]Editar['"]/);
+  assert.match(src, /addedNodes/);
+  assert.match(src, /nodeType\s*===\s*1/);
+  assert.doesNotMatch(src, /new MutationObserver\(\(\)\s*=>\s*decorate\(document\)\)/);
+});
+
 test('security migration protects sensitive tables and audit logs', () => {
   const sql = read('supabase/migrations/20261009_security_policies_v1.sql');
   assert.match(sql, /revoke all on table public\.audit_logs from anon/i);
