@@ -9,6 +9,15 @@
   }
 
   function decorate(root = document) {
+    root.querySelectorAll?.('.v4-process-cell-open').forEach(button => {
+      if (!canManage()) {
+        button.remove();
+        return;
+      }
+      button.textContent = 'Editar';
+      button.setAttribute('aria-label', 'Editar processo');
+    });
+
     root.querySelectorAll?.('.v4-row-actions').forEach(container => {
       const openBtn = [...container.querySelectorAll('button')].find(btn => /openAtlasV4Process\(/.test(btn.getAttribute('onclick') || ''));
       if (!openBtn) return;
