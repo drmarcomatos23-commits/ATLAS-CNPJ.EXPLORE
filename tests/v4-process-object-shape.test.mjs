@@ -8,7 +8,15 @@ test('lista e pipeline exibem nomes de etapa e responsavel em vez de objetos bru
   globalThis.fmtDateBR=v=>v||'—';
   globalThis.setHead=()=>{};
   let body={innerHTML:''};
-  globalThis.document={querySelector:(sel)=>sel==='#v4-process-body'?body:null,querySelectorAll:()=>[]};
+  globalThis.document={
+    querySelector:(sel)=>sel==='#v4-process-body'?body:null,
+    querySelectorAll:()=>[],
+    getElementById:()=>null,
+    createElement:()=>({id:'',textContent:'',style:{}}),
+    head:{appendChild(){}},
+    body:{},
+    addEventListener(){}
+  };
   globalThis.page=()=>{};
   globalThis.loadOperationalData=async()=>({clients:[{id:'c1',legal_name:'RPA PRODUÇÕES E EVENTOS'}],processes:[{id:'p1',public_code:'LEG-2026-000016',client_id:'c1',service_type:'legalizacao_empresarial',stage:{id:'s1',name:'Constituição'},owner:{id:'u1',full_name:'Juliana Silva'},status:'in_progress'}],groups:[],templates:[],stages:[],profiles:[],protocols:[],costs:[],licenses:[]});
   globalThis.decorateProcesses=d=>d.processes;
