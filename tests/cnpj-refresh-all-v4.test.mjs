@@ -8,7 +8,7 @@ const html=fs.readFileSync('index.html','utf8');
 test('Consultar CNPJ carrega regra de atualização geral',()=>{
   assert.ok(html.includes('/cnpj-refresh-all-v4.js?v=4.1'));
   assert.match(js,/async function refreshAllRegisteredCnpjs\(/);
-  assert.match(js,/from\('clients'\)\.select\('id,tax_id'\)/);
+  assert.match(js,/from\('clients'\)\.select\('id,tax_id,metadata'\)/);
   assert.match(js,/closest\?\.\('#client-cnpj-consult'\)/);
 });
 
