@@ -12,17 +12,25 @@ test('Dashboard oculta somente o subtitulo inferior e mantem o logo', () => {
   };
   const subtitle = { hidden: false };
   const handlers = {};
+  const head = { appendChild(){} };
+  const body = {};
   const document = {
+    head,
+    body,
     querySelector(selector){
       if(selector === '[data-page="dashboard"].active') return dashboardActive ? {} : null;
       if(selector === '.brand-logo') return img;
       if(selector === '.sidebar-footer span:first-of-type') return subtitle;
+      if(selector.startsWith('link[data-atlas-') || selector.startsWith('script[data-atlas-')) return {};
       return null;
     },
+    querySelectorAll(){ return []; },
+    createElement(){ return { dataset:{}, addEventListener(){}, set rel(v){this._rel=v}, set href(v){this._href=v}, set src(v){this._src=v} }; },
     addEventListener(type, cb){ handlers[type]=cb; }
   };
   class MutationObserver { constructor(cb){ this.cb=cb; } observe(){} }
-  const context = { document, MutationObserver, queueMicrotask: (fn)=>fn() };
+  const window = { matchMedia:()=>({matches:false}), addEventListener(){}, emitAtlasReportV4:true };
+  const context = { document, window, MutationObserver, queueMicrotask: (fn)=>fn() };
   vm.runInNewContext(fs.readFileSync('dashboard-brand-guard-v4.js','utf8'), context);
   handlers.DOMContentLoaded();
   assert.equal(img.src, '/atlas-dashboard-brand.svg?v=4.2');
