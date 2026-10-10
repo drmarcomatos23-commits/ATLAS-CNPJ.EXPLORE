@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const index=fs.readFileSync('index.html','utf8');
+const shellCss=fs.readFileSync('atlas-v5.css','utf8');
 const css=fs.existsSync('modules-v5.css')?fs.readFileSync('modules-v5.css','utf8'):'';
 
 test('V5 carrega camada dos modulos secundarios antes do shell e mobile',()=>{
-  const modules=index.indexOf('/modules-v5.css?v=5.0');
+  assert.match(shellCss,/^@import url\("\/modules-v5\.css\?v=5\.0"\);/,'atlas-v5.css deve importar modules-v5.css no inicio');
   const shell=index.indexOf('/atlas-v5.css?v=5.0');
   const mobile=index.indexOf('/mobile-v5.css?v=5.0');
-  assert.ok(modules>=0,'modules-v5.css ausente do index');
-  assert.ok(modules<shell,'modules-v5.css deve carregar antes do shell global');
+  assert.ok(shell>=0,'atlas-v5.css ausente do index');
   assert.ok(shell<mobile,'mobile-v5.css deve continuar sendo a ultima camada responsiva');
 });
 
