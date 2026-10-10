@@ -1,0 +1,112 @@
+/* ATLAS Legalização V5 — módulos secundários
+   Licenças, Financeiro, Documentos, Relatórios e Configurações */
+
+/* Licenças */
+.license-company-list{gap:12px!important;}
+.license-grid{gap:12px!important;}
+.license-card{
+  border-color:var(--v5-border)!important;
+  border-radius:var(--v5-radius)!important;
+  padding:15px!important;
+  box-shadow:0 3px 12px rgba(7,25,43,.035)!important;
+}
+.license-card-top strong{font-size:var(--v5-font-sm)!important;line-height:1.35!important;color:var(--v5-text)!important;}
+.license-card-top span:not(.pill),.license-meta span{font-size:var(--v5-font-xs)!important;line-height:1.4!important;}
+.license-meta strong{font-size:var(--v5-font-sm)!important;line-height:1.35!important;}
+.license-edit-row{border-color:var(--v5-border)!important;border-radius:var(--v5-radius)!important;background:#fff!important;box-shadow:var(--v5-shadow)!important;}
+.license-edit-title strong{font-size:var(--v5-font-md)!important;}
+.license-edit-title span{font-size:var(--v5-font-xs)!important;}
+.license-expiry-panel{border-color:var(--v5-border)!important;border-radius:var(--v5-radius)!important;box-shadow:var(--v5-shadow)!important;padding:16px!important;}
+.license-expiry-head h2{font-size:var(--v5-font-lg)!important;letter-spacing:-.015em!important;color:var(--v5-text)!important;}
+.license-expiry-head p,.license-expiry-total{font-size:var(--v5-font-xs)!important;line-height:1.45!important;}
+.license-expiry-row{
+  min-height:72px;
+  grid-template-columns:minmax(240px,1.5fr) minmax(180px,1fr) 150px 140px auto;
+  border-color:#e1e9f0!important;
+  border-radius:10px!important;
+  background:#fff!important;
+}
+.license-expiry-company strong,.license-expiry-kind strong{font-size:var(--v5-font-sm)!important;line-height:1.35!important;}
+.license-expiry-company span,.license-expiry-kind span,.license-expiry-date span{font-size:var(--v5-font-xs)!important;}
+.license-expiry-date strong{font-size:var(--v5-font-lg)!important;}
+.license-expiry-row .mini-btn{min-height:36px;padding:8px 11px!important;border-radius:8px!important;}
+
+/* Financeiro */
+.finance-kpis{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;}
+.finance-kpis .kpi{min-height:112px!important;padding:16px!important;border-radius:var(--v5-radius)!important;}
+.finance-kpis .kpi-label{font-size:var(--v5-font-xs)!important;}
+.finance-kpis .kpi strong{font-size:24px!important;line-height:1.1!important;color:#0b315f!important;}
+.finance-kpis .kpi small{font-size:var(--v5-font-xs)!important;line-height:1.4!important;}
+.honorarios-control{border-radius:var(--v5-radius)!important;}
+.honorarios-control .table-wrap{border-radius:var(--v5-radius)!important;border-color:var(--v5-border)!important;}
+.honorarios-control table,.finance-kpis+section table{min-width:980px;}
+.honorarios-control th,.finance-kpis+section th{font-size:var(--v5-font-xs)!important;padding:10px 11px!important;background:#f6f8fb!important;}
+.honorarios-control td,.finance-kpis+section td{font-size:var(--v5-font-sm)!important;padding:11px!important;line-height:1.4!important;}
+.honorarios-control td .muted,.finance-kpis+section td .muted{font-size:var(--v5-font-xs)!important;line-height:1.35!important;}
+.row-actions{gap:6px!important;}
+.row-actions .mini-btn,.payment-confirm-btn{min-height:36px;padding:8px 10px!important;border-radius:8px!important;}
+.payment-confirm-btn{font-weight:850!important;}
+.payment-confirm-btn:not(:disabled){background:#e7f5ee!important;color:#0a7456!important;border-color:#c8e5d7!important;}
+.payment-confirm-btn:disabled{opacity:.78!important;}
+
+/* Documentos */
+.source-note{
+  border:1px solid #d9e6ef!important;
+  border-radius:10px!important;
+  background:#f7fafc!important;
+  color:#526a7f!important;
+  padding:12px 14px!important;
+  font-size:var(--v5-font-sm)!important;
+  line-height:1.5!important;
+}
+.source-note strong{color:#173b5d!important;}
+#page-content .table-wrap{border-color:var(--v5-border);}
+#page-content .table-wrap th{font-size:var(--v5-font-xs);}
+#page-content .table-wrap td{font-size:var(--v5-font-sm);line-height:1.4;}
+
+/* Relatórios */
+.report-actions{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+}
+.report-actions .btn,.report-actions .mini-btn{min-height:38px;border-radius:9px!important;}
+.report-card,.report-summary-card{
+  border:1px solid var(--v5-border)!important;
+  border-radius:var(--v5-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--v5-shadow)!important;
+}
+.report-card h3,.report-summary-card h3{font-size:var(--v5-font-md)!important;color:var(--v5-text)!important;}
+
+/* Configurações */
+.data-list{gap:0!important;}
+.data-row{
+  min-height:44px;
+  grid-template-columns:minmax(130px,180px) minmax(0,1fr)!important;
+  align-items:center!important;
+  padding:10px 4px!important;
+  border-bottom:1px solid #edf2f6!important;
+  font-size:var(--v5-font-sm)!important;
+}
+.data-row span{font-size:var(--v5-font-xs)!important;color:var(--v5-muted)!important;font-weight:700!important;}
+.data-row strong{font-size:var(--v5-font-sm)!important;color:var(--v5-text)!important;line-height:1.4!important;}
+
+@media (max-width:1180px){
+  .finance-kpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .license-expiry-row{grid-template-columns:1fr 1fr!important;}
+}
+
+@media (max-width:760px){
+  .finance-kpis{grid-template-columns:1fr!important;}
+  .finance-kpis .kpi{min-height:96px!important;}
+  .license-grid{grid-template-columns:1fr!important;}
+  .license-expiry-panel{padding:12px!important;}
+  .license-expiry-row{grid-template-columns:1fr!important;min-height:0;padding:13px!important;}
+  .license-expiry-row .mini-btn,.row-actions .mini-btn,.payment-confirm-btn{width:100%!important;min-height:44px!important;}
+  .source-note{padding:11px 12px!important;}
+  .data-row{grid-template-columns:1fr!important;gap:3px!important;align-items:start!important;}
+  .report-actions{display:grid;grid-template-columns:1fr;width:100%;}
+  .report-actions .btn,.report-actions .mini-btn{width:100%!important;min-height:44px!important;}
+}
