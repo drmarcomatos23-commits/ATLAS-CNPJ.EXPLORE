@@ -45,7 +45,7 @@
 .honorarios-control td .muted,.finance-kpis+section td .muted{font-size:var(--v5-font-xs)!important;line-height:1.35!important;}
 .row-actions{gap:6px!important;}
 .row-actions .mini-btn,.payment-confirm-btn{min-height:36px;padding:8px 10px!important;border-radius:8px!important;}
-.payment-confirm-btn{font-weight:850!important;}
+.payment-confirm-btn{min-height:36px!important;font-weight:850!important;}
 .payment-confirm-btn:not(:disabled){background:#e7f5ee!important;color:#0a7456!important;border-color:#c8e5d7!important;}
 .payment-confirm-btn:disabled{opacity:.78!important;}
 
