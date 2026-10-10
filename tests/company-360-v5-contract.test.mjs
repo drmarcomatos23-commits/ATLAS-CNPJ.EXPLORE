@@ -24,6 +24,14 @@ test('company 360 redecorates rows when group filters rebuild the company table'
   assert.match(js, /observer\.observe\(view,\s*\{\s*childList:\s*true,\s*subtree:\s*true\s*\}\)/);
 });
 
+test('company 360 resolves company by CNPJ before falling back to legal name', () => {
+  assert.match(js, /select\('id,legal_name,tax_id'\)/);
+  assert.match(js, /const\s+byTax\s*=\s*new\s+Map/);
+  assert.match(js, /const\s+taxId\s*=\s*String\(cells\[1\]\?\.textContent/);
+  assert.match(js, /replace\(\/\\D\/g,' '\)|replace\(\/\\D\/g,''\)/);
+  assert.match(js, /byTax\.get\(taxId\)\s*\|\|\s*byName\.get\(name\)/);
+});
+
 test('company 360 has sectioned responsive presentation', () => {
   assert.match(css, /\.company-360-grid/);
   assert.match(css, /\.company-360-section/);
