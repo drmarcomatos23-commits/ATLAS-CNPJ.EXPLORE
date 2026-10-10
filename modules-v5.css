@@ -1,6 +1,8 @@
 /* ATLAS Legalização V5 — módulos secundários
    Licenças, Financeiro, Documentos, Relatórios e Configurações */
 
+@import url("/support-modules-v5.css?v=5.0");
+
 /* Licenças */
 .license-company-list{gap:12px!important;}
 .license-grid{gap:12px!important;}
