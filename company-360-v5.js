@@ -1,11 +1,13 @@
 (() => {
   const previousClientPage = window.clientPage;
   let companyListObserver = null;
-  let companyIdByName = null;
+  let companyIdMaps = null;
 
   const esc360 = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[char]));
+
+  const taxKey360 = (value) => String(value ?? '').replace(/\D/g, '');
 
   const date360 = (value) => {
     if (!value) return '—';
@@ -155,25 +157,35 @@
   }
 
   async function loadCompanyIdMap() {
-    if (companyIdByName) return companyIdByName;
+    if (companyIdMaps) return companyIdMaps;
     const db = typeof atlasDb === 'function' ? atlasDb() : null;
-    if (!db) return new Map();
-    const { data, error } = await db.from('clients').select('id,legal_name').is('deleted_at', null);
-    if (error) return new Map();
-    companyIdByName = new Map((data || []).map(c => [String(c.legal_name || '').trim(), c.id]));
-    return companyIdByName;
+    if (!db) return { byTax: new Map(), byName: new Map() };
+    const { data, error } = await db.from('clients').select('id,legal_name,tax_id').is('deleted_at', null);
+    if (error) return { byTax: new Map(), byName: new Map() };
+    const byTax = new Map();
+    const byName = new Map();
+    for (const company of data || []) {
+      const taxId = taxKey360(company.tax_id);
+      const name = String(company.legal_name || '').trim();
+      if (taxId) byTax.set(taxId, company.id);
+      if (name && !byName.has(name)) byName.set(name, company.id);
+    }
+    companyIdMaps = { byTax, byName };
+    return companyIdMaps;
   }
 
   async function decorateCompanyRows() {
     const rows = [...document.querySelectorAll('#company-list-view tbody tr')];
     if (!rows.length) return;
-    const byName = await loadCompanyIdMap();
+    const { byTax, byName } = await loadCompanyIdMap();
 
     rows.forEach(row => {
       if (row.querySelector('.company-360-open')) return;
-      const firstCell = row.querySelector('td');
+      const cells = row.querySelectorAll('td');
+      const firstCell = cells[0];
       const name = firstCell?.querySelector('strong')?.textContent?.trim();
-      const id = byName.get(name);
+      const taxId = String(cells[1]?.textContent || '').replace(/\D/g,'');
+      const id = byTax.get(taxId) || byName.get(name);
       if (!firstCell || !id) return;
       const button = document.createElement('button');
       button.type = 'button';
@@ -200,7 +212,7 @@
 
   if (typeof previousClientPage === 'function') {
     window.clientPage = async function(...args) {
-      companyIdByName = null;
+      companyIdMaps = null;
       const result = await previousClientPage(...args);
       await decorateCompanyRows();
       watchCompanyList();
