@@ -1,0 +1,20 @@
+name: ATLAS Legalizacao V5 Checks
+
+on:
+  push:
+    branches:
+      - atlas-legalizacao-v5
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Run test suite
+        run: npm test
