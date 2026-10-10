@@ -1,0 +1,89 @@
+/* ATLAS Legalização V5 — módulos de apoio e administração */
+
+/* Exigências */
+.real-task{
+  min-height:72px;
+  padding:14px 15px!important;
+  border-color:var(--v5-border)!important;
+  border-radius:var(--v5-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--v5-shadow)!important;
+}
+.real-task strong{font-size:var(--v5-font-md)!important;line-height:1.35!important;color:var(--v5-text)!important;}
+.real-task small,.real-task span{font-size:var(--v5-font-xs)!important;line-height:1.45!important;}
+.real-task .mini-btn,.real-task .btn{min-height:36px!important;}
+
+/* Integrações */
+.integration-card{
+  padding:16px!important;
+  border-color:var(--v5-border)!important;
+  border-radius:var(--v5-radius)!important;
+  background:#fff!important;
+  box-shadow:var(--v5-shadow)!important;
+}
+.integration-card h3,.integration-card strong{font-size:var(--v5-font-md)!important;line-height:1.35!important;color:var(--v5-text)!important;}
+.integration-card p,.integration-card small,.integration-card span{font-size:var(--v5-font-sm)!important;line-height:1.5!important;color:var(--v5-muted)!important;}
+.integration-card .btn{min-height:36px!important;border-radius:8px!important;}
+
+/* Base de Conhecimento */
+.kb-search-wrap input{height:46px!important;border-radius:11px!important;font-size:13px!important;}
+.kb-category-btn{
+  min-height:36px!important;
+  padding:8px 12px!important;
+  font-size:var(--v5-font-sm)!important;
+  border-color:var(--v5-border)!important;
+}
+.kb-grid{gap:12px!important;}
+.kb-card{min-height:176px!important;padding:16px!important;border-color:var(--v5-border)!important;border-radius:var(--v5-radius)!important;box-shadow:var(--v5-shadow)!important;}
+.kb-category{font-size:var(--v5-font-xs)!important;}
+.kb-card h3{font-size:var(--v5-font-lg)!important;line-height:1.4!important;}
+.kb-card p{font-size:var(--v5-font-sm)!important;line-height:1.6!important;}
+.kb-tags span{font-size:var(--v5-font-xs)!important;padding:5px 8px!important;}
+.kb-audience,.kb-article-meta{font-size:var(--v5-font-xs)!important;}
+.kb-lead{font-size:var(--v5-font-md)!important;}
+.kb-article-section h3,.kb-answer-box h3{font-size:var(--v5-font-md)!important;}
+.kb-article-text,.kb-answer-box{font-size:var(--v5-font-sm)!important;}
+.kb-role-check{min-height:36px!important;font-size:var(--v5-font-sm)!important;}
+
+/* Treinamento */
+.training-intro h2{font-size:18px!important;color:var(--v5-text)!important;}
+.training-intro p{font-size:var(--v5-font-sm)!important;line-height:1.6!important;}
+.training-version,.training-kicker{font-size:var(--v5-font-xs)!important;}
+.training-grid{gap:12px!important;}
+.training-card{padding:16px!important;border-color:var(--v5-border)!important;border-radius:var(--v5-radius)!important;}
+.training-card h3{font-size:var(--v5-font-lg)!important;}
+.training-card p{font-size:var(--v5-font-sm)!important;line-height:1.6!important;}
+.training-modules span,.training-module-list span,.training-video-meta span{font-size:var(--v5-font-xs)!important;}
+.training-actions .btn{min-height:36px!important;border-radius:8px!important;}
+.training-steps>div{padding:12px!important;border-color:var(--v5-border)!important;}
+.training-steps span{font-size:var(--v5-font-sm)!important;line-height:1.55!important;}
+.training-video-copy p{font-size:var(--v5-font-sm)!important;}
+.training-manual-view p,.training-manual-view li{font-size:var(--v5-font-sm)!important;}
+.training-troubles strong,.training-troubles span{font-size:var(--v5-font-xs)!important;}
+
+/* Usuários */
+.users-list-card{
+  padding:16px!important;
+  border-color:var(--v5-border)!important;
+  border-radius:var(--v5-radius)!important;
+  box-shadow:var(--v5-shadow)!important;
+}
+.users-table{border-radius:10px!important;border-color:var(--v5-border)!important;}
+.users-table th{font-size:var(--v5-font-xs)!important;padding:10px 11px!important;background:#f5f8fb!important;}
+.users-table td{font-size:var(--v5-font-sm)!important;padding:11px!important;line-height:1.4!important;}
+.users-table .mini-btn{min-height:36px!important;border-radius:8px!important;}
+
+@media (max-width:760px){
+  .real-task{min-height:0!important;padding:13px!important;}
+  .real-task .mini-btn,.real-task .btn{width:100%!important;min-height:44px!important;}
+  .integration-card{padding:13px!important;}
+  .integration-card .btn{width:100%!important;min-height:44px!important;}
+  .kb-categories{overflow-x:auto!important;flex-wrap:nowrap!important;padding-bottom:5px!important;scrollbar-width:thin;}
+  .kb-category-btn{flex:0 0 auto!important;min-height:40px!important;}
+  .kb-card{min-height:0!important;padding:14px!important;}
+  .training-actions{display:grid!important;grid-template-columns:1fr!important;width:100%!important;}
+  .training-actions .btn{width:100%!important;min-height:44px!important;}
+  .users-list-card{padding:12px!important;}
+  .users-table{max-width:100%!important;overflow-x:auto!important;}
+  .users-table .mini-btn{min-height:44px!important;}
+}
