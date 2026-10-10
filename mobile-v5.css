@@ -34,6 +34,24 @@
   .v4-profile-select{display:none!important;}
   .v4-main-grid,.v4-bottom-grid{grid-template-columns:1fr!important;gap:9px!important;}
   .v4-card{min-width:0!important;max-width:100%!important;}
+
+  /* Dashboard: a fila "Minha Operação Hoje" vira cards verticais no mobile.
+     Ela não deve herdar a tabela desktop de 820px nem aceitar gesto horizontal. */
+  .v4-today .v4-table-scroll{overflow-x:hidden!important;overflow-y:visible!important;max-height:none!important;max-width:100%!important;border:0!important;border-radius:0!important;overscroll-behavior-x:none!important;touch-action:pan-y;}
+  .v4-today .v4-ops-table{min-width:0!important;width:100%!important;display:block!important;table-layout:fixed!important;}
+  .v4-today .v4-ops-table thead{display:none!important;}
+  .v4-today .v4-ops-table tbody{display:grid!important;width:100%!important;max-width:100%!important;gap:10px!important;}
+  .v4-today .v4-ops-table tbody tr{display:grid!important;grid-template-columns:1fr!important;width:100%!important;max-width:100%!important;min-width:0!important;gap:7px!important;padding:12px!important;border:1px solid var(--v5-border)!important;border-radius:12px!important;background:#fff!important;box-shadow:var(--v5-shadow)!important;}
+  .v4-today .v4-ops-table td{display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;padding:0!important;border:0!important;overflow-wrap:anywhere!important;word-break:normal!important;white-space:normal!important;}
+  .v4-today .v4-ops-table td:nth-child(n+3):nth-child(-n+7)::before{display:block;margin-bottom:3px;font-size:var(--v5-font-xs)!important;line-height:1.2;font-weight:800;letter-spacing:.035em;text-transform:uppercase;color:#8192a3;}
+  .v4-today .v4-ops-table td:nth-child(3)::before{content:'Empresa';}
+  .v4-today .v4-ops-table td:nth-child(4)::before{content:'Etapa atual';}
+  .v4-today .v4-ops-table td:nth-child(5)::before{content:'Prazo';}
+  .v4-today .v4-ops-table td:nth-child(6)::before{content:'Responsável';}
+  .v4-today .v4-ops-table td:nth-child(7)::before{content:'Próxima ação';}
+  .v4-today .v4-owner{display:flex!important;min-width:0!important;max-width:100%!important;flex-wrap:wrap!important;overflow-wrap:anywhere!important;}
+  .v4-today .v4-ops-table td:last-child .mini-btn{width:100%!important;min-height:44px!important;}
+
   .v4-process-list{width:100%!important;max-width:100%!important;display:grid!important;gap:10px!important;}
   .v4-process-head{display:none!important;}
   .v4-process-row{width:100%!important;max-width:100%!important;display:grid!important;grid-template-columns:1fr 1fr!important;gap:10px 12px!important;padding:14px!important;border:1px solid var(--v5-border)!important;border-radius:12px!important;background:#fff!important;}
