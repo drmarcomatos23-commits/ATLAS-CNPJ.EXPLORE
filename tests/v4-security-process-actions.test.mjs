@@ -9,9 +9,9 @@ test('processos V4 exibem editar e excluir apenas para perfis operacionais autor
   const actions = read('process-actions-v4.js');
   assert.match(operations, /C\.canEditForRole\(r\)&&!\['cliente','auditoria'\]\.includes\(r\)/);
   assert.match(actions, /\['admin',\s*'operacao'\]\.includes/);
-  assert.match(actions, />Editar</);
-  assert.match(actions, />Excluir</);
-  assert.match(actions, /deleteProcess\(/);
+  assert.match(actions, /textContent\s*=\s*'Editar'/);
+  assert.match(actions, /textContent\s*=\s*'Excluir'/);
+  assert.match(actions, /deleteProcess\?\.\(id\)/);
 });
 
 test('edição de processo concluído delega completed_at exclusivamente ao banco', () => {
