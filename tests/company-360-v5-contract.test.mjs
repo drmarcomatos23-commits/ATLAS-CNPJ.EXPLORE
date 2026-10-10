@@ -19,6 +19,11 @@ test('company 360 consolidates the operational data domains', () => {
   }
 });
 
+test('company 360 redecorates rows when group filters rebuild the company table', () => {
+  assert.match(js, /new\s+MutationObserver/);
+  assert.match(js, /observer\.observe\(view,\s*\{\s*childList:\s*true,\s*subtree:\s*true\s*\}\)/);
+});
+
 test('company 360 has sectioned responsive presentation', () => {
   assert.match(css, /\.company-360-grid/);
   assert.match(css, /\.company-360-section/);
