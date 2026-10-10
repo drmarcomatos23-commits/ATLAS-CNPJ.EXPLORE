@@ -1,5 +1,7 @@
 (() => {
   const previousClientPage = window.clientPage;
+  let companyListObserver = null;
+  let companyIdByName = null;
 
   const esc360 = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -40,12 +42,11 @@
 
     const modal = document.querySelector('#company-360-backdrop .company-360-modal');
     try {
-      const [clientRes, partnersRes, processesRes, licensesRes, documentsRes] = await Promise.all([
+      const [clientRes, partnersRes, processesRes, licensesRes] = await Promise.all([
         db.from('clients').select('*').eq('id', clientId).single(),
         db.from('client_partners').select('*').eq('client_id', clientId).order('full_name', { ascending: true }),
         db.from('processes').select('*').eq('client_id', clientId).order('created_at', { ascending: false }),
-        db.from('licenses').select('*').eq('client_id', clientId).order('expires_at', { ascending: true }),
-        db.from('documents').select('id,name,category,client_id,process_id,created_at').eq('client_id', clientId).order('created_at', { ascending: false })
+        db.from('licenses').select('*').eq('client_id', clientId).order('expires_at', { ascending: true })
       ]);
 
       if (clientRes.error) throw clientRes.error;
@@ -53,17 +54,24 @@
       const partners = partnersRes.data || [];
       const processes = processesRes.data || [];
       const licenses = licensesRes.data || [];
-      const documents = documentsRes.data || [];
       const processIds = processes.map(p => p.id);
 
       let costs = [];
-      if (processIds.length) {
-        const costsRes = await db.from('costs').select('*').in('process_id', processIds);
-        if (!costsRes.error) costs = costsRes.data || [];
-      } else {
-        // Mantém o domínio financeiro explícito no contrato mesmo quando não há processos.
-        await db.from('costs').select('id').limit(0);
-      }
+      let documents = [];
+      const [directDocsRes, processDocsRes, costsRes] = await Promise.all([
+        db.from('documents').select('id,name,category,client_id,process_id,created_at').eq('client_id', clientId).order('created_at', { ascending: false }),
+        processIds.length
+          ? db.from('documents').select('id,name,category,client_id,process_id,created_at').in('process_id', processIds).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+        processIds.length
+          ? db.from('costs').select('*').in('process_id', processIds)
+          : db.from('costs').select('id').limit(0)
+      ]);
+
+      if (!costsRes.error && processIds.length) costs = costsRes.data || [];
+      const docsById = new Map();
+      for (const doc of [...(directDocsRes.data || []), ...(processDocsRes.data || [])]) docsById.set(doc.id, doc);
+      documents = [...docsById.values()].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 
       const activeProcesses = processes.filter(p => !['completed', 'cancelled'].includes(p.status)).length;
       const overdueLicenses = licenses.filter(l => l.expires_at && new Date(`${l.expires_at}T23:59:59`) < new Date()).length;
@@ -146,14 +154,20 @@
     }
   }
 
-  async function decorateCompanyRows() {
+  async function loadCompanyIdMap() {
+    if (companyIdByName) return companyIdByName;
     const db = typeof atlasDb === 'function' ? atlasDb() : null;
-    const rows = [...document.querySelectorAll('#company-list-view tbody tr')];
-    if (!db || !rows.length) return;
-
+    if (!db) return new Map();
     const { data, error } = await db.from('clients').select('id,legal_name').is('deleted_at', null);
-    if (error) return;
-    const byName = new Map((data || []).map(c => [String(c.legal_name || '').trim(), c.id]));
+    if (error) return new Map();
+    companyIdByName = new Map((data || []).map(c => [String(c.legal_name || '').trim(), c.id]));
+    return companyIdByName;
+  }
+
+  async function decorateCompanyRows() {
+    const rows = [...document.querySelectorAll('#company-list-view tbody tr')];
+    if (!rows.length) return;
+    const byName = await loadCompanyIdMap();
 
     rows.forEach(row => {
       if (row.querySelector('.company-360-open')) return;
@@ -170,13 +184,26 @@
     });
   }
 
+  function watchCompanyList() {
+    companyListObserver?.disconnect();
+    const view = document.getElementById('company-list-view');
+    if (!view) return;
+    const observer = new MutationObserver(() => {
+      queueMicrotask(() => decorateCompanyRows());
+    });
+    observer.observe(view, { childList: true, subtree: true });
+    companyListObserver = observer;
+  }
+
   window.openCompany360V5 = openCompany360V5;
   window.closeCompany360V5 = closeCompany360V5;
 
   if (typeof previousClientPage === 'function') {
     window.clientPage = async function(...args) {
+      companyIdByName = null;
       const result = await previousClientPage(...args);
       await decorateCompanyRows();
+      watchCompanyList();
       return result;
     };
   }
