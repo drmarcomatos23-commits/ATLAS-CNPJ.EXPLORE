@@ -41,8 +41,10 @@ test('homologacao V5 cadastro de empresa consulta CNPJ, endereco e socios sem ap
 });
 
 test('homologacao V5 conclusao de processo permanece autoritativa no banco', () => {
-  assert.match(completionGuard, /completed_at/);
-  assert.match(completionGuard, /delete\s+copy\.completed_at|delete\s+payload\.completed_at/);
+  assert.match(completionGuard, /const cleanPayload = \(payload\) =>/);
+  assert.match(completionGuard, /delete\s+clean\.completed_at/);
+  assert.match(completionGuard, /payload\.map\(cleanPayload\)/);
+  assert.match(completionGuard, /cleanPayload\(payload\)/);
   assert.match(index, /process-completion-guard-v5\.js\?v=5\.0/);
 });
 
