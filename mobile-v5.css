@@ -34,6 +34,7 @@
   .v4-profile-select{display:none!important;}
   .v4-main-grid,.v4-bottom-grid{grid-template-columns:1fr!important;gap:9px!important;}
   .v4-card{min-width:0!important;max-width:100%!important;}
+  #new-process-btn{display:none!important;}
 
   /* Dashboard: a fila "Minha Operação Hoje" vira cards verticais no mobile.
      Ela não deve herdar a tabela desktop de 820px nem aceitar gesto horizontal. */
