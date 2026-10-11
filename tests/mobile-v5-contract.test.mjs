@@ -28,3 +28,7 @@ test('dashboard today queue becomes vertical cards instead of horizontal table s
   assert.match(css, /\.v4-today\s+\.v4-ops-table\s+tbody\s+tr\s*\{[^}]*display:\s*grid!important[^}]*grid-template-columns:\s*1fr!important/);
   assert.match(css, /\.v4-today\s+\.v4-ops-table\s+td\s*\{[^}]*min-width:\s*0!important[^}]*overflow-wrap:\s*anywhere!important/);
 });
+
+test('mobile V5 removes the redundant floating new-process button', () => {
+  assert.match(css, /#new-process-btn\s*\{[^}]*display:\s*none!important/);
+});
