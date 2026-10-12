@@ -1,6 +1,6 @@
 (() => {
   function escA(v){
-    return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+    return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function sortCompaniesAlpha(list){
     return [...(list||[])].sort((a,b)=>String(a?.legal_name||'').localeCompare(String(b?.legal_name||''),'pt-BR',{sensitivity:'base',numeric:true}));
