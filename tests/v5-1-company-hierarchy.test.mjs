@@ -51,6 +51,16 @@ test('abertura de um novo formulário limpa hierarquia pendente de tentativa ant
   assert.match(hierarchy, /async function injectHierarchyFields[^]*pendingHierarchy\s*=\s*null/);
 });
 
+test('matriz com filiais ativas não pode ser convertida em filial', () => {
+  assert.match(hierarchy, /Matriz com filiais vinculadas não pode ser convertida em filial/);
+  assert.match(hierarchy, /activeBranchesForMatrix/);
+});
+
+test('matriz com filiais ativas não pode ser arquivada isoladamente', () => {
+  assert.match(hierarchy, /Não é possível arquivar a matriz enquanto houver filiais ativas vinculadas/);
+  assert.match(hierarchy, /previousArchiveClient/);
+});
+
 test('Empresa 360 mostra a estrutura matriz e filiais no mesmo cadastro visual', () => {
   assert.match(hierarchy, /Matriz e filiais/);
   assert.match(hierarchy, /companyFamily/);
