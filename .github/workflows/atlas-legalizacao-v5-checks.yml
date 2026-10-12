@@ -19,3 +19,10 @@ jobs:
           node-version: '24'
       - name: Run test suite
         run: npm test
+      - name: Syntax check V5.1 modules
+        run: |
+          node --check dashboard-v4.js
+          node --check company-360-v5.js
+          node --check command-center-v4.js
+          node --check pwa-v5-1.js
+          node --check sw-v5-1.js
