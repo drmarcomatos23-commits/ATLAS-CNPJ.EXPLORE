@@ -6,8 +6,9 @@ const dashboard = readFileSync('dashboard-v4.js', 'utf8');
 const css = readFileSync('dashboard-v5.css', 'utf8');
 
 test('Central de Pendências V5.1 torna as cinco categorias clicáveis', () => {
+  assert.match(dashboard, /data-pending-kind="\$\{kind\}"/);
   for (const kind of ['cliente', 'financeiro', 'equipe', 'licencas', 'orgao']) {
-    assert.match(dashboard, new RegExp(`data-pending-kind=["']${kind}["']`));
+    assert.match(dashboard, new RegExp(`item\\(['"]${kind}['"]`));
   }
   assert.match(dashboard, /openAtlasV51Pending/);
   assert.match(dashboard, /pendingRecords/);
