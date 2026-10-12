@@ -60,8 +60,9 @@ begin
     audit_client_id := nullif(row_data ->> 'id', '')::uuid;
   end if;
 
+  -- Não interrompe a operação principal quando o registro não puder ser escopado.
   if audit_org_id is null then
-    return coalesce(new, old);
+    return null;
   end if;
 
   audit_label := coalesce(
@@ -75,18 +76,14 @@ begin
   );
 
   if tg_op = 'UPDATE' then
-    select coalesce(jsonb_agg(keys.key order by keys.key), '[]'::jsonb)
+    select coalesce(jsonb_agg(changed.key order by changed.key), '[]'::jsonb)
       into changed_fields
     from (
-      select key
-      from jsonb_object_keys(row_data || previous_data) as key
-      where row_data -> key is distinct from previous_data -> key
-        and key not in ('updated_at')
-    ) as keys;
-  elsif tg_op = 'INSERT' then
-    changed_fields := '[]'::jsonb;
-  else
-    changed_fields := '[]'::jsonb;
+      select k.key
+      from jsonb_object_keys(row_data || previous_data) as k(key)
+      where row_data -> k.key is distinct from previous_data -> k.key
+        and k.key <> 'updated_at'
+    ) as changed;
   end if;
 
   insert into public.audit_logs (
@@ -110,11 +107,12 @@ begin
     ))
   );
 
-  return coalesce(new, old);
+  -- O retorno de AFTER triggers é ignorado pelo PostgreSQL.
+  return null;
 end;
 $$;
 
--- Trigger function is internal: users do not call it directly.
+-- Trigger function é interna: usuários não a chamam diretamente.
 revoke all on function atlas_private.capture_audit_log() from public;
 revoke all on function atlas_private.capture_audit_log() from anon;
 revoke all on function atlas_private.capture_audit_log() from authenticated;
