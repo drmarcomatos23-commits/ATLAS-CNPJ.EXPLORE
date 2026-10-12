@@ -1,0 +1,23 @@
+{
+  "id": "/",
+  "name": "ATLAS Legalização e Gerenciamento",
+  "short_name": "ATLAS",
+  "description": "Gestão de legalização empresarial, processos, custos, documentos e licenças.",
+  "lang": "pt-BR",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#f2f6fb",
+  "theme_color": "#07192b",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/atlas-pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
