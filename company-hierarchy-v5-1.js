@@ -248,8 +248,8 @@
   });
 
   function rowClient(row, list) {
-    const cells = row.querySelectorAll('td');
-    const tax = digits(cells[2]?.textContent || cells[1]?.textContent || '');
+    const cells = [...row.querySelectorAll('td')];
+    const tax = cells.map(cell => digits(cell.textContent || '')).find(value => value.length === 14) || '';
     const name = row.querySelector('td strong')?.textContent?.trim() || '';
     return list.find(client => tax && digits(client.tax_id) === tax) || list.find(client => client.legal_name === name) || null;
   }
@@ -275,6 +275,7 @@
   async function decorateHierarchyRows() {
     const view = document.getElementById('company-list-view');
     if (!view || view.dataset.hierarchyBusy === '1') return;
+    hierarchyObserver?.disconnect();
     view.dataset.hierarchyBusy = '1';
     try {
       const list = await loadClients(true);
@@ -320,6 +321,7 @@
       }
     } finally {
       view.dataset.hierarchyBusy = '0';
+      if (document.getElementById('company-list-view') === view) watchHierarchyList();
     }
   }
 
