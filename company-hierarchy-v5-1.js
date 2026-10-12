@@ -59,12 +59,20 @@
     };
   }
 
+  function effectiveGroupId(record, list = clientCache) {
+    if (!record) return null;
+    const normalized = normalizeClientHierarchy(record, list);
+    if (normalized.establishment_type !== 'filial') return record.group_id || null;
+    const matrix = list.find(candidate => candidate.id === normalized.parent_client_id);
+    return matrix?.group_id || record.group_id || null;
+  }
+
   async function loadClients(force = false) {
     if (clientCache.length && !force) return clientCache;
     const db = typeof atlasDb === 'function' ? atlasDb() : null;
     if (!db) return [];
     const { data, error } = await db.from('clients')
-      .select('id,legal_name,trade_name,tax_id,city,state,metadata,deleted_at')
+      .select('id,legal_name,trade_name,tax_id,city,state,group_id,metadata,deleted_at')
       .is('deleted_at', null)
       .order('legal_name', { ascending: true });
     if (error) return [];
@@ -93,6 +101,14 @@
       const label = `${matrix.legal_name || matrix.trade_name || 'Matriz'}${matrix.tax_id ? ' · ' + matrix.tax_id : ''}`;
       return `<option value="${escHierarchy(matrix.id)}" ${matrix.id === selectedId ? 'selected' : ''}>${escHierarchy(label)}</option>`;
     }).join('');
+  }
+
+  function inheritMatrixGroup(parentId) {
+    if (!parentId) return;
+    const matrix = clientCache.find(client => client.id === parentId);
+    const groupSelect = document.getElementById('client-group-id');
+    if (!matrix?.group_id || !groupSelect) return;
+    if ([...groupSelect.options].some(option => option.value === matrix.group_id)) groupSelect.value = matrix.group_id;
   }
 
   async function updateHierarchyControls({ type, parentId = '', currentId = '' } = {}) {
@@ -132,6 +148,7 @@
   }
 
   async function injectHierarchyFields(id = '', parentId = '') {
+    pendingHierarchy = null;
     const form = document.getElementById('client-real-form');
     const cnpjMessage = document.getElementById('client-cnpj-message');
     if (!form || !cnpjMessage || form.dataset.hierarchyV51 === '1') return;
@@ -165,10 +182,15 @@
     `);
 
     await updateHierarchyControls({ type: initialType, parentId: initialParent, currentId: id });
+    if (!id && parentId) inheritMatrixGroup(parentId);
 
     const typeSelect = document.getElementById('client-establishment-type');
     const cnpjInput = document.getElementById('client-tax-id');
+    const parentSelect = document.getElementById('client-parent-id');
     typeSelect?.addEventListener('change', () => updateHierarchyControls({ type: typeSelect.value, currentId: id }));
+    parentSelect?.addEventListener('change', () => {
+      if (!id && parentSelect.value) inheritMatrixGroup(parentSelect.value);
+    });
     cnpjInput?.addEventListener('blur', () => {
       const value = digits(cnpjInput.value);
       if (value.length === 14) classifyCnpjOfficially(value, id);
@@ -377,6 +399,7 @@
     establishmentTypeFromPayload,
     establishmentType,
     normalizeClientHierarchy,
+    effectiveGroupId,
     familyForCompany
   };
 
