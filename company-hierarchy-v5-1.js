@@ -2,6 +2,7 @@
   const previousOpenClientModal = window.openClientModal;
   const previousClientPage = window.clientPage;
   const previousOpenCompany360 = window.openCompany360V5;
+  const previousArchiveClient = window.archiveClient;
   let hierarchyObserver = null;
   let clientCache = [];
   let pendingHierarchy = null;
@@ -57,6 +58,13 @@
       parent_client_id: type === 'filial' ? parentClientId(record, list) : null,
       cnpj_root: record?.metadata?.cnpj_root || cnpjRoot(record?.tax_id)
     };
+  }
+
+  function activeBranchesForMatrix(matrixId, list = clientCache) {
+    if (!matrixId) return [];
+    return list
+      .map(client => normalizeClientHierarchy(client, list))
+      .filter(client => client.establishment_type === 'filial' && client.parent_client_id === matrixId);
   }
 
   function effectiveGroupId(record, list = clientCache) {
@@ -214,6 +222,19 @@
       const currentCnpj = document.getElementById('client-tax-id')?.value || '';
       const root = cnpjRoot(currentCnpj);
       const message = document.getElementById('client-form-message');
+
+      if (id && type === 'filial') {
+        const original = clientCache.find(client => client.id === id);
+        if (original && establishmentType(original) === 'matriz' && activeBranchesForMatrix(id, clientCache).length) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          if (message) {
+            message.textContent = 'Matriz com filiais vinculadas não pode ser convertida em filial. Desvincule ou arquive as filiais antes de alterar o tipo de estabelecimento.';
+            message.className = 'auth-message error span-2';
+          }
+          return;
+        }
+      }
 
       if (type === 'filial' && !parent) {
         event.preventDefault();
@@ -402,6 +423,7 @@
     establishmentTypeFromPayload,
     establishmentType,
     normalizeClientHierarchy,
+    activeBranchesForMatrix,
     effectiveGroupId,
     familyForCompany
   };
@@ -429,5 +451,21 @@
       await injectCompanyFamily(clientId);
       return result;
     };
+  }
+
+  if (typeof previousArchiveClient === 'function') {
+    window.archiveClient = async function(id) {
+      const list = await loadClients(true);
+      const record = list.find(client => client.id === id);
+      if (record && establishmentType(record) === 'matriz') {
+        const branches = activeBranchesForMatrix(id, list);
+        if (branches.length) {
+          alert(`Não é possível arquivar a matriz enquanto houver filiais ativas vinculadas (${branches.length}). Arquive ou desvincule as filiais primeiro.`);
+          return;
+        }
+      }
+      return previousArchiveClient(id);
+    };
+    window.deleteClient = window.archiveClient;
   }
 })();
