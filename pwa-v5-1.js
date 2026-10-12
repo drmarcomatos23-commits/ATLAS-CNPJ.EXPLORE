@@ -41,6 +41,15 @@
     }
   }
 
+  function loadEstablishmentContext(){
+    if(window.AtlasEstablishmentContextV51||document.querySelector('script[data-atlas-establishment-v51]'))return;
+    const script=document.createElement('script');
+    script.src='/establishment-context-v5-1.js?v=5.1';
+    script.async=false;
+    script.dataset.atlasEstablishmentV51='1';
+    document.head.appendChild(script);
+  }
+
   window.addEventListener('beforeinstallprompt',event=>{
     event.preventDefault();
     deferredInstallPrompt=event;
@@ -52,6 +61,8 @@
     deferredInstallPrompt=null;
     document.getElementById('atlas-pwa-install')?.classList.add('hidden');
   });
+
+  loadEstablishmentContext();
 
   window.addEventListener('DOMContentLoaded',()=>{
     ensureInstallButton();

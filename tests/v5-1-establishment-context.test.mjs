@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 
 const context = readFileSync('establishment-context-v5-1.js', 'utf8');
 const index = readFileSync('index.html', 'utf8');
+const pwa = readFileSync('pwa-v5-1.js', 'utf8');
 
 test('contexto operacional expõe rótulos consistentes de matriz e filial', () => {
   assert.match(context, /AtlasEstablishmentContextV51/);
@@ -42,7 +43,8 @@ test('busca global acrescenta matriz ou filial sem substituir o mecanismo existe
   assert.match(context, /MutationObserver/);
 });
 
-test('camada de contexto é carregada depois da hierarquia V5.1', () => {
-  assert.match(index, /establishment-context-v5-1\.js\?v=5\.1/);
-  assert.equal(index.indexOf('company-hierarchy-v5-1.js') < index.indexOf('establishment-context-v5-1.js'), true);
+test('camada de contexto é inicializada depois da hierarquia V5.1', () => {
+  assert.match(pwa, /establishment-context-v5-1\.js\?v=5\.1/);
+  assert.match(pwa, /loadEstablishmentContext/);
+  assert.equal(index.indexOf('company-hierarchy-v5-1.js') < index.indexOf('pwa-v5-1.js'), true);
 });
