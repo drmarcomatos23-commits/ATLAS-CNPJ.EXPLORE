@@ -15,9 +15,58 @@
     return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR');
   };
 
+  const dateTime360 = (value) => {
+    if (!value) return '—';
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? '—' : d.toLocaleString('pt-BR', {
+      dateStyle: 'short',
+      timeStyle: 'short'
+    });
+  };
+
   const money360 = (value) => Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency', currency: 'BRL'
   });
+
+  const auditActionLabel360 = (value) => ({
+    created: 'Criado',
+    updated: 'Alterado',
+    deleted: 'Excluído'
+  }[value] || value || 'Evento');
+
+  const auditEntityLabel360 = (value) => ({
+    clients: 'Empresa',
+    client_partners: 'Sócio',
+    processes: 'Processo',
+    licenses: 'Licença',
+    costs: 'Financeiro',
+    documents: 'Documento'
+  }[value] || value || 'Registro');
+
+  const auditFieldLabel360 = (value) => ({
+    legal_name: 'razão social',
+    trade_name: 'nome fantasia',
+    status: 'status',
+    title: 'processo',
+    due_date: 'prazo',
+    stage_id: 'etapa',
+    owner_id: 'responsável',
+    payment_status: 'situação do pagamento',
+    paid_at: 'data de pagamento',
+    amount: 'valor',
+    expires_at: 'vencimento',
+    name: 'nome',
+    full_name: 'nome do sócio'
+  }[value] || String(value || '').replaceAll('_', ' '));
+
+  const auditDetail360 = (log) => {
+    const payload = log?.payload || {};
+    const changed = Array.isArray(payload.changed_fields) ? payload.changed_fields : [];
+    if (log?.action === 'updated' && changed.length) {
+      return `Alterou: ${changed.map(auditFieldLabel360).join(', ')}`;
+    }
+    return payload.label || 'Registro operacional';
+  };
 
   const empty360 = (text) => `<div class="company-360-empty">${esc360(text)}</div>`;
 
@@ -60,20 +109,35 @@
 
       let costs = [];
       let documents = [];
-      const [directDocsRes, processDocsRes, costsRes] = await Promise.all([
+      const [directDocsRes, processDocsRes, costsRes, auditRes] = await Promise.all([
         db.from('documents').select('id,name,category,client_id,process_id,created_at').eq('client_id', clientId).order('created_at', { ascending: false }),
         processIds.length
           ? db.from('documents').select('id,name,category,client_id,process_id,created_at').in('process_id', processIds).order('created_at', { ascending: false })
           : Promise.resolve({ data: [], error: null }),
         processIds.length
           ? db.from('costs').select('*').in('process_id', processIds)
-          : db.from('costs').select('id').limit(0)
+          : db.from('costs').select('id').limit(0),
+        db.from('audit_logs')
+          .select('id,actor_id,action,entity_type,entity_id,payload,created_at')
+          .eq('payload->>client_id', String(clientId))
+          .order('created_at', { ascending: false })
+          .limit(60)
       ]);
 
       if (!costsRes.error && processIds.length) costs = costsRes.data || [];
       const docsById = new Map();
       for (const doc of [...(directDocsRes.data || []), ...(processDocsRes.data || [])]) docsById.set(doc.id, doc);
       documents = [...docsById.values()].sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+      const auditLogs = auditRes.error ? [] : (auditRes.data || []);
+      const actorNames = new Map();
+      const actorIds = [...new Set(auditLogs.map(log => log.actor_id).filter(Boolean))];
+      if (actorIds.length) {
+        const actorRes = await db.from('profiles').select('id,full_name').in('id', actorIds);
+        if (!actorRes.error) {
+          for (const actor of actorRes.data || []) actorNames.set(actor.id, actor.full_name || 'Usuário do sistema');
+        }
+      }
 
       const activeProcesses = processes.filter(p => !['completed', 'cancelled'].includes(p.status)).length;
       const overdueLicenses = licenses.filter(l => l.expires_at && new Date(`${l.expires_at}T23:59:59`) < new Date()).length;
@@ -142,6 +206,15 @@
             <section class="company-360-section span-2">
               <div class="company-360-section-head"><h3>Documentos</h3><span>Dossiê digital</span></div>
               ${sectionTable(['Documento','Categoria','Incluído em'], documents.map(d => `<tr><td><strong>${esc360(d.name || 'Documento')}</strong></td><td>${esc360(d.category || 'Geral')}</td><td>${date360(d.created_at)}</td></tr>`), 'Nenhum documento vinculado.')}
+            </section>
+
+            <section class="company-360-section span-2 company-360-history">
+              <div class="company-360-section-head"><h3>Histórico operacional</h3><span>${auditLogs.length} evento(s)</span></div>
+              ${sectionTable(
+                ['Data','Ação','Módulo','Responsável','Detalhes'],
+                auditLogs.map(log => `<tr><td>${dateTime360(log.created_at)}</td><td><strong>${esc360(auditActionLabel360(log.action))}</strong></td><td>${esc360(auditEntityLabel360(log.entity_type))}</td><td>${esc360(log.actor_id ? (actorNames.get(log.actor_id) || 'Usuário do sistema') : 'Automação')}</td><td>${esc360(auditDetail360(log))}</td></tr>`),
+                'Nenhum evento de auditoria disponível para esta empresa.'
+              )}
             </section>
           </div>
         </div>`;
