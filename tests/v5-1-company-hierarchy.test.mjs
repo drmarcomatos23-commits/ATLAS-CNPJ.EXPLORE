@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const hierarchy = readFileSync('company-hierarchy-v5-1.js', 'utf8');
+const archive = readFileSync('client-archive.js', 'utf8');
 const api = readFileSync('api/cnpj.js', 'utf8');
 const index = readFileSync('index.html', 'utf8');
 const css = readFileSync('company-hierarchy-v5-1.css', 'utf8');
@@ -38,6 +39,12 @@ test('nova filial iniciada pela matriz herda o grupo empresarial quando o seleto
   assert.match(hierarchy, /group_id/);
   assert.match(hierarchy, /inheritMatrixGroup/);
   assert.match(hierarchy, /client-group-id/);
+});
+
+test('filtro de grupos usa o grupo efetivo da matriz para filiais antigas sem group_id', () => {
+  assert.match(hierarchy, /effectiveGroupId/);
+  assert.match(archive, /AtlasCompanyHierarchyV51\?\.effectiveGroupId/);
+  assert.match(archive, /effectiveGroup\(c,list\)/);
 });
 
 test('abertura de um novo formulário limpa hierarquia pendente de tentativa anterior', () => {
