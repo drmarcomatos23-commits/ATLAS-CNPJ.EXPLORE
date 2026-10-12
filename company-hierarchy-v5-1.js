@@ -126,7 +126,10 @@
     parentWrap?.classList.toggle('hidden', resolvedType !== 'filial');
     renderParentOptions(parentSelect, matrices, parentId || parentSelect?.value || '');
 
-    if (resolvedType === 'filial' && matrices.length === 1 && !parentSelect?.value) parentSelect.value = matrices[0].id;
+    if (resolvedType === 'filial' && matrices.length === 1 && !parentSelect?.value) {
+      parentSelect.value = matrices[0].id;
+      if (!currentId) inheritMatrixGroup(matrices[0].id);
+    }
     if (note) {
       note.textContent = hierarchyHelp(resolvedType, root, matrices);
       note.className = `auth-message ${resolvedType === 'filial' && root && !matrices.length ? 'error' : 'info'} span-2`;
