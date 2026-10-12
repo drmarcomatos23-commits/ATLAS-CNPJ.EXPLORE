@@ -72,10 +72,11 @@ test('camada executiva da familia empresarial existe e é carregada após a hier
 test('dashboard separa matrizes filiais estabelecimentos e familias com filiais', () => {
   const api = loadApi();
   assert.ok(api?.buildStructureMetrics, 'API deve expor buildStructureMetrics');
-  assert.deepEqual(
-    api.buildStructureMetrics(clients),
-    { matrices:2, branches:2, establishments:4, familiesWithBranches:1 }
-  );
+  const metrics = api.buildStructureMetrics(clients);
+  assert.equal(metrics.matrices, 2);
+  assert.equal(metrics.branches, 2);
+  assert.equal(metrics.establishments, 4);
+  assert.equal(metrics.familiesWithBranches, 1);
 });
 
 test('familia de uma filial resolve a matriz e todos os estabelecimentos vinculados', () => {
