@@ -64,7 +64,7 @@
     const db = typeof atlasDb === 'function' ? atlasDb() : null;
     if (!db) return [];
     const { data, error } = await db.from('clients')
-      .select('id,legal_name,trade_name,tax_id,metadata,deleted_at')
+      .select('id,legal_name,trade_name,tax_id,city,state,metadata,deleted_at')
       .is('deleted_at', null)
       .order('legal_name', { ascending: true });
     if (error) return [];
