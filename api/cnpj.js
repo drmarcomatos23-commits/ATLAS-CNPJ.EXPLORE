@@ -37,14 +37,21 @@ async function fetchJson(url, timeoutMs) {
 function normalizeBrasilApi(b, cnpj) {
   const secondary = Array.isArray(b?.cnaes_secundarios) ? b.cnaes_secundarios : [];
   const partners = Array.isArray(b?.qsa) ? b.qsa : [];
+  const establishmentType = String(b?.descricao_identificador_matriz_filial || '').toUpperCase() ||
+    (Number(b?.identificador_matriz_filial) === 2 ? 'FILIAL' : Number(b?.identificador_matriz_filial) === 1 ? 'MATRIZ' : '');
   return {
     _atlas_source: 'BrasilAPI (fallback)',
     razao_social: b?.razao_social || b?.nome_fantasia || '',
     capital_social: b?.capital_social ?? null,
     natureza_juridica: { descricao: b?.descricao_natureza_juridica || b?.natureza_juridica || '' },
     porte: { descricao: b?.porte || '' },
+    descricao_identificador_matriz_filial: establishmentType,
+    identificador_matriz_filial: b?.identificador_matriz_filial ?? null,
     estabelecimento: {
       cnpj: b?.cnpj || cnpj,
+      tipo: establishmentType ? (establishmentType === 'FILIAL' ? 'Filial' : 'Matriz') : '',
+      descricao_identificador_matriz_filial: establishmentType,
+      identificador_matriz_filial: b?.identificador_matriz_filial ?? null,
       nome_fantasia: b?.nome_fantasia || '',
       situacao_cadastral: b?.descricao_situacao_cadastral || String(b?.situacao_cadastral || ''),
       data_inicio_atividade: b?.data_inicio_atividade || '',
