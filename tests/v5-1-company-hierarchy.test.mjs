@@ -42,6 +42,10 @@ test('Empresa 360 mostra a estrutura matriz e filiais no mesmo cadastro visual',
   assert.match(hierarchy, /openCompany360V51Member/);
 });
 
+test('Empresa 360 carrega cidade e UF de todos os membros da família empresarial', () => {
+  assert.match(hierarchy, /select\('id,legal_name,trade_name,tax_id,city,state,metadata,deleted_at'\)/);
+});
+
 test('camada de hierarquia é carregada depois da Empresa 360 sem substituir produção', () => {
   assert.match(index, /company-hierarchy-v5-1\.css\?v=5\.1/);
   assert.match(index, /company-hierarchy-v5-1\.js\?v=5\.1/);
