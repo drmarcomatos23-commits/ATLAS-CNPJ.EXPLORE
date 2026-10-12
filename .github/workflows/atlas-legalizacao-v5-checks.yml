@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - atlas-legalizacao-v5
+      - atlas-legalizacao-v5.1
 
 jobs:
   test:
