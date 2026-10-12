@@ -1,12 +1,15 @@
 (() => {
   function escA(v){
-    return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
   }
   function sortCompaniesAlpha(list){
     return [...(list||[])].sort((a,b)=>String(a?.legal_name||'').localeCompare(String(b?.legal_name||''),'pt-BR',{sensitivity:'base',numeric:true}));
   }
   function sortGroupsAlpha(list){
     return [...(list||[])].sort((a,b)=>String(a?.name||'').localeCompare(String(b?.name||''),'pt-BR',{sensitivity:'base',numeric:true}));
+  }
+  function effectiveGroup(c,list){
+    return window.AtlasCompanyHierarchyV51?.effectiveGroupId?.(c,list) ?? c?.group_id ?? null;
   }
 
   window.archiveClient=async function(id){
@@ -93,7 +96,8 @@
     const grouped=new Map(groups.map(g=>[g.id,[]]));
     const ungrouped=[];
     sortCompaniesAlpha(list).forEach(c=>{
-      if(c.group_id&&grouped.has(c.group_id))grouped.get(c.group_id).push(c);
+      const groupId=effectiveGroup(c,list);
+      if(groupId&&grouped.has(groupId))grouped.get(groupId).push(c);
       else ungrouped.push(c);
     });
 
@@ -249,14 +253,14 @@
         return;
       }
       if(value==='__ungrouped__'){
-        const rows=list.filter(c=>!c.group_id);
+        const rows=list.filter(c=>!effectiveGroup(c,list));
         view.innerHTML=rows.length
           ? ungroupedBlock(rows,processCounts,role)
           : '<div class="empty-state"><div class="empty-icon">↳</div><h3>Nenhuma empresa sem grupo</h3><p>Todas as empresas estão categorizadas.</p></div>';
         return;
       }
       const group=groups.find(g=>g.id===value);
-      const rows=list.filter(c=>c.group_id===value);
+      const rows=list.filter(c=>effectiveGroup(c,list)===value);
       view.innerHTML=group&&rows.length
         ? groupBlock(group,rows,processCounts,role)
         : '<div class="empty-state"><div class="empty-icon">↳</div><h3>Nenhuma empresa neste grupo</h3><p>Vincule empresas ao grupo no cadastro ou edição da empresa.</p></div>';
@@ -288,7 +292,7 @@
         const option=[...filter.options].find(o=>o.value===group.id);
         if(option)option.textContent=normalized;
         filter.value=group.id;
-        view.innerHTML=groupBlock(group,list.filter(c=>c.group_id===group.id),processCounts,role);
+        view.innerHTML=groupBlock(group,list.filter(c=>effectiveGroup(c,list)===group.id),processCounts,role);
         alert('Nome do grupo atualizado com sucesso.');
       }catch(err){
         const raw=String(err?.message||err||'');
