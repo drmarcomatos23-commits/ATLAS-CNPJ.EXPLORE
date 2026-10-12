@@ -23,6 +23,8 @@ jobs:
         run: |
           node --check dashboard-v4.js
           node --check company-360-v5.js
+          node --check company-hierarchy-v5-1.js
           node --check command-center-v4.js
           node --check pwa-v5-1.js
           node --check sw-v5-1.js
+          node --check api/cnpj.js
