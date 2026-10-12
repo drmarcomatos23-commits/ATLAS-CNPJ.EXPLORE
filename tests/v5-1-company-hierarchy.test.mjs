@@ -34,6 +34,16 @@ test('lista de empresas agrupa filiais dentro da matriz e permite criar filial p
   assert.match(css, /\.company-branch-row/);
 });
 
+test('nova filial iniciada pela matriz herda o grupo empresarial quando o seletor está disponível', () => {
+  assert.match(hierarchy, /group_id/);
+  assert.match(hierarchy, /inheritMatrixGroup/);
+  assert.match(hierarchy, /client-group-id/);
+});
+
+test('abertura de um novo formulário limpa hierarquia pendente de tentativa anterior', () => {
+  assert.match(hierarchy, /async function injectHierarchyFields[^]*pendingHierarchy\s*=\s*null/);
+});
+
 test('Empresa 360 mostra a estrutura matriz e filiais no mesmo cadastro visual', () => {
   assert.match(hierarchy, /Matriz e filiais/);
   assert.match(hierarchy, /companyFamily/);
@@ -43,7 +53,7 @@ test('Empresa 360 mostra a estrutura matriz e filiais no mesmo cadastro visual',
 });
 
 test('Empresa 360 carrega cidade e UF de todos os membros da família empresarial', () => {
-  assert.match(hierarchy, /select\('id,legal_name,trade_name,tax_id,city,state,metadata,deleted_at'\)/);
+  assert.match(hierarchy, /select\('id,legal_name,trade_name,tax_id,city,state,group_id,metadata,deleted_at'\)/);
 });
 
 test('camada de hierarquia é carregada depois da Empresa 360 sem substituir produção', () => {
