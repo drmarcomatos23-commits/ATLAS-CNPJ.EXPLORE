@@ -244,7 +244,7 @@
   });
  }
 
- root.AtlasV4Search={buildIndex,search,groupResults,activate,targetPage,hierarchyContext};
+ root.AtlasV4Search={buildIndex,search,groupResults,activate,targetPage,hierarchyContext,ensureData};
  if(root.document?.addEventListener){
   root.document.addEventListener('DOMContentLoaded',bind);
   root.document.addEventListener('keydown',event=>{
