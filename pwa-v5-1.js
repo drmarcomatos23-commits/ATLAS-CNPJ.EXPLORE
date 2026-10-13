@@ -34,7 +34,7 @@
   async function registerServiceWorker(){
     if(!('serviceWorker' in navigator))return;
     try{
-      const registration=await navigator.serviceWorker.register('/sw-v5-1.js?v=5.1',{scope:'/'});
+      const registration=await navigator.serviceWorker.register('/sw-v5-1.js?v=5.1',{scope:'/',updateViaCache:'none'});
       registration.update?.();
     }catch(error){
       console.warn('ATLAS PWA: service worker indisponível',error);
