@@ -9,7 +9,7 @@ const css=fs.existsSync('modules-v5.css')?fs.readFileSync('modules-v5.css','utf8
 test('V5 carrega camada dos modulos secundarios antes do shell e mobile',()=>{
   assert.match(shellCss,/^@import url\("\/modules-v5\.css\?v=5\.0"\);/,'atlas-v5.css deve importar modules-v5.css no inicio');
   const shell=index.indexOf('/atlas-v5.css?v=5.0');
-  const mobile=index.indexOf('/mobile-v5.css?v=5.0');
+  const mobile=index.indexOf('/mobile-v5.css?v=5.1');
   assert.ok(shell>=0,'atlas-v5.css ausente do index');
   assert.ok(shell<mobile,'mobile-v5.css deve continuar sendo a ultima camada responsiva');
 });
