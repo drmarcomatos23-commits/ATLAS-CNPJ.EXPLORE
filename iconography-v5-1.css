@@ -20,10 +20,19 @@
 .v4-kpi.warn .v4-kpi-icon{color:#9a671c!important;}
 .v4-kpi.money .v4-kpi-icon{color:#216f5d!important;}
 
+.atlas-topbar-icon-button{display:grid!important;place-items:center!important;font-size:0!important;line-height:1!important;}
+.atlas-topbar-icon-button svg{width:18px!important;height:18px!important;display:block!important;vector-effect:non-scaling-stroke;}
+#mobile-menu-btn.atlas-topbar-icon-button svg{width:20px!important;height:20px!important;}
+#new-process-btn.atlas-action-with-icon{display:inline-flex!important;align-items:center!important;justify-content:center!important;gap:7px!important;}
+#new-process-btn.atlas-action-with-icon svg{width:16px!important;height:16px!important;display:block!important;flex:0 0 auto!important;vector-effect:non-scaling-stroke;}
+#new-process-btn .atlas-action-label{display:inline-block!important;line-height:1!important;}
+
 @media(max-width:760px){
   .nav-list{padding-top:2px!important;}
   .nav-group-toggle{min-height:24px!important;margin:1px 4px!important;padding:1px 7px!important;}
   .sidebar .nav-item{min-height:40px!important;padding:0 10px!important;}
   .nav-ico{width:20px!important;min-width:20px!important;height:20px!important;}
   .nav-ico svg{width:18px!important;height:18px!important;}
+  .atlas-topbar-icon-button svg{width:19px!important;height:19px!important;}
+  #mobile-menu-btn.atlas-topbar-icon-button svg{width:21px!important;height:21px!important;}
 }
