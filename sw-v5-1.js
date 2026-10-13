@@ -1,4 +1,4 @@
-const CACHE_NAME='atlas-legalizacao-v5.1-static-1';
+const CACHE_NAME='atlas-legalizacao-v5.1-static-2';
 const CORE_ASSETS=['/index.html','/manifest.webmanifest','/atlas-pwa-icon.svg','/atlas-dashboard-brand.svg'];
 const STATIC_EXT=/\.(?:css|js|svg|png|webp|ico|woff2?)$/i;
 
@@ -31,14 +31,17 @@ async function networkFirstNavigation(request){
   }
 }
 
-async function staticCache(request){
+async function staticNetworkFirst(request){
   const cache=await caches.open(CACHE_NAME);
-  const cached=await cache.match(request);
-  const network=fetch(request).then(async response=>{
+  try{
+    const response=await fetch(request);
     if(response?.ok&&response.type==='basic')await cache.put(request,response.clone());
     return response;
-  }).catch(()=>null);
-  return cached||(await network)||Response.error();
+  }catch(error){
+    const cached=await cache.match(request);
+    if(cached)return cached;
+    return Response.error();
+  }
 }
 
 self.addEventListener('fetch',event=>{
@@ -54,5 +57,5 @@ self.addEventListener('fetch',event=>{
     return;
   }
 
-  if(STATIC_EXT.test(url.pathname))event.respondWith(staticCache(request));
+  if(STATIC_EXT.test(url.pathname))event.respondWith(staticNetworkFirst(request));
 });
