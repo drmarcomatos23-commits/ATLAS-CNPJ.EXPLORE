@@ -19,6 +19,11 @@
     return digits.length === 14 && digits.slice(8, 12) !== '0001' ? 'filial' : 'matriz';
   }
 
+  function establishmentNumber(record) {
+    const digits = String(record?.tax_id || record?.cnpj || '').replace(/\D/g, '');
+    return digits.length >= 12 ? digits.slice(8, 12) : '';
+  }
+
   function normalize(record, list) {
     const h = hierarchyApi();
     if (h?.normalizeClientHierarchy) return h.normalizeClientHierarchy(record, list);
@@ -95,6 +100,23 @@
       documents: docsById.size,
       financial: { total, paid, pending: Math.max(0, total - paid) }
     };
+  }
+
+  function buildEstablishmentBreakdown(family, data = {}, now = new Date()) {
+    return (family?.members || []).map(member => {
+      const summary = consolidateFamily({ members: [member] }, data, now);
+      return {
+        id: member.id,
+        name: member.trade_name || member.legal_name || 'Estabelecimento',
+        legalName: member.legal_name || member.trade_name || 'Estabelecimento',
+        type: establishmentType(member),
+        establishmentNumber: establishmentNumber(member),
+        taxId: member.tax_id || member.cnpj || '',
+        city: member.city || '',
+        state: member.state || '',
+        ...summary
+      };
+    });
   }
 
   async function loadClients() {
@@ -203,6 +225,35 @@
     setTimeout(apply, 0);
   };
 
+  function establishmentLabel(row) {
+    return row.type === 'filial'
+      ? `Filial ${row.establishmentNumber || ''}`.trim()
+      : 'Matriz';
+  }
+
+  function renderEstablishmentBreakdown(rows, currentClientId) {
+    return `<div class="company-360-family-breakdown">
+      <div class="company-360-family-breakdown-head">
+        <div><span>UNIDADES DA FAMÍLIA</span><h4>Detalhamento por estabelecimento</h4></div>
+        <small>Indicadores preservados por CNPJ</small>
+      </div>
+      <div class="company-360-family-breakdown-list">
+        ${rows.map(row => {
+          const place = [row.city, row.state].filter(Boolean).join('/');
+          const current = row.id === currentClientId ? ' is-current' : '';
+          return `<button type="button" class="family-establishment-row${current}" onclick="openFamilyEstablishment('${escFamily(row.id)}')">
+            <span class="family-establishment-main"><strong>${escFamily(establishmentLabel(row))}</strong><b>${escFamily(row.name)}</b><small>${escFamily([row.taxId, place].filter(Boolean).join(' · '))}</small></span>
+            <span><em>Processos</em><strong>${row.processes.total}</strong><small>${row.processes.active} ativo(s)</small></span>
+            <span><em>Licenças</em><strong>${row.licenses.total}</strong><small>${row.licenses.overdue} vencida(s)</small></span>
+            <span><em>Documentos</em><strong>${row.documents}</strong><small>vinculado(s)</small></span>
+            <span><em>Financeiro</em><strong>${moneyFamily(row.financial.total)}</strong><small>${moneyFamily(row.financial.pending)} pendente</small></span>
+            <span class="family-establishment-open">Abrir →</span>
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
   async function injectFamilySummary(clientId) {
     const body = document.querySelector('#company-360-backdrop .company-360-body');
     if (!body || body.querySelector('.company-360-family-summary')) return;
@@ -211,6 +262,7 @@
     if (!family.matrix || !family.members.length) return;
     const data = await loadFamilyOperationalData(family);
     const summary = consolidateFamily(family, data);
+    const breakdown = buildEstablishmentBreakdown(family, data);
     const current = family.members.find(member => member.id === clientId);
     const currentType = current ? establishmentType(current) : 'matriz';
 
@@ -226,21 +278,27 @@
         <div><span>Licenças</span><strong>${summary.licenses.total}</strong><small>${summary.licenses.overdue} vencida(s)</small></div>
         <div><span>Documentos</span><strong>${summary.documents}</strong><small>Dossiê da família</small></div>
         <div><span>Financeiro</span><strong>${moneyFamily(summary.financial.total)}</strong><small>${moneyFamily(summary.financial.paid)} pago · ${moneyFamily(summary.financial.pending)} pendente</small></div>
-      </div>`;
+      </div>
+      ${renderEstablishmentBreakdown(breakdown, clientId)}`;
     const kpis = body.querySelector('.company-360-kpis');
     if (kpis) kpis.after(section); else body.prepend(section);
   }
 
-  window.openFamilyMatrix = function(matrixId) {
-    if (!matrixId) return;
+  window.openFamilyEstablishment = function(clientId) {
+    if (!clientId) return;
     window.closeCompany360V5?.();
-    window.openCompany360V5?.(matrixId);
+    window.openCompany360V5?.(clientId);
+  };
+
+  window.openFamilyMatrix = function(matrixId) {
+    window.openFamilyEstablishment?.(matrixId);
   };
 
   window.AtlasEnterpriseFamilyV51 = {
     buildStructureMetrics,
     familyForClient,
     consolidateFamily,
+    buildEstablishmentBreakdown,
     renderEnterpriseStructureDashboard,
     injectFamilySummary
   };
