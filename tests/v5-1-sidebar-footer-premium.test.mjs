@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const index = readFileSync('index.html', 'utf8');
 const css = readFileSync('atlas-v5.css', 'utf8');
 
-test('rodapé premium da sidebar usa ícone, identidade e badge de preview', () => {
+test('rodapé premium da sidebar usa ícone, identidade e badge de produção', () => {
   assert.match(index, /class="sidebar-footer-brand"/);
   assert.match(index, /class="sidebar-footer-icon"[^>]+atlas-pwa-icon\.svg/);
   assert.match(index, /class="sidebar-footer-copy"/);
@@ -13,7 +13,8 @@ test('rodapé premium da sidebar usa ícone, identidade e badge de preview', () 
   assert.match(index, /class="sidebar-footer-subtitle">Legalização e Gerenciamento</);
   assert.match(index, /class="sidebar-footer-badge"/);
   assert.match(index, /class="sidebar-footer-status-dot"/);
-  assert.match(index, />Preview 5\.1</);
+  assert.match(index, />Produção 5\.1</);
+  assert.doesNotMatch(index, />Preview 5\.1</);
 });
 
 test('rodapé premium permanece integrado à sidebar sem card isolado', () => {
