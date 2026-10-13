@@ -17,7 +17,11 @@
     'triangle-alert': '<path d="M10.2 4.3 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.8 4.3a2.1 2.1 0 0 0-3.6 0z"/><path d="M12 9v4M12 17h.01"/>',
     'messages-square': '<path d="M5 5h11a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H9l-4 3v-3a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z"/><path d="M8 9h6M8 13h4"/>',
     receipt: '<path d="M6 3h12v18l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4L6 21z"/><path d="M9 8h6M9 12h6M9 16h4"/>',
-    'chevron-down': '<path d="m7 9.5 5 5 5-5"/>'
+    'chevron-down': '<path d="m7 9.5 5 5 5-5"/>',
+    'menu': '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    'bell': '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/>',
+    'log-out': '<path d="M10 17l5-5-5-5M15 12H3M14 4h4a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3h-4"/>',
+    'plus': '<path d="M12 5v14M5 12h14"/>'
   };
 
   const pageIcons = {
@@ -57,6 +61,32 @@
     });
   }
 
+  function applyTopbarIcons() {
+    const controls = [
+      ['#mobile-menu-btn', 'menu'],
+      ['.top-actions .bell', 'bell'],
+      ['#logout-btn', 'log-out']
+    ];
+
+    controls.forEach(([selector, iconName]) => {
+      const host = document.querySelector(selector);
+      if (!host) return;
+      host.classList.add('atlas-topbar-icon-button');
+      if (host.dataset.atlasIcon === iconName && host.querySelector('svg')) return;
+      host.dataset.atlasIcon = iconName;
+      host.innerHTML = svg(iconName, 'atlas-topbar-line-icon');
+    });
+
+    const newProcess = document.querySelector('#new-process-btn');
+    if (newProcess) {
+      newProcess.classList.add('atlas-action-with-icon');
+      if (newProcess.dataset.atlasIcon !== 'plus' || !newProcess.querySelector('svg')) {
+        newProcess.dataset.atlasIcon = 'plus';
+        newProcess.innerHTML = `${svg('plus', 'atlas-action-line-icon')}<span class="atlas-action-label">Novo processo</span>`;
+      }
+    }
+  }
+
   function refreshDashboardIcons(root = document) {
     root.querySelectorAll?.('[data-atlas-icon]').forEach(host => {
       const name = host.dataset.atlasIcon;
@@ -67,11 +97,15 @@
 
   function applyAll() {
     applySidebarIcons();
+    applyTopbarIcons();
     refreshDashboardIcons();
-    setTimeout(applySidebarIcons, 0);
+    setTimeout(() => {
+      applySidebarIcons();
+      applyTopbarIcons();
+    }, 0);
   }
 
-  window.AtlasV51Icons = { svg, pageIcons, applySidebarIcons, refreshDashboardIcons };
+  window.AtlasV51Icons = { svg, pageIcons, applySidebarIcons, applyTopbarIcons, refreshDashboardIcons };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyAll);
   else applyAll();
