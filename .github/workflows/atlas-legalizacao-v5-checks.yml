@@ -29,6 +29,7 @@ jobs:
           node --check enterprise-family-v5-1.js
           node --check client-archive.js
           node --check command-center-v4.js
+          node --check iconography-v5-1.js
           node --check pwa-v5-1.js
           node --check sw-v5-1.js
           node --check api/cnpj.js
