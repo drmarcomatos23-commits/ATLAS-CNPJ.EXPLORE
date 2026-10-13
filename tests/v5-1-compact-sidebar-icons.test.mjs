@@ -36,9 +36,9 @@ test('KPIs usam os mesmos SVGs profissionais do sistema', () => {
 test('sidebar reduz espacos entre grupos sem comprometer alvos de clique', () => {
   const css = existsSync('iconography-v5-1.css') ? readFileSync('iconography-v5-1.css', 'utf8') : '';
   assert.match(css, /\.nav-list\s*\{[^}]*gap:\s*0/i);
-  assert.match(css, /\.nav-accordion-group\s*\{[^}]*margin:\s*0 0 2px/i);
-  assert.match(css, /\.nav-group-toggle\s*\{[^}]*min-height:\s*24px/i);
-  assert.match(css, /\.nav-group-items\s*\{[^}]*gap:\s*2px/i);
-  assert.match(css, /\.sidebar \.nav-item\s*\{[^}]*min-height:\s*34px/i);
+  assert.match(css, /\.nav-accordion-group\s*\{[^}]*margin:\s*0!important/i);
+  assert.match(css, /\.nav-group-toggle\s*\{[^}]*min-height:\s*20px!important/i);
+  assert.match(css, /\.nav-group-items\s*\{[^}]*gap:\s*0!important/i);
+  assert.match(css, /\.sidebar \.nav-item\s*\{[^}]*min-height:\s*32px!important/i);
   assert.match(css, /\.nav-ico svg\s*\{[^}]*width:\s*16px/i);
 });
