@@ -63,9 +63,9 @@
   const style = document.createElement('style');
   style.id = 'atlas-sidebar-accordion-v4-style';
   style.textContent = `
-    .nav-accordion-group{display:block;margin:0 0 4px}.nav-accordion-group.hidden{display:none!important}
-    .nav-group-toggle{width:100%;display:flex!important;align-items:center;justify-content:space-between;border:0;background:transparent;cursor:pointer;text-align:left;padding-right:10px!important}
-    .nav-group-chevron{font-size:16px;line-height:1;transition:transform .18s ease;opacity:.72}.nav-accordion-group.is-open>.nav-group-toggle .nav-group-chevron{transform:rotate(180deg)}
+    .nav-accordion-group{display:block;margin:0 0 1px}.nav-accordion-group.hidden{display:none!important}
+    .nav-group-toggle{width:100%;display:flex!important;align-items:center;justify-content:space-between;border:0;background:transparent;cursor:pointer;text-align:left;padding-top:2px!important;padding-right:8px!important;padding-bottom:2px!important;min-height:20px!important}
+    .nav-group-chevron{font-size:14px;line-height:1;transition:transform .18s ease;opacity:.72}.nav-accordion-group.is-open>.nav-group-toggle .nav-group-chevron{transform:rotate(180deg)}
     .nav-group-items{display:grid;gap:2px}.nav-group-items[hidden]{display:none!important}
     .nav-group-items .nav-item{margin-left:5px;width:calc(100% - 5px)}
   `;
