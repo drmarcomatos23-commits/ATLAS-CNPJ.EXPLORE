@@ -2,18 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const indexHtml = await readFile(new URL('../index.html', import.meta.url), 'utf8');
 const atlasCss = await readFile(new URL('../atlas-v5.css', import.meta.url), 'utf8');
 const accordionJs = await readFile(new URL('../sidebar-accordion-v4.js', import.meta.url), 'utf8');
 const sw = await readFile(new URL('../sw-v5-1.js', import.meta.url), 'utf8');
 const pwa = await readFile(new URL('../pwa-v5-1.js', import.meta.url), 'utf8');
 
-test('assets críticos da busca e sidebar usam revisão V5.1.2 para invalidar cache antigo', () => {
-  assert.match(indexHtml, /command-center-v4\.js\?v=5\.1\.2/);
-  assert.match(indexHtml, /sidebar-accordion-v4\.js\?v=5\.1\.2/);
-  assert.match(indexHtml, /atlas-v5\.css\?v=5\.1\.2/);
-  assert.match(pwa, /sw-v5-1\.js\?v=5\.1\.2/);
+test('PWA não entrega JavaScript e CSS antigos depois de uma nova revisão', () => {
   assert.match(sw, /atlas-legalizacao-v5\.1-static-2/);
+  assert.match(sw, /async function staticNetworkFirst/);
+  assert.match(sw, /event\.respondWith\(staticNetworkFirst\(request\)\)/);
+  assert.match(pwa, /updateViaCache:'none'/);
 });
 
 test('chaves de setorização da sidebar usam espaçamento compacto', () => {
@@ -21,7 +19,7 @@ test('chaves de setorização da sidebar usam espaçamento compacto', () => {
   assert.match(accordionJs, /\.nav-accordion-group\{display:block;margin:0 0 1px\}/);
 });
 
-test('busca expõe carregamento assíncrono para validar que o índice aguarda os dados', async () => {
+test('busca aguarda o carregamento dos dados antes de responder', async () => {
   globalThis.window = globalThis;
   globalThis.document = {};
   globalThis.loadOperationalData = async () => ({
