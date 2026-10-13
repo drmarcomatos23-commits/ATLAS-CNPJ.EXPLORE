@@ -109,7 +109,7 @@ html,body{background:var(--v5-bg);color:var(--v5-text);}
 .page-head .eyebrow{font-size:var(--v5-font-xs)!important;letter-spacing:.08em!important;}
 
 .nav-group-title{
-  margin:14px 10px 5px!important;
+  margin:8px 8px 2px!important;
   color:#8da3b7!important;
   font-size:var(--v5-font-xs)!important;
   line-height:1!important;
