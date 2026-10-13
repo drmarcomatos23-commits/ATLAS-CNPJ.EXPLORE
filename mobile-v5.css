@@ -77,3 +77,10 @@
   .v4-pipe-col{min-width:88vw!important;max-width:88vw!important;}
   .brand-box img.brand-logo{width:142px!important;}
 }
+
+/* V5.1 — correção de regressão da topbar e busca global no mobile.
+   Esta camada vem depois das regras legadas e precisa prevalecer com !important. */
+@media (max-width:760px){
+  .topbar{height:auto!important;}
+  .global-search{display:block!important;}
+}
