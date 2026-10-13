@@ -4,8 +4,6 @@
       const items = [...group.querySelectorAll('.nav-item')];
       const hasVisible = items.some(item => !item.classList.contains('hidden'));
       group.classList.toggle('hidden', !hasVisible);
-      const active = items.some(item => item.classList.contains('active'));
-      if (active) setExpanded(group, true);
     });
   }
 
@@ -24,17 +22,17 @@
     nav.dataset.accordionReady = '1';
 
     const titles = [...nav.querySelectorAll(':scope > .nav-group-title')];
-    titles.forEach((title, index) => {
+    titles.forEach(title => {
       const group = document.createElement('section');
       group.className = 'nav-accordion-group';
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'nav-group-title nav-group-toggle';
       toggle.innerHTML = `<span>${title.textContent.trim()}</span><span class="nav-group-chevron" aria-hidden="true">⌄</span>`;
-      toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
       const items = document.createElement('div');
       items.className = 'nav-group-items';
-      items.hidden = true;
+      items.hidden = false;
 
       let node = title.nextElementSibling;
       while (node && !node.classList.contains('nav-group-title')) {
@@ -45,8 +43,7 @@
       title.replaceWith(group);
       group.append(toggle, items);
 
-      const shouldOpen = index === 0 || items.querySelector('.nav-item.active');
-      setExpanded(group, !!shouldOpen);
+      setExpanded(group, true);
       toggle.addEventListener('click', () => setExpanded(group, toggle.getAttribute('aria-expanded') !== 'true'));
     });
 
