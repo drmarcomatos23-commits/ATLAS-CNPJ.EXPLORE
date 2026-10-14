@@ -17,7 +17,7 @@
     document.body.classList.toggle('mobile-menu-open',open);
     button.setAttribute('aria-expanded',open?'true':'false');
     button.setAttribute('aria-label',open?'Fechar menu':'Abrir menu');
-    button.textContent=open?'×':'☰';
+    window.AtlasV51Icons?.applyTopbarIcons?.();
   }
 
   function close(){ setOpen(false); }
