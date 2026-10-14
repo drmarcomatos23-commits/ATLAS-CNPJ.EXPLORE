@@ -11,9 +11,8 @@
   }
 
   function iconMarkup(page){
-    const icons = window.AtlasV51Icons;
-    const iconName = page === 'mais' ? 'menu' : icons?.pageIcons?.[page];
-    if(iconName && icons?.svg) return icons.svg(iconName,'atlas-mobile-tab-line-icon');
+    const iconName = page === 'mais' ? 'menu' : window.AtlasV51Icons?.pageIcons?.[page];
+    if(iconName && window.AtlasV51Icons?.svg) return window.AtlasV51Icons.svg(iconName,'atlas-mobile-tab-line-icon');
 
     const source = sourceFor(page);
     const desktopIcon = source?.querySelector('.nav-ico svg');
