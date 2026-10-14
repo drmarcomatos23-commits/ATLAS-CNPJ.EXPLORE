@@ -7,8 +7,8 @@ const mobileCss = await readFile(new URL('../mobile-app-v4.css', import.meta.url
 const mobileJs = await readFile(new URL('../mobile-app-v4.js', import.meta.url), 'utf8');
 const responsiveJs = await readFile(new URL('../mobile-responsive.js', import.meta.url), 'utf8');
 
-test('shell mobile carrega a camada app explicitamente depois da V5.1', () => {
-  assert.match(html, /mobile-v5\.css\?v=5\.1[\s\S]*mobile-app-v4\.css\?v=4\.4/);
+test('shell mobile carrega a camada app antes da camada final V5.1', () => {
+  assert.match(html, /mobile-app-v4\.css\?v=4\.4[\s\S]*mobile-v5\.css\?v=5\.1/);
   assert.match(html, /iconography-v5-1\.js\?v=5\.1[\s\S]*mobile-app-v4\.js\?v=4\.4/);
 });
 
