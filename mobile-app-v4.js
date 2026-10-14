@@ -1,7 +1,6 @@
 (() => {
   const mq = window.matchMedia('(max-width:760px)');
   const preferredPages = ['dashboard','processos','clientes','custos'];
-  const iconMap = { dashboard:'⌂', processos:'▤', clientes:'▥', custos:'R$', mais:'☰' };
 
   function sourceFor(page){
     return document.querySelector(`#nav [data-page="${page}"]`);
@@ -9,6 +8,18 @@
 
   function isVisible(el){
     return !!el && !el.classList.contains('hidden');
+  }
+
+  function iconMarkup(page){
+    const icons = window.AtlasV51Icons;
+    const iconName = page === 'mais' ? 'menu' : icons?.pageIcons?.[page];
+    if(iconName && icons?.svg) return icons.svg(iconName,'atlas-mobile-tab-line-icon');
+
+    const source = sourceFor(page);
+    const desktopIcon = source?.querySelector('.nav-ico svg');
+    if(desktopIcon) return desktopIcon.outerHTML;
+
+    return '<span aria-hidden="true">•</span>';
   }
 
   function ensureAppTitle(){
@@ -41,12 +52,17 @@
   }
 
   function buttonHtml(page,label,active=false){
-    const icon = iconMap[page] || '•';
-    return `<button type="button" class="atlas-mobile-tab${active?' active':''}" data-mobile-page="${page}" aria-label="${label}"><span class="tab-ico">${icon}</span><span class="tab-label">${label}</span></button>`;
+    return `<button type="button" class="atlas-mobile-tab${active?' active':''}" data-mobile-page="${page}" aria-label="${label}"><span class="tab-ico">${iconMarkup(page)}</span><span class="tab-label">${label}</span></button>`;
   }
 
   function currentPage(){
     return document.querySelector('#nav [data-page].active')?.dataset.page || 'dashboard';
+  }
+
+  function syncFab(activePage){
+    const fab = document.getElementById('new-process-btn');
+    if(!fab) return;
+    fab.classList.toggle('mobile-fab-suppressed', mq.matches && activePage === 'processos');
   }
 
   function buildBottomNav(){
@@ -85,13 +101,17 @@
   }
 
   function syncMobileShell(){
+    const active = currentPage();
     if(!mq.matches){
       document.getElementById('atlas-mobile-bottom-nav')?.classList.add('hidden');
       document.querySelector('.mobile-app-title')?.remove();
+      document.getElementById('new-process-btn')?.classList.remove('mobile-fab-suppressed');
       return;
     }
+    window.AtlasV51Icons?.applyTopbarIcons?.();
     ensureAppTitle();
     buildBottomNav();
+    syncFab(active);
   }
 
   function bind(){
