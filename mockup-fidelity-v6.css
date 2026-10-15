@@ -1,0 +1,139 @@
+/* ATLAS Legalização — fidelity layer for the approved 1672×941 mockup.
+   Loaded last by atlas-v6-shell.js. No business logic is changed here. */
+
+@media (min-width:1181px){
+  :root{--v6-sidebar-width:300px!important;--v6-topbar-height:74px!important}
+  html,body,#app-shell{overflow-x:hidden!important}
+
+  #app-shell .sidebar{
+    width:300px!important;
+    background:linear-gradient(180deg,#063a68 0%,#03264a 30%,#021b36 100%)!important;
+  }
+  #app-shell .workspace{margin-left:300px!important;width:calc(100% - 300px)!important;min-width:0!important}
+  #app-shell .brand-box{
+    min-height:124px!important;height:124px!important;padding:17px 26px 14px!important;
+    align-items:center!important;border-bottom:0!important;
+  }
+  #app-shell .brand-box .brand-logo{width:238px!important;max-height:92px!important;object-fit:contain!important;object-position:left center!important}
+
+  #app-shell .nav-list{padding:4px 14px 10px!important}
+  #app-shell .nav-item{
+    min-height:59px!important;margin:2px 0!important;padding:0 18px 0 24px!important;gap:17px!important;
+    border-radius:10px!important;font-size:16px!important;font-weight:500!important;
+  }
+  #app-shell .nav-item.active{
+    border-left-width:4px!important;background:linear-gradient(90deg,#0a579c 0%,#0b4e8c 100%)!important;
+    box-shadow:inset 0 0 0 1px rgba(83,176,238,.28)!important;
+  }
+  #app-shell .nav-ico{width:31px!important;min-width:31px!important;height:31px!important;font-size:27px!important}
+  #app-shell .nav-ico svg{width:28px!important;height:28px!important;stroke-width:1.75!important}
+
+  /* Extra modules stay available without taking over the approved sidebar composition. */
+  #app-shell .v6-secondary-nav{
+    max-height:30px!important;margin:5px 0 0!important;padding:0!important;overflow:hidden!important;
+    border-top:1px solid rgba(255,255,255,.08)!important;transition:max-height .18s ease!important;
+  }
+  #app-shell .v6-secondary-nav:hover,#app-shell .v6-secondary-nav:focus-within{max-height:272px!important}
+  #app-shell .v6-secondary-title{
+    height:30px!important;margin:0 14px!important;display:flex!important;align-items:center!important;
+    font-size:9px!important;letter-spacing:.10em!important;color:rgba(255,255,255,.38)!important;
+  }
+  #app-shell .v6-secondary-nav .nav-item{min-height:42px!important;font-size:12px!important;margin:0!important}
+
+  #app-shell .sidebar-footer{
+    padding:10px 27px 24px!important;background:transparent!important;border-top:1px solid rgba(255,255,255,.18)!important;
+  }
+  #app-shell .v6-account-card{grid-template-columns:54px minmax(0,1fr) 24px!important;gap:13px!important;min-height:79px!important}
+  #app-shell .v6-account-avatar{width:54px!important;height:54px!important;font-size:17px!important;background:rgba(17,69,116,.58)!important}
+  #app-shell .v6-account-name{font-size:16px!important;font-weight:500!important}
+  #app-shell .v6-account-label{font-size:13px!important}
+  #app-shell .v6-sidebar-logout{min-height:50px!important;margin-top:2px!important;padding:0!important;gap:16px!important;font-size:15px!important}
+
+  #app-shell .topbar{
+    height:74px!important;min-height:74px!important;padding:0 26px!important;gap:20px!important;
+    border-radius:0!important;background:#fff!important;
+  }
+  #app-shell .mobile-menu-btn{display:none!important}
+  #app-shell .global-search{width:500px!important;max-width:500px!important;margin-left:0!important;margin-right:auto!important}
+  #app-shell .global-search input{height:46px!important;border-radius:10px!important;background:#f5f8fc!important;font-size:14px!important}
+  #app-shell .global-search::before{font-size:28px!important;margin-top:9px!important}
+  #app-shell .top-actions{gap:18px!important;min-width:0!important}
+  #app-shell .bell{width:44px!important;height:44px!important;font-size:25px!important}
+  #app-shell .user-block{grid-template-columns:48px minmax(0,190px)!important;gap:12px!important;padding-left:20px!important;min-width:0!important}
+  #app-shell .avatar{width:48px!important;height:48px!important;font-size:14px!important}
+  #app-shell .user-block>div:last-child{min-width:0!important}
+  #app-shell .user-block strong{font-size:14px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  #app-shell .user-block small{font-size:12px!important;white-space:nowrap!important}
+  #app-shell .logout-btn{width:34px!important;min-width:34px!important}
+
+  #app-shell .main,#app-shell #page-content,.v6-dashboard{width:100%!important;max-width:none!important;min-width:0!important;overflow-x:hidden!important}
+
+  .v6-dashboard-hero{
+    height:266px!important;min-height:266px!important;
+    grid-template-columns:minmax(0,1fr) 252px!important;
+    background-position:center right!important;background-size:cover!important;
+  }
+  .v6-dashboard-hero-main{
+    grid-template-columns:118px minmax(0,1fr)!important;gap:26px!important;
+    max-width:930px!important;padding:27px 30px 21px 39px!important;
+  }
+  .v6-dashboard-hero-logo{
+    content:url('/assets/atlas-mark-v6.svg')!important;
+    width:118px!important;height:126px!important;max-height:none!important;align-self:center!important;object-fit:contain!important;
+  }
+  .v6-dashboard-hero-copy .v6-kicker{margin-bottom:5px!important;font-size:16px!important;letter-spacing:.20em!important}
+  .v6-dashboard-hero-copy h1{font-size:64px!important;line-height:.94!important;letter-spacing:.025em!important;font-weight:800!important}
+  .v6-dashboard-hero-copy .v6-hero-subtitle{margin-top:7px!important;font-size:24px!important;letter-spacing:.085em!important;white-space:nowrap!important}
+  .v6-dashboard-hero-copy .v6-orange-line{width:62px!important;height:4px!important;margin:20px 0 13px!important}
+  .v6-dashboard-hero-copy p{max-width:600px!important;font-size:16px!important;line-height:1.33!important}
+  .v6-dashboard-services{
+    width:226px!important;box-sizing:border-box!important;align-self:center!important;margin:0 14px 0 0!important;
+    padding:7px 0 7px 19px!important;border-left-width:4px!important;
+    background:linear-gradient(90deg,rgba(255,255,255,.91),rgba(255,255,255,.72))!important;
+  }
+  .v6-dashboard-services span{padding:5px 0!important;font-size:12px!important;font-weight:500!important;letter-spacing:.18em!important}
+
+  .v6-dashboard-body{padding:0 15px 18px!important;min-width:0!important}
+  .v6-kpi-grid{gap:8px!important;margin-top:0!important}
+  .v6-kpi-card{
+    min-height:138px!important;padding:14px 15px 11px!important;grid-template-columns:50px minmax(0,1fr)!important;
+    border-radius:10px!important;box-shadow:0 4px 13px rgba(4,39,75,.07)!important;
+  }
+  .v6-kpi-icon{width:47px!important;height:47px!important;border-radius:10px!important;font-size:24px!important}
+  .v6-kpi-label{font-size:12px!important}
+  .v6-kpi-value{font-size:28px!important}
+  .v6-kpi-action{font-size:11px!important;padding-top:8px!important}
+
+  .v6-dashboard-main-grid{grid-template-columns:minmax(0,2fr) minmax(360px,1fr)!important;gap:12px!important;margin-top:12px!important;min-width:0!important}
+  .v6-dashboard-bottom-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:12px!important;margin-top:12px!important;min-width:0!important}
+  .v6-panel{border-radius:10px!important;min-width:0!important;overflow:hidden!important}
+  .v6-panel-head{min-height:54px!important;padding:10px 16px!important}
+  .v6-panel-head h2{font-size:14px!important}
+  .v6-panel-head p{font-size:10px!important}
+  .v6-panel-link{padding:7px 12px!important;font-size:10px!important}
+
+  .v6-pipeline-wrap{padding:14px 16px 15px!important}
+  .v6-pipeline-stage{min-height:110px!important;padding-top:10px!important;padding-bottom:10px!important}
+  .v6-pipeline-stage .v6-stage-icon{font-size:28px!important;margin-bottom:9px!important}
+  .v6-pipeline-stage strong{font-size:11px!important;line-height:1.22!important}
+  .v6-pipeline-counts{gap:20px!important;margin-top:10px!important}
+  .v6-pipeline-count b{font-size:16px!important}
+  .v6-mini-bar{height:8px!important}
+
+  .v6-recent-list,.v6-deadline-list{padding:5px 12px 8px!important}
+  .v6-recent-row,.v6-deadline-row{min-height:42px!important;grid-template-columns:24px minmax(0,1fr) auto auto!important;padding:4px 2px!important}
+  .v6-row-main strong{font-size:11px!important}.v6-row-main small{font-size:9px!important}
+  .v6-status-pill,.v6-deadline-pill{font-size:9px!important;padding:5px 10px!important}
+  .v6-row-date{font-size:9px!important}
+  .v6-chart-body{min-height:164px!important;padding:15px 18px!important}
+  .v6-bar-chart{height:164px!important;padding-top:20px!important}
+}
+
+@media (min-width:1181px) and (max-width:1500px){
+  .v6-dashboard-hero-copy h1{font-size:58px!important}
+  .v6-dashboard-hero-copy .v6-hero-subtitle{font-size:20px!important}
+  .v6-dashboard-hero-main{grid-template-columns:104px minmax(0,1fr)!important;gap:20px!important;padding-left:30px!important}
+  .v6-dashboard-hero-logo{width:104px!important;height:116px!important}
+  .v6-dashboard-services{width:210px!important}
+  .v6-dashboard-main-grid{grid-template-columns:minmax(0,1.95fr) minmax(330px,1fr)!important}
+}
