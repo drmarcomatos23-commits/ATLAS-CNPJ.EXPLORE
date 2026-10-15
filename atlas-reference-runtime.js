@@ -6,6 +6,15 @@
     LEGACY_LAYER_IDS.forEach(id => document.getElementById(id)?.remove());
   }
 
+  function ensureFinalStylesheet() {
+    if (document.getElementById('atlas-reference-final-css')) return;
+    const link=document.createElement('link');
+    link.id='atlas-reference-final-css';
+    link.rel='stylesheet';
+    link.href='/atlas-reference-final.css?v=1.0';
+    document.head.appendChild(link);
+  }
+
   function injectRuntimeStyles() {
     if (document.getElementById('atlas-reference-runtime-style')) return;
     const style=document.createElement('style');
@@ -76,12 +85,13 @@
   }
 
   function run() {
-    injectRuntimeStyles();
     removeLegacyFidelityLayers();
+    ensureFinalStylesheet();
+    injectRuntimeStyles();
     upgradeCharts();
     const root=document.getElementById('page-content');
     if (root && window.MutationObserver) {
-      new MutationObserver(() => { removeLegacyFidelityLayers(); queueMicrotask(upgradeCharts); }).observe(root,{childList:true,subtree:false});
+      new MutationObserver(() => { removeLegacyFidelityLayers(); ensureFinalStylesheet(); queueMicrotask(upgradeCharts); }).observe(root,{childList:true,subtree:false});
     }
   }
 
