@@ -8,7 +8,7 @@ const css = fs.readFileSync('atlas-v6.css','utf8');
 test('dashboard V6 removes duplicate legacy page header before rendering hero',()=>{
   assert.match(shell,/page-head/);
   assert.match(shell,/style\.display\s*=\s*['"]none['"]/);
-  assert.match(shell,/data-v6-page=\\"dashboard\\"/);
+  assert.ok(shell.includes('data-v6-page="dashboard"'));
 });
 
 test('shell V6 enforces exact approved search placeholder after legacy mutations',()=>{
