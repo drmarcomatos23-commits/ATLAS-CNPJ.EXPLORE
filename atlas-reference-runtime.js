@@ -6,6 +6,24 @@
     LEGACY_LAYER_IDS.forEach(id => document.getElementById(id)?.remove());
   }
 
+  function injectRuntimeStyles() {
+    if (document.getElementById('atlas-reference-runtime-style')) return;
+    const style=document.createElement('style');
+    style.id='atlas-reference-runtime-style';
+    style.textContent=`
+      .atlas-chart-canvas{position:relative;min-width:0}
+      .atlas-chart-canvas.donut{width:82px;height:82px;margin:auto}
+      .atlas-chart-canvas.donut canvas{width:82px!important;height:82px!important}
+      .atlas-chart-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+      .atlas-chart-center b{font-size:12px;color:#0F1D3A}.atlas-chart-center small{font-size:5.5px;color:#6B7A99}
+      .atlas-chart-canvas.bars{height:98px;width:100%}
+      .atlas-chart-canvas.bars canvas{width:100%!important;height:98px!important}
+      .atlas-status-body:has(.atlas-chart-canvas){grid-template-columns:96px minmax(0,1fr)}
+      .atlas-bars:has(.atlas-chart-canvas){display:block;height:104px;padding:8px 14px 4px}
+    `;
+    document.head.appendChild(style);
+  }
+
   function destroyCharts() {
     while (chartInstances.length) {
       try { chartInstances.pop()?.destroy?.(); } catch (_) {}
@@ -58,6 +76,7 @@
   }
 
   function run() {
+    injectRuntimeStyles();
     removeLegacyFidelityLayers();
     upgradeCharts();
     const root=document.getElementById('page-content');
