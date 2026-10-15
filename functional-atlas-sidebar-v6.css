@@ -1,0 +1,122 @@
+/* Functional ATLAS sidebar reference layer — loaded after mockup-fidelity-v6.css */
+@media (min-width:1181px){
+  #app-shell .nav-list{
+    padding:6px 12px 14px 12px!important;
+  }
+
+  #app-shell .v6-nav-group{
+    margin:0 0 20px!important;
+    padding:0!important;
+  }
+
+  #app-shell .v6-functional-group-title{
+    display:flex!important;
+    align-items:center!important;
+    min-height:24px!important;
+    margin:0 8px 5px!important;
+    padding:0!important;
+    color:rgba(219,235,248,.52)!important;
+    font-size:9px!important;
+    font-weight:700!important;
+    letter-spacing:.02em!important;
+    text-transform:none!important;
+  }
+
+  #app-shell .v6-functional-nav-item{
+    min-height:44px!important;
+    margin:1px 0!important;
+    padding:0 14px 0 14px!important;
+    gap:12px!important;
+    border-radius:7px!important;
+    border:1px solid transparent!important;
+    border-left:0!important;
+    color:rgba(255,255,255,.82)!important;
+    font-size:13px!important;
+    font-weight:560!important;
+    transform:none!important;
+  }
+
+  #app-shell .v6-functional-nav-item:hover{
+    transform:none!important;
+    color:#fff!important;
+    background:rgba(23,93,150,.34)!important;
+    border-color:rgba(102,174,226,.10)!important;
+  }
+
+  #app-shell .v6-functional-nav-item.active{
+    color:#fff!important;
+    background:linear-gradient(90deg,#0c5da8 0%,#0c4d8c 100%)!important;
+    border-color:rgba(93,182,239,.24)!important;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.025),0 4px 10px rgba(0,14,31,.10)!important;
+  }
+
+  #app-shell .v6-functional-nav-item.active::before{
+    content:''!important;
+    position:absolute!important;
+    left:0!important;
+    top:7px!important;
+    bottom:7px!important;
+    width:3px!important;
+    border-radius:0 3px 3px 0!important;
+    background:#ff9f1c!important;
+  }
+
+  #app-shell .v6-functional-nav-item.active::after{display:none!important}
+
+  #app-shell .nav-ico{
+    width:22px!important;
+    min-width:22px!important;
+    height:22px!important;
+    display:inline-flex!important;
+    align-items:center!important;
+    justify-content:center!important;
+    color:rgba(226,241,252,.86)!important;
+    font-size:0!important;
+  }
+
+  #app-shell .nav-ico svg{
+    width:20px!important;
+    height:20px!important;
+    stroke-width:1.8!important;
+    vector-effect:non-scaling-stroke!important;
+  }
+
+  #app-shell .v6-functional-nav-item.active .nav-ico{
+    color:#fff!important;
+  }
+
+  #app-shell .v6-functional-nav-item:hover .nav-ico{
+    color:#f6fbff!important;
+  }
+
+  #app-shell .brand-box{
+    min-height:118px!important;
+    height:118px!important;
+    padding:17px 20px 13px!important;
+  }
+
+  #app-shell .brand-box .brand-logo{
+    width:220px!important;
+    max-height:82px!important;
+  }
+
+  #app-shell .sidebar-footer{
+    padding:10px 16px 16px!important;
+  }
+
+  #app-shell .v6-account-card{
+    min-height:66px!important;
+    grid-template-columns:44px minmax(0,1fr) 18px!important;
+    gap:10px!important;
+  }
+
+  #app-shell .v6-account-avatar{
+    width:44px!important;
+    height:44px!important;
+    font-size:14px!important;
+  }
+
+  #app-shell .v6-account-name{font-size:13px!important}
+  #app-shell .v6-account-label{font-size:11px!important}
+  #app-shell .v6-sidebar-logout{min-height:36px!important;font-size:12px!important}
+}
