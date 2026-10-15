@@ -25,6 +25,16 @@ jobs:
         run: node --test tests/v6-shell-contract.test.mjs
       - name: V6 role navigation
         run: node --test tests/v6-role-navigation.test.mjs
+      - name: Legacy atlas contracts
+        run: node --test tests/atlas-*.test.mjs
+      - name: Legacy V4 contracts
+        run: node --test tests/v4-*.test.mjs
+      - name: Legacy V5 contracts
+        run: node --test tests/v5-*.test.mjs
+      - name: Legacy V5.1 contracts
+        run: node --test tests/v5-1-*.test.mjs
+      - name: Legacy module contracts
+        run: node --test tests/cnpj-*.test.mjs tests/command-*.test.mjs tests/company-*.test.mjs tests/dashboard-*.test.mjs tests/mobile-*.test.mjs tests/modules-*.test.mjs tests/operations-*.test.mjs tests/process-*.test.mjs tests/role-*.test.mjs tests/support-*.test.mjs
       - name: Run test suite
         run: npm test
       - name: Syntax check V5.1 modules
