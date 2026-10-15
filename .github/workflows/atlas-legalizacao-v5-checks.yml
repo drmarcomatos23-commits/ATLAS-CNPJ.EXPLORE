@@ -6,6 +6,7 @@ on:
       - atlas-legalizacao-v5
       - atlas-legalizacao-v5.1
       - atlas-legalizacao-v5.1-ui-compact
+      - atlas-legalizacao-v6-mockup-exato
 
 jobs:
   test:
