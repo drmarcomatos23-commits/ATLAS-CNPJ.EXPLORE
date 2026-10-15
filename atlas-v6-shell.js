@@ -41,10 +41,6 @@
     return `${words[0][0] || ''}${words.length > 1 ? words[words.length - 1][0] : ''}`.toUpperCase();
   }
 
-  function getNavButton(nav, page) {
-    return nav.querySelector(`.nav-item[data-page="${page}"]`);
-  }
-
   function normalizeButton(button, page) {
     if (!button) return;
     const icon = button.querySelector('.nav-ico');
@@ -154,6 +150,15 @@
     }
   }
 
+  function injectFidelityStylesheet() {
+    if (document.getElementById('atlas-v6-mockup-fidelity')) return;
+    const link = document.createElement('link');
+    link.id = 'atlas-v6-mockup-fidelity';
+    link.rel = 'stylesheet';
+    link.href = '/mockup-fidelity-v6.css?v=6.2';
+    document.head.appendChild(link);
+  }
+
   function injectFidelityGuardStyles() {
     if (document.getElementById('atlas-v6-fidelity-guard')) return;
     const style = document.createElement('style');
@@ -202,6 +207,7 @@
   }
 
   function init() {
+    injectFidelityStylesheet();
     injectFidelityGuardStyles();
     reorganizeNavigation();
     ensureSidebarAccount();
