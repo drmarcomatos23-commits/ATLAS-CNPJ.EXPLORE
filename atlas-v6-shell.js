@@ -10,19 +10,10 @@
   ];
 
   const labelByPage = {
-    dashboard: 'Dashboard',
-    clientes: 'Empresas',
-    processos: 'Processos',
-    licencas: 'Licenças',
-    documentos: 'Documentos',
-    custos: 'Financeiro',
-    relatorios: 'Relatórios',
-    config: 'Configurações',
-    exigencias: 'Exigências',
-    integracoes: 'Integrações',
-    conhecimento: 'Base de Conhecimento',
-    treinamento: 'Treinamento',
-    usuarios: 'Usuários'
+    dashboard: 'Dashboard', clientes: 'Empresas', processos: 'Processos', licencas: 'Licenças',
+    documentos: 'Documentos', custos: 'Financeiro', relatorios: 'Relatórios', config: 'Configurações',
+    exigencias: 'Exigências', integracoes: 'Integrações', conhecimento: 'Base de Conhecimento',
+    treinamento: 'Treinamento', usuarios: 'Usuários'
   };
 
   const svg = paths => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
@@ -61,16 +52,13 @@
   function createGroup(label, pages, byPage) {
     const available = pages.map(page => byPage.get(page)).filter(Boolean);
     if (!available.length) return null;
-
     const group = document.createElement('section');
     group.className = 'v6-nav-group';
     group.dataset.navGroup = label;
-
     const title = document.createElement('div');
     title.className = 'nav-group-title v6-functional-group-title';
     title.textContent = label;
     group.appendChild(title);
-
     available.forEach(node => group.appendChild(node));
     return group;
   }
@@ -78,19 +66,16 @@
   function reorganizeNavigation() {
     const nav = document.getElementById('nav');
     if (!nav || nav.dataset.v6Organized === 'functional-atlas') return;
-
     const byPage = new Map();
     nav.querySelectorAll('.nav-item[data-page]').forEach(button => {
       byPage.set(button.dataset.page, button);
       normalizeButton(button, button.dataset.page);
     });
-
     const fragment = document.createDocumentFragment();
     NAV_GROUPS.forEach(({ label, pages }) => {
       const group = createGroup(label, pages, byPage);
       if (group) fragment.appendChild(group);
     });
-
     nav.replaceChildren(fragment);
     nav.dataset.v6Organized = 'functional-atlas';
   }
@@ -98,21 +83,14 @@
   function ensureSidebarAccount() {
     const footer = document.querySelector('#app-shell .sidebar-footer');
     if (!footer || footer.querySelector('.v6-account-card')) return;
-
     footer.innerHTML = `
       <div class="v6-account-card" role="group" aria-label="Minha Conta">
         <div class="v6-account-avatar" data-v6-user-avatar>MM</div>
-        <div class="v6-account-copy">
-          <strong class="v6-account-name" data-v6-user-name>Marco Matos</strong>
-          <span class="v6-account-label">Minha Conta</span>
-        </div>
+        <div class="v6-account-copy"><strong class="v6-account-name" data-v6-user-name>Marco Matos</strong><span class="v6-account-label">Minha Conta</span></div>
         <span aria-hidden="true">›</span>
       </div>
       <button class="v6-sidebar-logout" type="button" data-v6-logout><span aria-hidden="true">↪</span><span>Sair</span></button>`;
-
-    footer.querySelector('[data-v6-logout]')?.addEventListener('click', () => {
-      document.getElementById('logout-btn')?.click();
-    });
+    footer.querySelector('[data-v6-logout]')?.addEventListener('click', () => document.getElementById('logout-btn')?.click());
   }
 
   function syncSidebarIdentity() {
@@ -146,12 +124,8 @@
     const pageHead = document.querySelector('#app-shell .main > .page-head');
     if (!pageHead) return;
     if (page === 'dashboard' || document.querySelector('#page-content .v6-dashboard')) {
-      pageHead.style.display = 'none';
-      pageHead.setAttribute('aria-hidden', 'true');
-    } else {
-      pageHead.style.display = '';
-      pageHead.removeAttribute('aria-hidden');
-    }
+      pageHead.style.display = 'none'; pageHead.setAttribute('aria-hidden', 'true');
+    } else { pageHead.style.display = ''; pageHead.removeAttribute('aria-hidden'); }
   }
 
   function enforceSearch() {
@@ -160,12 +134,20 @@
   }
 
   function injectFidelityStylesheet() {
-    if (document.getElementById('atlas-v6-mockup-fidelity')) return;
-    const link = document.createElement('link');
-    link.id = 'atlas-v6-mockup-fidelity';
-    link.rel = 'stylesheet';
-    link.href = '/mockup-fidelity-v6.css?v=6.4';
-    document.head.appendChild(link);
+    if (!document.getElementById('atlas-v6-mockup-fidelity')) {
+      const link = document.createElement('link');
+      link.id = 'atlas-v6-mockup-fidelity';
+      link.rel = 'stylesheet';
+      link.href = '/mockup-fidelity-v6.css?v=6.4';
+      document.head.appendChild(link);
+    }
+    if (!document.getElementById('atlas-v6-functional-sidebar')) {
+      const sidebarLink = document.createElement('link');
+      sidebarLink.id = 'atlas-v6-functional-sidebar';
+      sidebarLink.rel = 'stylesheet';
+      sidebarLink.href = '/functional-atlas-sidebar-v6.css?v=1.0';
+      document.head.appendChild(sidebarLink);
+    }
   }
 
   function injectFidelityGuardStyles() {
@@ -175,11 +157,7 @@
     style.textContent = `
       #app-shell[data-v6-page="dashboard"] .main > .page-head,
       #app-shell:has(#page-content .v6-dashboard) .main > .page-head { display:none !important; }
-      @media (min-width:1181px) {
-        :root { --v6-sidebar-width:300px !important; --v6-topbar-height:74px !important; }
-        #app-shell .sidebar { width:300px !important; }
-        #app-shell .workspace { margin-left:300px !important; }
-      }
+      @media (min-width:1181px) { :root { --v6-sidebar-width:300px !important; --v6-topbar-height:74px !important; } #app-shell .sidebar { width:300px !important; } #app-shell .workspace { margin-left:300px !important; } }
       #app-shell .topbar { border-radius:0 !important; }
       #app-shell .main { padding-top:0 !important; }
       #app-shell[data-v6-page="dashboard"] #page-content { padding-top:0 !important; }
@@ -200,34 +178,19 @@
     const search = document.getElementById('global-search');
     if (search) new MutationObserver(enforceSearch).observe(search, { attributes: true, attributeFilter: ['placeholder'] });
     const userName = document.getElementById('user-name');
-    if (userName) {
-      new MutationObserver(() => {
-        syncSidebarIdentity();
-        const topRole = document.getElementById('user-role');
-        if (topRole && topRole.textContent !== 'ATLAS Legalização') topRole.textContent = 'ATLAS Legalização';
-      }).observe(userName, { childList: true, subtree: true, characterData: true });
-    }
+    if (userName) new MutationObserver(() => { syncSidebarIdentity(); const topRole = document.getElementById('user-role'); if (topRole && topRole.textContent !== 'ATLAS Legalização') topRole.textContent = 'ATLAS Legalização'; }).observe(userName, { childList: true, subtree: true, characterData: true });
     const content = document.getElementById('page-content');
     if (content) new MutationObserver(() => queueMicrotask(markCurrentPage)).observe(content, { childList: true, subtree: false });
   }
 
   function init() {
-    injectFidelityStylesheet();
-    injectFidelityGuardStyles();
-    reorganizeNavigation();
-    ensureSidebarAccount();
-    enforceSearch();
-    const role = document.getElementById('user-role');
-    if (role) role.textContent = 'ATLAS Legalização';
-    markCurrentPage();
-    observeNavigation();
-    observeLegacyOverrides();
-    syncUserChrome({});
+    injectFidelityStylesheet(); injectFidelityGuardStyles(); reorganizeNavigation(); ensureSidebarAccount(); enforceSearch();
+    const role = document.getElementById('user-role'); if (role) role.textContent = 'ATLAS Legalização';
+    markCurrentPage(); observeNavigation(); observeLegacyOverrides(); syncUserChrome({});
     setTimeout(() => { enforceSearch(); markCurrentPage(); syncSidebarIdentity(); }, 0);
     setTimeout(() => { enforceSearch(); markCurrentPage(); syncSidebarIdentity(); }, 350);
   }
 
   window.AtlasV6Shell = { syncUserChrome, reorganizeNavigation, markCurrentPage, enforceSearch };
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
-  else init();
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
