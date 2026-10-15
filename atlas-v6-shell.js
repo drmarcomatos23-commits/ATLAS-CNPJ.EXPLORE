@@ -1,6 +1,7 @@
 (() => {
   const PRIMARY_ORDER = ['dashboard', 'clientes', 'processos', 'licencas', 'documentos', 'custos', 'relatorios', 'config'];
   const SECONDARY_ORDER = ['exigencias', 'integracoes', 'conhecimento', 'treinamento', 'usuarios'];
+  const APPROVED_SEARCH_PLACEHOLDER = 'Buscar empresas, processos, documentos...';
 
   const labelByPage = {
     dashboard: 'Dashboard',
@@ -105,16 +106,20 @@
     });
   }
 
+  function syncSidebarIdentity() {
+    const name = document.getElementById('user-name')?.textContent?.trim() || 'Marco Matos';
+    document.querySelectorAll('[data-v6-user-name]').forEach(el => { el.textContent = name; });
+    document.querySelectorAll('[data-v6-user-avatar]').forEach(el => { el.textContent = initials(name); });
+  }
+
   function syncUserChrome(sessionUser = {}) {
     const name = sessionUser.name || sessionUser.full_name || sessionUser.user_metadata?.name || document.getElementById('user-name')?.textContent || 'Marco Matos';
-    const role = sessionUser.role || sessionUser.profile || document.getElementById('user-role')?.textContent || 'ATLAS Legalização';
-    const displayRole = /perfil/i.test(role) ? 'ATLAS Legalização' : role;
 
     const topName = document.getElementById('user-name');
     const topRole = document.getElementById('user-role');
     const topAvatar = document.getElementById('user-avatar');
     if (topName && name) topName.textContent = name;
-    if (topRole) topRole.textContent = displayRole || 'ATLAS Legalização';
+    if (topRole) topRole.textContent = 'ATLAS Legalização';
     if (topAvatar) topAvatar.textContent = initials(name);
 
     document.querySelectorAll('[data-v6-user-name]').forEach(el => { el.textContent = name; });
@@ -124,7 +129,48 @@
   function markCurrentPage() {
     const shell = document.getElementById('app-shell');
     const active = document.querySelector('#nav .nav-item.active[data-page]');
-    if (shell) shell.dataset.v6Page = active?.dataset.page || 'dashboard';
+    const hasDashboard = !!document.querySelector('#page-content .v6-dashboard');
+    const page = hasDashboard ? 'dashboard' : (active?.dataset.page || 'dashboard');
+    if (shell) shell.dataset.v6Page = page;
+    enforceDashboardHeader(page);
+  }
+
+  function enforceDashboardHeader(page) {
+    const pageHead = document.querySelector('#app-shell .main > .page-head');
+    if (!pageHead) return;
+    if (page === 'dashboard' || document.querySelector('#page-content .v6-dashboard')) {
+      pageHead.style.display = 'none';
+      pageHead.setAttribute('aria-hidden', 'true');
+    } else {
+      pageHead.style.display = '';
+      pageHead.removeAttribute('aria-hidden');
+    }
+  }
+
+  function enforceSearch() {
+    const search = document.getElementById('global-search');
+    if (search && search.placeholder !== APPROVED_SEARCH_PLACEHOLDER) {
+      search.placeholder = APPROVED_SEARCH_PLACEHOLDER;
+    }
+  }
+
+  function injectFidelityGuardStyles() {
+    if (document.getElementById('atlas-v6-fidelity-guard')) return;
+    const style = document.createElement('style');
+    style.id = 'atlas-v6-fidelity-guard';
+    style.textContent = `
+      #app-shell[data-v6-page="dashboard"] .main > .page-head,
+      #app-shell:has(#page-content .v6-dashboard) .main > .page-head { display:none !important; }
+      @media (min-width:1181px) {
+        :root { --v6-sidebar-width:300px !important; --v6-topbar-height:74px !important; }
+        #app-shell .sidebar { width:300px !important; }
+        #app-shell .workspace { margin-left:300px !important; }
+      }
+      #app-shell .topbar { border-radius:0 !important; }
+      #app-shell .main { padding-top:0 !important; }
+      #app-shell[data-v6-page="dashboard"] #page-content { padding-top:0 !important; }
+    `;
+    document.head.appendChild(style);
   }
 
   function observeNavigation() {
@@ -135,22 +181,46 @@
     nav.addEventListener('click', () => queueMicrotask(markCurrentPage));
   }
 
+  function observeLegacyOverrides() {
+    if (!window.MutationObserver) return;
+    const search = document.getElementById('global-search');
+    if (search) {
+      new MutationObserver(enforceSearch).observe(search, { attributes: true, attributeFilter: ['placeholder'] });
+    }
+    const userName = document.getElementById('user-name');
+    if (userName) {
+      new MutationObserver(() => {
+        syncSidebarIdentity();
+        const topRole = document.getElementById('user-role');
+        if (topRole && topRole.textContent !== 'ATLAS Legalização') topRole.textContent = 'ATLAS Legalização';
+      }).observe(userName, { childList: true, subtree: true, characterData: true });
+    }
+    const content = document.getElementById('page-content');
+    if (content) {
+      new MutationObserver(() => queueMicrotask(markCurrentPage)).observe(content, { childList: true, subtree: false });
+    }
+  }
+
   function init() {
+    injectFidelityGuardStyles();
     reorganizeNavigation();
     ensureSidebarAccount();
-    const search = document.getElementById('global-search');
-    if (search) search.placeholder = 'Buscar empresas, processos, documentos...';
+    enforceSearch();
     const role = document.getElementById('user-role');
-    if (role && (!role.textContent || role.textContent.trim() === 'Perfil')) role.textContent = 'ATLAS Legalização';
+    if (role) role.textContent = 'ATLAS Legalização';
     markCurrentPage();
     observeNavigation();
+    observeLegacyOverrides();
     syncUserChrome({});
+    setTimeout(() => { enforceSearch(); markCurrentPage(); syncSidebarIdentity(); }, 0);
+    setTimeout(() => { enforceSearch(); markCurrentPage(); syncSidebarIdentity(); }, 350);
   }
 
   window.AtlasV6Shell = {
     syncUserChrome,
     reorganizeNavigation,
-    markCurrentPage
+    markCurrentPage,
+    enforceSearch
   };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true });
