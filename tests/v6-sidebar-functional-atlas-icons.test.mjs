@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
 const shell = fs.readFileSync('atlas-v6-shell.js','utf8');
-const css = fs.readFileSync('mockup-fidelity-v6.css','utf8');
+const css = fs.readFileSync('functional-atlas-sidebar-v6.css','utf8');
 
 test('sidebar uses inline outline SVG icons instead of text glyphs',()=>{
   assert.match(shell,/const iconSvgByPage/);
@@ -20,5 +20,5 @@ test('sidebar follows functional Atlas navigation group labels',()=>{
 });
 
 test('sidebar icon sizing is compact like functional Atlas',()=>{
-  assert.match(css,/\.nav-ico svg\{width:20px!important;height:20px!important/);
+  assert.match(css,/\.nav-ico svg\s*\{[^}]*width:\s*20px!important;[^}]*height:\s*20px!important/s);
 });
