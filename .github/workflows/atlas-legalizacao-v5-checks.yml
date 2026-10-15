@@ -25,10 +25,22 @@ jobs:
         run: node --test tests/v6-shell-contract.test.mjs
       - name: V6 role navigation
         run: node --test tests/v6-role-navigation.test.mjs
+      - name: V4 sidebar reference
+        run: node --test tests/v4-sidebar-reference.test.mjs
+      - name: V4 dashboard footer brand
+        run: node --test tests/v4-dashboard-footer-brand.test.mjs
+      - name: V4 login reference
+        run: node --test tests/v4-login-reference.test.mjs
+      - name: V4 mobile layout
+        run: node --test tests/v4-mobile-layout.test.mjs
+      - name: V4 theme system
+        run: node --test tests/v4-theme-system.test.mjs
+      - name: V4 visual fidelity
+        run: node --test tests/v4-visual-fidelity.test.mjs
+      - name: Legacy V4 remaining contracts
+        run: node --test tests/v4-cnpj-authoritative-lock.test.mjs tests/v4-completed-service-edit.test.mjs tests/v4-completion-date-sidebar-accordion.test.mjs tests/v4-dashboard-integration.test.mjs tests/v4-finance-notifications-behavior.test.mjs tests/v4-finance-notifications-db-contract.test.mjs tests/v4-finance-notifications-ui.test.mjs tests/v4-legacy-functions.test.mjs tests/v4-process-object-shape.test.mjs tests/v4-process-open-cell-guard.test.mjs tests/v4-real-shape.test.mjs tests/v4-regression-contract.test.mjs tests/v4-report-brand-patch.test.mjs tests/v4-report-loader.test.mjs tests/v4-report-visual.test.mjs tests/v4-security-process-actions.test.mjs
       - name: Legacy atlas contracts
         run: node --test tests/atlas-*.test.mjs
-      - name: Legacy V4 contracts
-        run: node --test tests/v4-*.test.mjs
       - name: Legacy V5 contracts
         run: node --test tests/v5-*.test.mjs
       - name: Legacy V5.1 contracts
