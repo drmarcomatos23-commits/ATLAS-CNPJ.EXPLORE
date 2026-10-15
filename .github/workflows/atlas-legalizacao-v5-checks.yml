@@ -19,6 +19,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: V6 production guard
+        run: node --test tests/v6-production-guard.test.mjs
+      - name: V6 shell contract
+        run: node --test tests/v6-shell-contract.test.mjs
+      - name: V6 role navigation
+        run: node --test tests/v6-role-navigation.test.mjs
       - name: Run test suite
         run: npm test
       - name: Syntax check V5.1 modules
