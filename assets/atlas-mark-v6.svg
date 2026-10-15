@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 110 116" role="img" aria-label="ATLAS">
+  <defs>
+    <linearGradient id="o" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffad24"/><stop offset="1" stop-color="#ff7b16"/></linearGradient>
+    <linearGradient id="c" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#28d8ee"/><stop offset="1" stop-color="#08afd1"/></linearGradient>
+  </defs>
+  <path d="M55 0 106 108H86L55 43 24 108H4Z" fill="url(#o)"/>
+  <path d="M55 62 110 108 87 116 55 87 23 116 0 108Z" fill="url(#c)"/>
+  <path d="M55 80 97 110 81 116 55 97 29 116 13 110Z" fill="#0877b8"/>
+</svg>
