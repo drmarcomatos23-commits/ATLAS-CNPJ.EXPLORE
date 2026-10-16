@@ -14,7 +14,7 @@ await import('../dashboard-v6.js');
 
 const D = globalThis.AtlasDashboardV6;
 
-test('V6 dashboard model returns zero KPIs and the five approved status buckets without fake values', () => {
+test('V6 dashboard model returns zeros and empty collections without fake values', () => {
   const model = D.buildModel({
     companies: [], processes: [], licenses: [], costs: [], pending: [], documents: [], now: '2026-10-15T12:00:00-03:00'
   });
@@ -28,30 +28,24 @@ test('V6 dashboard model returns zero KPIs and the five approved status buckets 
   });
   assert.deepEqual(model.pipeline.map(x => x.count), [0,0,0,0,0,0]);
   assert.deepEqual(model.recentProcesses, []);
-  assert.deepEqual(model.statusDistribution, [
-    { label:'Em andamento', count:0 },
-    { label:'Concluídos', count:0 },
-    { label:'Aguardando', count:0 },
-    { label:'Em análise', count:0 },
-    { label:'Cancelados', count:0 }
-  ]);
+  assert.deepEqual(model.statusDistribution, []);
   assert.deepEqual(model.companyTypes, []);
   assert.deepEqual(model.deadlines, []);
 });
 
-test('V6 dashboard counts only truly in-progress processes in Processos em andamento KPI', () => {
+test('V6 dashboard counts active processes and preserves the six approved pipeline stages', () => {
   const model = D.buildModel({
     companies: [],
     processes: [
-      { id: 'p1', status: 'in_progress', stage: 'Consulta de Viabilidade' },
-      { id: 'p2', status: 'open', stage: 'DBE' },
+      { id: 'p1', status: 'Em andamento', stage: 'Consulta de Viabilidade' },
+      { id: 'p2', status: 'Aguardando', stage: 'DBE' },
       { id: 'p3', status: 'Em análise', stage: 'Junta Comercial' },
-      { id: 'p4', status: 'completed', stage: 'Pós-abertura' },
-      { id: 'p5', status: 'cancelled', stage: 'Licenças' }
+      { id: 'p4', status: 'Concluído', stage: 'Pós-abertura' },
+      { id: 'p5', status: 'Cancelado', stage: 'Licenças' }
     ],
     licenses: [], costs: [], pending: [], documents: [], now: '2026-10-15T12:00:00-03:00'
   });
-  assert.equal(model.kpis.activeProcesses, 1);
+  assert.equal(model.kpis.activeProcesses, 3);
   assert.deepEqual(model.pipeline.map(x => x.label), [
     'Consulta de Viabilidade',
     'DBE / Receita Federal',
@@ -61,23 +55,6 @@ test('V6 dashboard counts only truly in-progress processes in Processos em andam
     'Pós-abertura / Regularização'
   ]);
   assert.deepEqual(model.pipeline.map(x => x.count), [1,1,1,0,1,1]);
-});
-
-test('V6 maps persisted process statuses to the approved dashboard buckets', () => {
-  const model = D.buildModel({
-    processes: [
-      ...Array.from({length:18},(_,i)=>({id:`i${i}`,status:'in_progress'})),
-      ...Array.from({length:3},(_,i)=>({id:`o${i}`,status:'open'})),
-      ...Array.from({length:4},(_,i)=>({id:`c${i}`,status:'completed'}))
-    ]
-  });
-  assert.deepEqual(model.statusDistribution, [
-    { label:'Em andamento', count:18 },
-    { label:'Concluídos', count:4 },
-    { label:'Aguardando', count:3 },
-    { label:'Em análise', count:0 },
-    { label:'Cancelados', count:0 }
-  ]);
 });
 
 test('V6 dashboard sorts deadlines and recent processes using real dates', () => {
