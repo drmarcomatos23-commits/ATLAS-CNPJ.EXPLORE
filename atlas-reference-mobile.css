@@ -1,0 +1,383 @@
+/* ATLAS Legalização — camada mobile final da referência aprovada.
+   Corrige apenas apresentação; rotas, dados e ações permanecem no código existente. */
+
+@media (max-width:760px){
+  html,body{
+    width:100%;
+    max-width:100%;
+    overflow-x:hidden!important;
+    background:#F3F6FB!important;
+  }
+  body{overscroll-behavior-y:auto!important}
+  body.atlas-final-dashboard-active{padding-bottom:0!important}
+
+  /* O cabeçalho legado era a causa do segundo "DASHBOARD" visto no iPhone. */
+  body.atlas-final-dashboard-active #app-shell[data-v6-page="dashboard"] .main > .page-head,
+  #app-shell[data-v6-page="dashboard"] .main > .page-head:has(+ #page-content .atlas-final-dashboard){
+    display:none!important;
+    visibility:hidden!important;
+    height:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+    overflow:hidden!important;
+  }
+
+  /* No Dashboard final, o CTA já está nos próprios componentes; remove o FAB legado. */
+  body.atlas-final-dashboard-active #new-process-btn,
+  #app-shell[data-v6-page="dashboard"] #new-process-btn{
+    display:none!important;
+  }
+
+  /* A referência final usa drawer lateral; a barra inferior antiga não pode cobrir KPIs. */
+  body.atlas-final-dashboard-active #atlas-mobile-bottom-nav{
+    display:none!important;
+  }
+  body.atlas-final-dashboard-active .workspace{
+    padding-bottom:0!important;
+  }
+
+  /* Drawer: sidebar sempre acima do backdrop. */
+  #app-shell .sidebar{
+    position:fixed!important;
+    inset:0 auto 0 0!important;
+    width:min(86vw,320px)!important;
+    max-width:320px!important;
+    height:100dvh!important;
+    min-height:100dvh!important;
+    z-index:2300!important;
+    transform:translateX(-105%)!important;
+    visibility:visible!important;
+    opacity:1!important;
+    border-radius:0 20px 20px 0!important;
+    background:linear-gradient(180deg,#0A1F44 0%,#0B2A5B 100%)!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+    transition:transform .22s ease,box-shadow .22s ease!important;
+  }
+  #app-shell .sidebar.mobile-open{
+    transform:translateX(0)!important;
+    z-index:2300!important;
+    box-shadow:20px 0 56px rgba(4,20,44,.34)!important;
+  }
+  #app-shell .mobile-nav-overlay{
+    position:fixed!important;
+    inset:0!important;
+    z-index:2200!important;
+    background:rgba(5,20,42,.42)!important;
+    backdrop-filter:blur(3px)!important;
+    -webkit-backdrop-filter:blur(3px)!important;
+  }
+  #app-shell .mobile-nav-overlay.open{
+    opacity:1!important;
+    visibility:visible!important;
+  }
+  #app-shell .sidebar .brand-box{
+    min-height:84px!important;
+    height:84px!important;
+    margin:0!important;
+    padding:14px 18px 8px!important;
+    border-radius:0!important;
+    flex:0 0 auto!important;
+  }
+  #app-shell .sidebar .brand-box .brand-logo{
+    width:176px!important;
+    max-height:62px!important;
+    margin:0!important;
+    object-position:left center!important;
+  }
+  #app-shell .sidebar .nav-list{
+    flex:1 1 auto!important;
+    min-height:0!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    padding:8px 10px 16px!important;
+    -webkit-overflow-scrolling:touch!important;
+    overscroll-behavior:contain!important;
+    scrollbar-width:thin!important;
+    scrollbar-color:rgba(91,181,236,.36) transparent!important;
+  }
+  #app-shell .sidebar .nav-item{
+    min-height:48px!important;
+    height:48px!important;
+    padding:0 13px!important;
+    margin:1px 0!important;
+    border-radius:11px!important;
+    gap:12px!important;
+    font-size:13px!important;
+  }
+  #app-shell .sidebar .nav-item .nav-ico,
+  #app-shell .sidebar .nav-item .nav-ico svg{
+    width:21px!important;
+    height:21px!important;
+    min-width:21px!important;
+  }
+  #app-shell .sidebar .sidebar-footer{
+    position:static!important;
+    flex:0 0 auto!important;
+    margin-top:0!important;
+    padding:10px 14px max(14px,env(safe-area-inset-bottom))!important;
+    background:rgba(5,26,55,.96)!important;
+  }
+
+  /* App bar compacta. */
+  #app-shell .topbar{
+    position:sticky!important;
+    top:0!important;
+    z-index:1200!important;
+    min-height:104px!important;
+    height:auto!important;
+    display:grid!important;
+    grid-template-columns:54px minmax(0,1fr) auto!important;
+    grid-template-rows:54px 46px!important;
+    gap:8px 10px!important;
+    padding:max(8px,env(safe-area-inset-top)) 12px 8px!important;
+    background:rgba(255,255,255,.98)!important;
+    border-bottom:1px solid #E3E9F2!important;
+    box-shadow:0 2px 10px rgba(16,40,90,.04)!important;
+    backdrop-filter:blur(14px)!important;
+    -webkit-backdrop-filter:blur(14px)!important;
+  }
+  #app-shell .mobile-menu-btn{
+    grid-column:1!important;
+    grid-row:1!important;
+    width:52px!important;
+    height:52px!important;
+    min-width:52px!important;
+    min-height:52px!important;
+    border-radius:14px!important;
+    border:1px solid #DDE6F0!important;
+    background:#fff!important;
+    color:#123B63!important;
+  }
+  #app-shell .mobile-app-title{
+    grid-column:2!important;
+    grid-row:1!important;
+    align-self:center!important;
+    padding:0 2px!important;
+  }
+  #app-shell .mobile-app-title small{font-size:9px!important;letter-spacing:.18em!important;color:#61748E!important}
+  #app-shell .mobile-app-title strong{font-size:18px!important;line-height:1.15!important;color:#102B4A!important}
+  #app-shell .top-actions{
+    grid-column:3!important;
+    grid-row:1!important;
+    align-self:center!important;
+    margin-left:0!important;
+  }
+  #app-shell .avatar{width:48px!important;height:48px!important;border-radius:15px!important;font-size:12px!important}
+  #app-shell .logout-btn{display:inline-flex!important;width:42px!important;height:42px!important;min-width:42px!important;border-radius:12px!important}
+  #app-shell .bell{display:none!important}
+  #app-shell .global-search{
+    grid-column:1/-1!important;
+    grid-row:2!important;
+    width:100%!important;
+    max-width:none!important;
+    min-width:0!important;
+  }
+  #app-shell .global-search input{
+    width:100%!important;
+    height:44px!important;
+    min-height:44px!important;
+    padding:0 14px 0 42px!important;
+    border:1px solid #D7E2EE!important;
+    border-radius:12px!important;
+    background:#F8FAFD!important;
+    font-size:16px!important;
+    color:#1B3557!important;
+  }
+  #app-shell .global-search::before{left:14px!important;top:9px!important;font-size:20px!important}
+
+  #app-shell .main{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    padding:0!important;
+    overflow:visible!important;
+    background:#F3F6FB!important;
+  }
+  #app-shell #page-content{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    padding:0!important;
+    overflow-x:hidden!important;
+  }
+
+  .atlas-final-dashboard{
+    width:100%!important;
+    max-width:100%!important;
+    min-width:0!important;
+    padding:12px 10px 24px!important;
+    box-sizing:border-box!important;
+    overflow-x:hidden!important;
+  }
+
+  /* Hero único e legível em celular. */
+  .atlas-final-hero{
+    width:100%!important;
+    height:auto!important;
+    min-height:248px!important;
+    margin:0!important;
+    display:block!important;
+    border-radius:18px!important;
+    overflow:hidden!important;
+    background:
+      linear-gradient(90deg,rgba(255,255,255,.95) 0%,rgba(242,249,255,.88) 34%,rgba(219,239,251,.56) 64%,rgba(255,255,255,.28) 100%),
+      url('/assets/atlas-legalizacao-hero-v6.svg') center right/cover no-repeat!important;
+    box-shadow:0 4px 18px rgba(16,40,90,.08)!important;
+  }
+  .atlas-hero-main{
+    width:100%!important;
+    max-width:none!important;
+    min-height:192px!important;
+    display:grid!important;
+    grid-template-columns:76px minmax(0,1fr)!important;
+    gap:13px!important;
+    align-items:center!important;
+    padding:22px 18px 12px!important;
+    box-sizing:border-box!important;
+  }
+  .atlas-hero-main>img{width:72px!important;height:92px!important;object-fit:contain!important}
+  .atlas-hero-main>div>span{font-size:9px!important;letter-spacing:.18em!important;color:#254363!important}
+  .atlas-hero-main h1{font-size:40px!important;line-height:.96!important;color:#0D3764!important}
+  .atlas-hero-main h3{font-size:11px!important;line-height:1.25!important;letter-spacing:.08em!important;white-space:normal!important}
+  .atlas-hero-main i{width:42px!important;height:3px!important;margin:11px 0 8px!important}
+  .atlas-hero-main p{
+    grid-column:1/-1!important;
+    max-width:none!important;
+    margin-top:2px!important;
+    font-size:12px!important;
+    line-height:1.35!important;
+  }
+  .atlas-services{
+    position:static!important;
+    width:auto!important;
+    margin:0 14px 14px!important;
+    padding:8px 8px 8px 12px!important;
+    display:flex!important;
+    gap:12px!important;
+    overflow-x:auto!important;
+    border-left:3px solid #F7931E!important;
+    background:rgba(255,255,255,.82)!important;
+    -webkit-overflow-scrolling:touch!important;
+    scrollbar-width:none!important;
+  }
+  .atlas-services::-webkit-scrollbar{display:none!important}
+  .atlas-services span{flex:0 0 auto!important;font-size:8px!important;line-height:1.3!important;letter-spacing:.14em!important}
+
+  .atlas-final-body{
+    width:100%!important;
+    margin-top:-12px!important;
+    padding:0 7px 18px!important;
+    box-sizing:border-box!important;
+    position:relative!important;
+    z-index:2!important;
+  }
+  .atlas-kpi-grid{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .atlas-kpi{
+    min-width:0!important;
+    min-height:112px!important;
+    grid-template-columns:38px minmax(0,1fr)!important;
+    gap:8px!important;
+    padding:11px 10px!important;
+    border-radius:13px!important;
+  }
+  .atlas-kpi-icon{width:36px!important;height:36px!important;border-radius:9px!important}
+  .atlas-kpi-icon svg{width:20px!important;height:20px!important}
+  .atlas-kpi-copy small{font-size:9px!important;line-height:1.2!important}
+  .atlas-kpi-copy strong{font-size:19px!important;white-space:normal!important}
+  .atlas-kpi-copy em,.atlas-kpi-copy>span{font-size:8px!important}
+
+  .atlas-main-grid,.atlas-bottom-grid{
+    grid-template-columns:1fr!important;
+    gap:10px!important;
+    margin-top:10px!important;
+  }
+  .atlas-card{border-radius:14px!important}
+  .atlas-card>header{
+    min-height:52px!important;
+    grid-template-columns:22px minmax(0,1fr) auto!important;
+    gap:8px!important;
+    padding:9px 11px!important;
+  }
+  .atlas-card>header h2{font-size:11px!important}
+  .atlas-card>header p{font-size:8px!important;line-height:1.3!important}
+  .atlas-card>header button{height:29px!important;padding:0 8px!important;font-size:8px!important}
+  .atlas-heading-icon svg{width:19px!important;height:19px!important}
+
+  .atlas-pipeline{
+    overflow:hidden!important;
+  }
+  .atlas-pipeline-track,
+  .atlas-pipeline-counts{
+    min-width:690px!important;
+  }
+  .atlas-pipeline-track{
+    overflow:visible!important;
+    padding:10px 10px 0!important;
+  }
+  .atlas-pipeline::after{
+    content:'Deslize para ver todas as etapas →';
+    display:block;
+    padding:0 12px 10px;
+    font-size:9px;
+    color:#70829A;
+  }
+  .atlas-pipeline{
+    overflow-x:auto!important;
+    -webkit-overflow-scrolling:touch!important;
+    scroll-snap-type:x proximity!important;
+    overscroll-behavior-x:contain!important;
+  }
+  .atlas-stage{min-height:82px!important}
+  .atlas-stage strong{font-size:8px!important}
+  .atlas-stage span svg{width:21px!important;height:21px!important}
+  .atlas-pipeline-counts b{font-size:11px!important}.atlas-pipeline-counts small{font-size:7px!important}
+
+  .atlas-list{padding:4px 10px 8px!important}
+  .atlas-list-row{
+    grid-template-columns:22px minmax(0,1fr) auto!important;
+    gap:7px!important;
+    min-height:50px!important;
+    padding:6px 0!important;
+  }
+  .atlas-row-main strong{font-size:9px!important}.atlas-row-main small{font-size:7px!important}
+  .atlas-badge{font-size:7px!important;padding:4px 7px!important}
+  .atlas-list-row time{grid-column:2/-1!important;text-align:left!important;font-size:7px!important}
+
+  .atlas-status-body:has(.atlas-chart-canvas){
+    grid-template-columns:108px minmax(0,1fr)!important;
+    padding:12px!important;
+  }
+  .atlas-chart-canvas.donut,.atlas-chart-canvas.donut canvas{width:94px!important;height:94px!important}
+  .atlas-chart-center b{font-size:14px!important}.atlas-chart-center small{font-size:7px!important}
+  .atlas-legend>div{grid-template-columns:8px minmax(0,1fr) 24px 28px!important;font-size:8px!important;margin:5px 0!important}
+  .atlas-legend b,.atlas-legend small{font-size:8px!important}
+  .atlas-bars:has(.atlas-chart-canvas){height:160px!important;padding:12px!important}
+  .atlas-chart-canvas.bars,.atlas-chart-canvas.bars canvas{height:145px!important}
+
+  .atlas-deadline-list{padding:4px 10px 8px!important}
+  .atlas-deadline-list>button{
+    grid-template-columns:20px minmax(0,1fr) auto!important;
+    gap:7px!important;
+    min-height:54px!important;
+    padding:7px 0!important;
+  }
+  .atlas-deadline-list strong{font-size:9px!important}.atlas-deadline-list small{font-size:7px!important}
+  .atlas-deadline-list em{font-size:7px!important;padding:4px 7px!important}
+  .atlas-deadline-list time{grid-column:2/-1!important;text-align:left!important;font-size:7px!important}
+}
+
+@media (max-width:390px){
+  .atlas-final-dashboard{padding-inline:7px!important}
+  .atlas-hero-main{grid-template-columns:65px minmax(0,1fr)!important;padding-inline:14px!important}
+  .atlas-hero-main>img{width:62px!important;height:82px!important}
+  .atlas-hero-main h1{font-size:36px!important}
+  .atlas-hero-main h3{font-size:10px!important}
+  .atlas-kpi{min-height:106px!important;padding:10px 8px!important}
+  .atlas-kpi-copy strong{font-size:17px!important}
+}
