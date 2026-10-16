@@ -83,18 +83,14 @@
 }
 
 @media (min-width:1181px){
-  /* Root cause of the large vertical holes: grouped navigation was participating
-     in the sidebar flex layout. Flatten it visually into one continuous list. */
+  /* Root cause of the large vertical holes: grouped navigation was distributed
+     as multiple layout blocks. Keep the menu as one compact continuous flow. */
   #app-shell .nav-list{
-    display:flex!important;
-    flex-direction:column!important;
-    justify-content:flex-start!important;
-    align-content:stretch!important;
-    gap:2px!important;
+    display:block!important;
     padding:6px 10px 96px!important;
   }
   #app-shell .v6-nav-group{
-    display:contents!important;
+    display:block!important;
     margin:0!important;
     padding:0!important;
   }
@@ -107,11 +103,9 @@
     padding:0!important;
   }
   #app-shell .nav-item{
-    order:var(--atlas-nav-order,99)!important;
-    flex:0 0 42px!important;
     min-height:42px!important;
     height:42px!important;
-    margin:1px 0!important;
+    margin:2px 0!important;
   }
   #app-shell .nav-item[data-page="exigencias"],
   #app-shell .nav-item[data-page="integracoes"],
