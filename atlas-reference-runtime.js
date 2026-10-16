@@ -24,6 +24,15 @@
     document.head.appendChild(link);
   }
 
+  function ensureMobileFixStylesheet() {
+    if (document.getElementById('atlas-reference-mobile-fix-css')) return;
+    const link=document.createElement('link');
+    link.id='atlas-reference-mobile-fix-css';
+    link.rel='stylesheet';
+    link.href='/atlas-reference-mobile-fix.css?v=1.0';
+    document.head.appendChild(link);
+  }
+
   function syncMobileDashboardChrome() {
     const active=!!document.querySelector('#page-content .atlas-final-dashboard');
     document.body.classList.toggle('atlas-final-dashboard-active',active);
@@ -116,6 +125,7 @@
     removeLegacyFidelityLayers();
     ensureFinalStylesheet();
     ensureMobileStylesheet();
+    ensureMobileFixStylesheet();
     injectRuntimeStyles();
     syncMobileDashboardChrome();
     upgradeCharts();
@@ -125,6 +135,7 @@
         removeLegacyFidelityLayers();
         ensureFinalStylesheet();
         ensureMobileStylesheet();
+        ensureMobileFixStylesheet();
         syncMobileDashboardChrome();
         queueMicrotask(upgradeCharts);
       }).observe(root,{childList:true,subtree:false});
