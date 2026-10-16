@@ -25,6 +25,7 @@
     ['Licença Ambiental','Construtora Horizonte','Vence em 22 dias','13/05/2025','warn'],
     ['Renovação de CLCB','Comércio Alfa','Vence em 28 dias','19/05/2025','normal']
   ];
+  const STATUS_BUCKETS = ['Em andamento','Concluídos','Aguardando','Em análise','Cancelados'];
 
   const svg = paths => `<svg data-atlas-icon viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
   const ICONS = {
@@ -60,6 +61,34 @@
       pending: hasOwnAny(raw,['pending','requirements','exigencias']),
       documents: hasOwnAny(raw,['documents'])
     };
+  }
+
+  function normalizeProcessSituation(rawStatus='') {
+    const s=String(rawStatus||'').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[\s-]+/g,'_');
+    if(s==='completed'||s==='done'||s.includes('conclu')||s.includes('finaliz')) return 'Concluídos';
+    if(s==='cancelled'||s==='canceled'||s.includes('cancel')) return 'Cancelados';
+    if(s==='open'||s==='pending'||s==='paused'||s.includes('aguard')||s.includes('pendente')||s.includes('paus')) return 'Aguardando';
+    if(s==='review'||s==='analysis'||s==='under_review'||s.includes('analise')) return 'Em análise';
+    if(s==='in_progress'||s==='overdue'||s==='active'||s.includes('andamento')||s.includes('atras')) return 'Em andamento';
+    return 'Em andamento';
+  }
+
+  function applyRealProcessSituations(model, processes=[]) {
+    const counts=new Map(STATUS_BUCKETS.map(label=>[label,0]));
+    for(const process of processes){
+      const label=normalizeProcessSituation(process?.status ?? process?.process_status ?? process?.state ?? '');
+      counts.set(label,(counts.get(label)||0)+1);
+    }
+    const normalized=STATUS_BUCKETS.map(label=>({label,count:counts.get(label)||0}));
+    model.statusDistribution=normalized;
+    model.kpis.activeProcesses=normalized.find(item=>item.label==='Em andamento')?.count || 0;
+    if(Array.isArray(model.recentProcesses)){
+      model.recentProcesses=model.recentProcesses.map(row=>({
+        ...row,
+        statusLabel:normalizeProcessSituation(row?.status ?? row?.process_status ?? row?.state ?? row?.statusLabel ?? '')
+      }));
+    }
+    return model;
   }
 
   function dateDaysLabel(value, now=new Date()) {
@@ -165,6 +194,7 @@
       state.pendingCount=summary?Object.values(summary).reduce((s,v)=>s+(Number(v)||0),0):(state.pending||state.requirements||state.exigencias||[]).length;
     }
     const model=window.AtlasDashboardV6.buildModel(state);
+    applyRealProcessSituations(model,processes);
     const flags=sourceFlags(raw);
     const root=document.getElementById('page-content');
     if(root){ root.innerHTML=finalHtml(model,flags,state.now); bind(root.querySelector('.atlas-final-dashboard')); }
@@ -174,7 +204,7 @@
 
   function install() {
     if(!window.AtlasDashboardV6) { setTimeout(install,60); return; }
-    window.AtlasReferenceFinal={render:renderFinal,useMockOnlyWhenMissing,MOCK_KPIS,MOCK_RECENT,MOCK_DEADLINES};
+    window.AtlasReferenceFinal={render:renderFinal,useMockOnlyWhenMissing,MOCK_KPIS,MOCK_RECENT,MOCK_DEADLINES,normalizeProcessSituation,applyRealProcessSituations};
     window.dashboard=async()=>{ try{return await renderFinal();}catch(err){console.error('ATLAS Final Dashboard:',err);return window.AtlasDashboardV6.render?.();} };
     if(document.querySelector('#nav .nav-item.active[data-page="dashboard"]') || document.querySelector('#page-content .v6-dashboard')) window.dashboard();
   }
