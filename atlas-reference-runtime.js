@@ -15,6 +15,34 @@
     document.head.appendChild(link);
   }
 
+  function ensureMobileStylesheet() {
+    if (document.getElementById('atlas-reference-mobile-css')) return;
+    const link=document.createElement('link');
+    link.id='atlas-reference-mobile-css';
+    link.rel='stylesheet';
+    link.href='/atlas-reference-mobile.css?v=1.0';
+    document.head.appendChild(link);
+  }
+
+  function syncMobileDashboardChrome() {
+    const active=!!document.querySelector('#page-content .atlas-final-dashboard');
+    document.body.classList.toggle('atlas-final-dashboard-active',active);
+    const shell=document.getElementById('app-shell');
+    if(active) shell?.setAttribute('data-v6-page','dashboard');
+    const pageHead=shell?.querySelector('.main > .page-head');
+    if(pageHead){
+      if(active){
+        pageHead.style.setProperty('display','none','important');
+        pageHead.setAttribute('aria-hidden','true');
+      } else {
+        pageHead.style.removeProperty('display');
+        pageHead.removeAttribute('aria-hidden');
+      }
+    }
+    const fab=document.getElementById('new-process-btn');
+    if(fab && active) fab.classList.add('mobile-fab-suppressed');
+  }
+
   function injectRuntimeStyles() {
     if (document.getElementById('atlas-reference-runtime-style')) return;
     const style=document.createElement('style');
@@ -87,12 +115,21 @@
   function run() {
     removeLegacyFidelityLayers();
     ensureFinalStylesheet();
+    ensureMobileStylesheet();
     injectRuntimeStyles();
+    syncMobileDashboardChrome();
     upgradeCharts();
     const root=document.getElementById('page-content');
     if (root && window.MutationObserver) {
-      new MutationObserver(() => { removeLegacyFidelityLayers(); ensureFinalStylesheet(); queueMicrotask(upgradeCharts); }).observe(root,{childList:true,subtree:false});
+      new MutationObserver(() => {
+        removeLegacyFidelityLayers();
+        ensureFinalStylesheet();
+        ensureMobileStylesheet();
+        syncMobileDashboardChrome();
+        queueMicrotask(upgradeCharts);
+      }).observe(root,{childList:true,subtree:false});
     }
+    window.addEventListener('resize',syncMobileDashboardChrome,{passive:true});
   }
 
   if (document.readyState==='loading') document.addEventListener('DOMContentLoaded',run,{once:true}); else run();
