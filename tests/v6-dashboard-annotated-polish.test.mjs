@@ -31,3 +31,16 @@ test('sidebar is reordered to the approved dashboard sequence', () => {
   assert.match(runtime, /SIDEBAR_ORDER/);
   assert.ok(runtime.includes("'dashboard','clientes','processos','licencas','documentos','custos','relatorios','config'"));
 });
+
+test('desktop-like 1024-1180 viewport keeps sidebar visible and workspace offset', () => {
+  assert.match(css, /@media\s*\(min-width:1024px\)\s*and\s*\(max-width:1180px\)/i);
+  assert.match(css, /#app-shell \.sidebar\{[\s\S]*?transform:none!important/i);
+  assert.match(css, /#app-shell \.workspace\{[\s\S]*?margin-left:185px!important/i);
+  assert.match(css, /#app-shell \.mobile-menu-btn\{[\s\S]*?display:none!important/i);
+});
+
+test('chartjs company type canvas is isolated from legacy grid positioning', () => {
+  assert.match(css, /\.atlas-bars>\.atlas-chart-canvas\.bars\{[\s\S]*?display:block!important/i);
+  assert.match(css, /\.atlas-bars>\.atlas-chart-canvas\.bars\{[\s\S]*?grid-template-rows:none!important/i);
+  assert.match(css, /\.atlas-chart-canvas\.bars canvas\{[\s\S]*?position:static!important/i);
+});
