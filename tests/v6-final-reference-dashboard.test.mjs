@@ -31,3 +31,13 @@ test('final reference uses line SVG icons instead of text glyphs', () => {
   assert.match(js,/stroke="currentColor"/);
   assert.match(js,/data-atlas-icon/);
 });
+
+test('final reference corrects persisted process statuses before rendering the situation card', () => {
+  assert.match(js,/normalizeProcessSituation/);
+  assert.match(js,/in_progress[\s\S]*Em andamento/);
+  assert.match(js,/open[\s\S]*Aguardando/);
+  assert.match(js,/completed[\s\S]*Concluídos/);
+  assert.match(js,/cancelled[\s\S]*Cancelados/);
+  assert.match(js,/STATUS_BUCKETS/);
+  assert.match(js,/model\.kpis\.activeProcesses\s*=\s*normalized\.find/);
+});
