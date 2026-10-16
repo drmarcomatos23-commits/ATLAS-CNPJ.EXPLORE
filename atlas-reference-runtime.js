@@ -60,9 +60,21 @@
   }
 
   function polishSidebarOrder() {
+    const nav=document.getElementById('nav');
+    if(!nav) return;
+    let primary=nav.querySelector('.atlas-polished-primary');
+    if(!primary){
+      primary=document.createElement('section');
+      primary.className='v6-nav-group atlas-polished-primary';
+      primary.setAttribute('aria-label','Navegação principal');
+      nav.prepend(primary);
+    }
     SIDEBAR_ORDER.forEach((page,index) => {
-      const item=document.querySelector(`#nav .nav-item[data-page="${page}"]`);
-      if(item) item.style.setProperty('--atlas-nav-order', String(index));
+      const item=nav.querySelector(`.nav-item[data-page="${page}"]`);
+      if(item){
+        item.style.setProperty('--atlas-nav-order', String(index));
+        primary.appendChild(item);
+      }
     });
   }
 
