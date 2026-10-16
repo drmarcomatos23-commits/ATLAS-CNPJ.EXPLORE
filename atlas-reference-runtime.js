@@ -33,6 +33,15 @@
     document.head.appendChild(link);
   }
 
+  function ensureReadabilityStylesheet() {
+    if (document.getElementById('atlas-readability-fix-css')) return;
+    const link=document.createElement('link');
+    link.id='atlas-readability-fix-css';
+    link.rel='stylesheet';
+    link.href='/atlas-readability-fix.css?v=1.0';
+    document.head.appendChild(link);
+  }
+
   function syncMobileDashboardChrome() {
     const active=!!document.querySelector('#page-content .atlas-final-dashboard');
     document.body.classList.toggle('atlas-final-dashboard-active',active);
@@ -116,7 +125,7 @@
     chartInstances.push(new Chart(document.getElementById('atlas-type-chart'), {
       type:'bar',
       data:{labels:typeRows.map(x=>x.label),datasets:[{data:typeRows.map(x=>x.value),backgroundColor:['#1565D8','#3CA7E5','#19B5C4','#F7931E','#98A5B9'],borderRadius:3,borderSkipped:false,maxBarThickness:34}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:8},color:'#60728D'}},y:{display:false,beginAtZero:true,grid:{display:false},border:{display:false}}}}
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{enabled:true}},scales:{x:{grid:{display:false},border:{display:false},ticks:{font:{size:10},color:'#60728D'}},y:{display:false,beginAtZero:true,grid:{display:false},border:{display:false}}}}
     }));
     dashboard.dataset.chartjsUpgraded='1';
   }
@@ -126,6 +135,7 @@
     ensureFinalStylesheet();
     ensureMobileStylesheet();
     ensureMobileFixStylesheet();
+    ensureReadabilityStylesheet();
     injectRuntimeStyles();
     syncMobileDashboardChrome();
     upgradeCharts();
@@ -136,6 +146,7 @@
         ensureFinalStylesheet();
         ensureMobileStylesheet();
         ensureMobileFixStylesheet();
+        ensureReadabilityStylesheet();
         syncMobileDashboardChrome();
         queueMicrotask(upgradeCharts);
       }).observe(root,{childList:true,subtree:false});
