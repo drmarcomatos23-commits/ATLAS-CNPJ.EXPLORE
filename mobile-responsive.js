@@ -9,6 +9,18 @@
     };
   }
 
+  function scrollActiveNavIntoView(){
+    const sidebar = document.querySelector('.sidebar');
+    const nav = sidebar?.querySelector('.nav-list');
+    if (!sidebar || !nav) return;
+    const page = document.getElementById('app-shell')?.dataset?.v6Page;
+    const active = sidebar.querySelector('.nav-item.active[data-page]') || (page ? sidebar.querySelector(`.nav-item[data-page="${page}"]`) : null);
+    requestAnimationFrame(() => {
+      if (active) active.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
+      else nav.scrollTop = 0;
+    });
+  }
+
   function setOpen(open){
     const {sidebar,overlay,button}=elements();
     if(!sidebar||!overlay||!button)return;
@@ -18,6 +30,7 @@
     button.setAttribute('aria-expanded',open?'true':'false');
     button.setAttribute('aria-label',open?'Fechar menu':'Abrir menu');
     window.AtlasV51Icons?.applyTopbarIcons?.();
+    if(open) scrollActiveNavIntoView();
   }
 
   function close(){ setOpen(false); }
@@ -42,6 +55,11 @@
       if(!isMobile()) close();
     });
 
+    window.addEventListener('orientationchange',()=>{
+      close();
+      setTimeout(() => window.dispatchEvent(new Event('resize')), 120);
+    });
+
     document.querySelectorAll('.table-wrap').forEach(el=>{
       el.setAttribute('tabindex','0');
       el.setAttribute('aria-label','Tabela com rolagem horizontal no celular');
@@ -64,5 +82,5 @@
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start);
   else start();
 
-  window.atlasMobile={open:()=>setOpen(true),close,toggle};
+  window.atlasMobile={open:()=>setOpen(true),close,toggle,scrollActiveNavIntoView};
 })();
