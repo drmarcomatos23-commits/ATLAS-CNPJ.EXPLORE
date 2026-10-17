@@ -42,10 +42,32 @@ test('active process KPI is calculated from every non-closed real process', () =
   assert.match(adapter, /model\.kpis\.activeProcesses=activeCount/);
 });
 
+test('financial pending is calculated only from unpaid cost records', () => {
+  assert.match(adapter, /function financialPendingStats/);
+  assert.match(adapter, /payment_status/);
+  assert.match(adapter, /status!==['"]paid['"]/);
+  assert.match(adapter, /Financeiro Pendente/);
+  assert.match(adapter, /lançamentos pendentes/);
+});
+
+test('operational pending excludes financial and license buckets', () => {
+  assert.match(adapter, /function operationalPendingCount/);
+  assert.match(adapter, /summary\.cliente/);
+  assert.match(adapter, /summary\.equipe/);
+  assert.match(adapter, /summary\.orgao/);
+  assert.doesNotMatch(adapter, /operationalPendingCount[\s\S]{0,500}summary\.financeiro/);
+  assert.doesNotMatch(adapter, /operationalPendingCount[\s\S]{0,500}summary\.licencas/);
+  assert.match(adapter, /Pendências Operacionais/);
+  assert.match(adapter, /Exigências e providências/);
+});
+
+test('adapter supplies pendingCount explicitly so mock fallback 27 cannot leak into real dashboard', () => {
+  assert.match(adapter, /pendingCount:operationalPending/);
+});
+
 test('fixed illustrative trend percentages are replaced with factual labels', () => {
   assert.match(adapter, /'Empresas':'Base atual'/);
   assert.match(adapter, /'Processos em andamento':'Ativos agora'/);
   assert.match(adapter, /'Licenças vencendo':'Próximos 30 dias'/);
-  assert.match(adapter, /'Honorários \(mês\)':'Competência do mês'/);
   assert.match(adapter, /'Documentos':'Arquivos cadastrados'/);
 });
