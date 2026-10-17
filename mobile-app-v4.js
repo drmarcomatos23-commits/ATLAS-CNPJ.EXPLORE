@@ -64,6 +64,34 @@
     fab.classList.toggle('mobile-fab-suppressed', mq.matches && activePage === 'processos');
   }
 
+  function syncDashboardChrome(activePage){
+    const app = document.getElementById('app-shell');
+    const bottom = document.getElementById('atlas-mobile-bottom-nav');
+    const workspace = app?.querySelector('.workspace');
+    const topbar = app?.querySelector('.topbar');
+    const dashboardActive = mq.matches && activePage === 'dashboard' && !!app && !app.classList.contains('hidden');
+
+    if(bottom){
+      if(dashboardActive) bottom.style.setProperty('display','grid','important');
+      else bottom.style.removeProperty('display');
+    }
+
+    if(workspace){
+      if(dashboardActive) workspace.style.setProperty('padding-bottom','calc(84px + env(safe-area-inset-bottom))','important');
+      else workspace.style.removeProperty('padding-bottom');
+    }
+
+    if(topbar){
+      if(dashboardActive){
+        topbar.style.setProperty('position','relative','important');
+        topbar.style.setProperty('top','auto','important');
+      } else {
+        topbar.style.removeProperty('position');
+        topbar.style.removeProperty('top');
+      }
+    }
+  }
+
   function buildBottomNav(){
     const bottom = ensureBottomNav();
     const app = document.getElementById('app-shell');
@@ -105,12 +133,14 @@
       document.getElementById('atlas-mobile-bottom-nav')?.classList.add('hidden');
       document.querySelector('.mobile-app-title')?.remove();
       document.getElementById('new-process-btn')?.classList.remove('mobile-fab-suppressed');
+      syncDashboardChrome(active);
       return;
     }
     window.AtlasV51Icons?.applyTopbarIcons?.();
     ensureAppTitle();
     buildBottomNav();
     syncFab(active);
+    syncDashboardChrome(active);
   }
 
   function bind(){
