@@ -8,6 +8,7 @@ on:
       - atlas-legalizacao-v5.1-ui-compact
       - atlas-legalizacao-v6-mockup-exato
       - atlas-legalizacao-auditoria-fixes-20261016
+      - atlas-legalizacao-dados-reais-20261017
 
 jobs:
   test:
@@ -53,6 +54,9 @@ jobs:
       - name: Syntax check V5.1 modules
         run: |
           node --check dashboard-v4.js
+          node --check dashboard-v6.js
+          node --check atlas-reference-final.js
+          node --check atlas-real-data-v7.js
           node --check company-360-v5.js
           node --check company-hierarchy-v5-1.js
           node --check establishment-context-v5-1.js

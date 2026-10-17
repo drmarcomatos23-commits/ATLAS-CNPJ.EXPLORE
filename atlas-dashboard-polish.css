@@ -204,6 +204,64 @@
   .atlas-chart-center small{font-size:9px!important}
 }
 
+/* Mobile KPI containment: preserve the approved two-column grid while keeping
+   long labels/currency values inside each card at narrow widths. */
+@media (max-width:760px){
+  .atlas-kpi{
+    min-width:0!important;
+    min-height:124px!important;
+    grid-template-columns:38px minmax(0,1fr)!important;
+    gap:8px!important;
+    padding:11px 10px!important;
+    overflow:hidden!important;
+    align-items:stretch!important;
+  }
+  .atlas-kpi-copy{
+    min-width:0!important;
+    width:100%!important;
+    max-width:100%!important;
+    display:flex!important;
+    flex-direction:column!important;
+    overflow:hidden!important;
+  }
+  .atlas-kpi-copy small{
+    display:block!important;
+    max-width:100%!important;
+    font-size:9px!important;
+    line-height:1.22!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+  }
+  .atlas-kpi-copy strong{
+    display:block!important;
+    max-width:100%!important;
+    font-size:clamp(14px,4.2vw,19px)!important;
+    line-height:1.05!important;
+    letter-spacing:-.025em!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+    word-break:normal!important;
+    margin:4px 0 5px!important;
+  }
+  .atlas-kpi-copy em{
+    max-width:100%!important;
+    font-size:8px!important;
+    line-height:1.22!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+  .atlas-kpi-copy>span{
+    max-width:100%!important;
+    margin-top:auto!important;
+    padding-top:6px!important;
+    font-size:8px!important;
+    line-height:1.2!important;
+    white-space:normal!important;
+    overflow-wrap:anywhere!important;
+  }
+}
+
 /* Desktop browsers can report a reduced CSS viewport under zoom even on a wide
    monitor. Keep the full desktop shell while a fine/hover pointer is present;
    touch devices continue to use the drawer/mobile layout. */
