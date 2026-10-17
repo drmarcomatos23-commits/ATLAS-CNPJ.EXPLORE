@@ -7,9 +7,21 @@
     return active?.dataset?.page || null;
   }
 
-  async function fetchClients() {
+  async function authenticatedContext() {
     const db = window.atlasAuth?.client;
-    if (!db) return [];
+    const profile = window.atlasAuth?.getProfile?.();
+    if (!db || !profile?.id) return null;
+
+    const { data, error } = await db.auth.getSession();
+    if (error || !data?.session?.access_token) return null;
+
+    return { db, profile, session: data.session };
+  }
+
+  async function fetchClients() {
+    const ctx = await authenticatedContext();
+    if (!ctx) return [];
+    const { db } = ctx;
     const { data, error } = await db.from('clients').select('id,legal_name,tax_id').order('legal_name',{ascending:true});
     if (error) return [];
     return data || [];
@@ -34,9 +46,13 @@
   }
 
   async function refreshCompaniesContext() {
+    const ctx = await authenticatedContext();
+    if (!ctx) return;
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(async () => {
       try {
+        const freshCtx = await authenticatedContext();
+        if (!freshCtx) return;
         await refreshCompanySelects();
         const page = currentPage();
         if (page === 'clientes' && typeof window.clientPage === 'function') {
@@ -53,9 +69,10 @@
   }
 
   async function startRealtime() {
-    const db = window.atlasAuth?.client;
-    const profile = window.atlasAuth?.getProfile?.();
-    if (!db || !profile?.organization_id) return;
+    const ctx = await authenticatedContext();
+    if (!ctx) return;
+    const { db, profile } = ctx;
+    if (!profile?.organization_id) return;
 
     if (channel) {
       try { await db.removeChannel(channel); } catch {}
