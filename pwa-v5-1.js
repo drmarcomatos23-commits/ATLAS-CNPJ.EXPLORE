@@ -41,22 +41,25 @@
     }
   }
 
-  function loadEstablishmentContext(){
-    if(window.AtlasEstablishmentContextV51||document.querySelector('script[data-atlas-establishment-v51]'))return;
+  function loadScriptOnce(src,datasetKey,globalName){
+    if((globalName&&window[globalName])||document.querySelector(`script[data-${datasetKey}]`))return;
     const script=document.createElement('script');
-    script.src='/establishment-context-v5-1.js?v=5.1';
+    script.src=src;
     script.async=false;
-    script.dataset.atlasEstablishmentV51='1';
+    script.dataset[datasetKey.replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]='1';
     document.head.appendChild(script);
   }
 
+  function loadEstablishmentContext(){
+    loadScriptOnce('/establishment-context-v5-1.js?v=5.1','atlas-establishment-v51','AtlasEstablishmentContextV51');
+  }
+
   function loadRealDataDashboard(){
-    if(window.AtlasRealDataV7||document.querySelector('script[data-atlas-real-data-v7]'))return;
-    const script=document.createElement('script');
-    script.src='/atlas-real-data-v7.js?v=7.0';
-    script.async=false;
-    script.dataset.atlasRealDataV7='1';
-    document.head.appendChild(script);
+    loadScriptOnce('/atlas-real-data-v7.js?v=7.0','atlas-real-data-v7','AtlasRealDataV7');
+  }
+
+  function loadOperationalProcessV71(){
+    loadScriptOnce('/atlas-ops-v7-process.js?v=7.1','atlas-ops-v71-process','AtlasOpsV71Process');
   }
 
   window.addEventListener('beforeinstallprompt',event=>{
@@ -73,6 +76,7 @@
 
   loadEstablishmentContext();
   loadRealDataDashboard();
+  loadOperationalProcessV71();
 
   window.addEventListener('DOMContentLoaded',()=>{
     ensureInstallButton();
