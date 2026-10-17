@@ -15,7 +15,8 @@ test('adapter uses real documents and removes archived companies/processes from 
   assert.match(adapter, /db\.from\('documents'\)\.select\('\*'\)/);
   assert.match(adapter, /filter\(client=>!client\?\.deleted_at\)/);
   assert.match(adapter, /filter\(process=>!process\?\.deleted_at\)/);
-  assert.match(adapter, /documents,/);
+  assert.match(adapter, /const documents=/);
+  assert.match(adapter, /normalized=\{\.\.\.raw,clients,companies:clients,processes,costs,documents\}/);
   assert.match(adapter, /pending:Array\.isArray\(raw\.pending\)\?raw\.pending:\[\]/);
 });
 
