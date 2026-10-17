@@ -82,6 +82,7 @@
   loadEstablishmentContext();
   loadRealDataDashboard();
   loadOperationalProcessV71();
+  loadScriptOnce('/atlas-ops-v7-docs.js?v=7.1','atlas-ops-v71-docs','AtlasOpsV71Documents');
 
   window.addEventListener('DOMContentLoaded',()=>{
     ensureInstallButton();
