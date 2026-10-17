@@ -137,7 +137,8 @@
     if(tab==='tasks')return `<section class="v71-panel"><div class="v71-panel-head"><h3>Tarefas</h3>${has('tasks.create')?'<button class="btn btn-primary" type="button" data-v71-new-task>＋ Nova Tarefa</button>':''}</div>${tasksTable(model,detail,false)}</section>`;
     if(tab==='blockers')return `<section class="v71-panel"><div class="v71-panel-head"><h3>Bloqueios</h3>${has('blockers.manage')?'<button class="btn btn-primary" type="button" data-v71-new-blocker>Novo bloqueio</button>':''}</div>${blockers(model,detail)}</section>`;
     if(tab==='sla')return `<section class="v71-panel"><div class="v71-panel-head"><h3>SLA e Prazos</h3><span>Tempo total x responsabilidade interna</span></div><div class="v71-sla-detail">${metrics(model)}${blockers(model,detail)}</div></section>`;
-    if(tab==='documents')return `<section class="v71-panel"><div class="v71-panel-head"><h3>Documentos</h3><span>${detail.documents?.length||0} arquivo(s)</span></div>${documents(detail)}</section>`;
+    if(tab==='documents')return `<section class="v71-panel"><div class="v71-panel-head"><h3>Documentos</h3><span>${detail.documents?.length||0} arquivo(s)</span></div>${window.AtlasOpsV71Documents?.documentPanel(detail)||documents(detail)}</section>`;
+    if(tab==='exigencies')return `<section class="v71-panel">${window.AtlasOpsV71Documents?.exigenciesPanel(detail)||'<div class="v71-empty">Exigências indisponíveis</div>'}</section>`;
     if(tab==='history')return `<section class="v71-panel"><div class="v71-panel-head"><h3>Histórico</h3><span>Trilha operacional</span></div>${history(detail)}</section>`;
     return overview(model,detail);
   }
@@ -145,18 +146,19 @@
   function processHtml(detail){
     const model=processModel(detail);const p=detail.process;
     const owner=profileName(detail,p.owner_id);
-    return `<div class="v71-process" data-v71-process="${e(p.id)}"><div class="v71-process-head"><div><small>Processo</small><h2>${e(processCode(p))}</h2><span class="v71-badge info">${e(p.status||'Em andamento')}</span></div><div class="v71-process-meta"><div><small>Cliente</small><strong>${e(clientName(detail.client))}</strong></div><div><small>Serviço</small><strong>${e(p.service_type||p.title||'—')}</strong></div><div><small>Responsável</small><strong>${e(owner)}</strong></div><div><small>Data de abertura</small><strong>${e(fmtDate(p.started_at||p.created_at))}</strong></div><div><small>Prazo geral</small><strong>${e(fmtDate(p.due_date))}</strong></div></div></div>${stageTrack(model)}${metrics(model)}<div class="v71-process-tabs">${[['overview','Visão Geral'],['tasks','Tarefas'],['blockers','Bloqueios'],['sla','SLA e Prazos'],['documents','Documentos'],['history','Histórico']].map(([key,label])=>`<button type="button" data-v71-tab="${key}" class="${currentTab===key?'active':''}">${label}</button>`).join('')}</div><div class="v71-tab-body">${tabBody(currentTab,model,detail)}</div></div>`;
+    return `<div class="v71-process" data-v71-process="${e(p.id)}"><div class="v71-process-head"><div><small>Processo</small><h2>${e(processCode(p))}</h2><span class="v71-badge info">${e(p.status||'Em andamento')}</span></div><div class="v71-process-meta"><div><small>Cliente</small><strong>${e(clientName(detail.client))}</strong></div><div><small>Serviço</small><strong>${e(p.service_type||p.title||'—')}</strong></div><div><small>Responsável</small><strong>${e(owner)}</strong></div><div><small>Data de abertura</small><strong>${e(fmtDate(p.started_at||p.created_at))}</strong></div><div><small>Prazo geral</small><strong>${e(fmtDate(p.due_date))}</strong></div></div></div>${stageTrack(model)}${metrics(model)}<div class="v71-process-tabs">${[['overview','Visão Geral'],['tasks','Tarefas'],['blockers','Bloqueios'],['sla','SLA e Prazos'],['documents','Documentos'],['exigencies','Exigências'],['history','Histórico']].map(([key,label])=>`<button type="button" data-v71-tab="${key}" class="${currentTab===key?'active':''}">${label}</button>`).join('')}</div><div class="v71-tab-body">${tabBody(currentTab,model,detail)}</div></div>`;
   }
 
   function legacyProcessHtml(detail){
     const p=detail.process||{};
-    return `<div class="v71-process"><div class="v71-process-head"><div><small>Processo</small><h2>${e(processCode(p))}</h2><span class="v71-badge">Processo legado</span></div><div class="v71-process-meta"><div><small>Cliente</small><strong>${e(clientName(detail.client))}</strong></div><div><small>Serviço</small><strong>${e(p.service_type||p.title||'—')}</strong></div><div><small>Data de abertura</small><strong>${e(fmtDate(p.started_at||p.created_at))}</strong></div></div></div><div class="v71-legacy-activation"><strong>Ativar Central Operacional neste processo</strong><p>O Atlas identificará a etapa atual e apresentará as tarefas propostas para sua revisão antes de criar qualquer pendência.</p><button class="btn btn-primary" type="button" data-v71-activate-legacy>Revisar tarefas propostas</button></div></div>`;
+    return `<div class="v71-process"><div class="v71-process-head"><div><small>Processo</small><h2>${e(processCode(p))}</h2><span class="v71-badge">Processo legado</span></div><div class="v71-process-meta"><div><small>Cliente</small><strong>${e(clientName(detail.client))}</strong></div><div><small>Serviço</small><strong>${e(p.service_type||p.title||'—')}</strong></div><div><small>Data de abertura</small><strong>${e(fmtDate(p.started_at||p.created_at))}</strong></div></div></div><div class="v71-legacy-activation"><strong>Ativar Central Operacional neste processo</strong><p>O Atlas identificará a etapa atual e apresentará as tarefas propostas para sua revisão antes de criar qualquer pendência.</p><button class="btn btn-primary" type="button" data-v71-activate-legacy>Revisar tarefas propostas</button></div>${window.AtlasOpsV71Documents?.documentPanel(detail)||''}${window.AtlasOpsV71Documents?.exigenciesPanel(detail)||''}</div>`;
   }
 
   function renderDetail(detail){
     currentDetail=detail;
     const root=modal(`Processo ${processCode(detail.process)}`,detail.operation?processHtml(detail):legacyProcessHtml(detail));
     bindDetail(root,detail);
+    window.AtlasOpsV71Documents?.bindProcessActions?.(root,detail);
   }
 
   async function refreshProcess(){
