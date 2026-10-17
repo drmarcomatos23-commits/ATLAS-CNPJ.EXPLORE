@@ -403,3 +403,90 @@ grant execute on function public.atlas_v71_review_document(uuid,text,text) to au
 grant execute on function public.atlas_v71_create_exigency(uuid,text,text,text,text,date,date,uuid,uuid) to authenticated;
 grant execute on function public.atlas_v71_mark_exigency_responded(uuid,uuid,text,text) to authenticated;
 grant execute on function public.atlas_v71_close_exigency(uuid,boolean,text) to authenticated;
+
+-- Complementa o motor 7.1 APÓS criação das tabelas documentais: guardas transacionais.
+create or replace function public.atlas_v71_advance_stage(p_process_id uuid, p_force boolean default false, p_justification text default null)
+returns jsonb
+language plpgsql
+security invoker
+set search_path = public
+as $$
+declare
+  v_process public.processes%rowtype;
+  v_current public.workflow_stages%rowtype;
+  v_next public.workflow_stages%rowtype;
+  v_pending integer;
+  v_doc_pending integer;
+  v_exigency_pending integer;
+  v_doc_created integer := 0;
+  v_created integer := 0;
+  v_type text;
+begin
+  select * into v_process from public.processes where id=p_process_id and organization_id=public.current_org_id() and deleted_at is null;
+  if not found then raise exception 'Processo não encontrado'; end if;
+  if not public.has_atlas_permission('workflow.advance') then raise exception 'Sem permissão para avançar etapa'; end if;
+  if p_force and nullif(btrim(p_justification),'') is null then raise exception 'Justificativa obrigatória para avanço forçado'; end if;
+  if p_force and not public.has_atlas_permission('workflow.override') then raise exception 'Sem permissão para avanço forçado'; end if;
+
+  select * into v_current from public.workflow_stages where id=v_process.current_stage_id;
+  if not found then raise exception 'Etapa atual não encontrada'; end if;
+  select count(*) into v_pending from public.tasks t
+    where t.process_id=p_process_id and t.stage_id=v_current.id and t.required = true and t.status not in ('completed','cancelled');
+  if v_pending > 0 and not p_force then raise exception 'Existem % tarefas obrigatórias pendentes',v_pending; end if;
+
+  -- A entrega do arquivo não equivale à aprovação documental.
+  select count(*) into v_doc_pending from public.process_document_requirements d
+    where d.process_id=p_process_id and d.required_rule='required'
+      and d.status not in ('approved','waived')
+      and (d.stage_id is null or d.stage_id=v_current.id);
+  if v_doc_pending > 0 and not p_force then
+    raise exception 'Existem % documentos obrigatórios não aprovados', v_doc_pending;
+  end if;
+  select count(*) into v_exigency_pending from public.process_exigencies x
+    where x.process_id=p_process_id and x.status not in ('accepted','cancelled');
+  if v_exigency_pending > 0 and not p_force then
+    raise exception 'Existem % exigências formais ainda sem aceite', v_exigency_pending;
+  end if;
+
+  select * into v_next from public.workflow_stages
+    where workflow_template_id=v_current.workflow_template_id and position>v_current.position order by position limit 1;
+  if not found then raise exception 'Processo já está na etapa final'; end if;
+
+  v_type := case when p_force then 'forced' else 'normal' end;
+  update public.processes set current_stage_id=v_next.id,status=case when lower(v_next.name) like 'conclu%' then 'completed' else 'in_progress' end where id=p_process_id;
+  update public.process_operations set current_stage_id=v_next.id,stage_started_at=now(),updated_at=now() where process_id=p_process_id;
+
+  insert into public.stage_transitions(organization_id,process_id,from_stage_id,to_stage_id,transition_type,justification,actor_id,metadata)
+  values(v_process.organization_id,p_process_id,v_current.id,v_next.id,v_type,nullif(btrim(p_justification),''),auth.uid(),jsonb_build_object('pending_required_at_transition',v_pending));
+
+  with inserted as (
+    insert into public.tasks(organization_id,process_id,stage_id,task_template_id,title,description,origin,required,team_id,priority,sla_days,created_by)
+    select v_process.organization_id,p_process_id,v_next.id,tt.id,tt.title,tt.description,'automatic',tt.required,tt.default_team_id,tt.priority,tt.sla_days,auth.uid()
+    from public.task_templates tt
+    where tt.organization_id=v_process.organization_id and tt.stage_id=v_next.id and tt.active=true
+    on conflict(process_id,task_template_id) where task_template_id is not null do nothing
+    returning id,process_id,organization_id
+  ), events as (
+    insert into public.task_events(organization_id,task_id,process_id,event_type,actor_id,payload)
+    select organization_id,id,process_id,'created',auth.uid(),jsonb_build_object('origin','automatic','stage_id',v_next.id) from inserted
+    returning 1
+  ) select count(*) into v_created from inserted;
+
+  -- Novos documentos específicos da etapa são criados apenas após o avanço confirmado.
+  insert into public.process_document_requirements
+    (organization_id,process_id,template_id,stage_id,title,instructions,category,required_rule,created_by)
+  select v_process.organization_id,v_process.id,dt.id,dt.stage_id,dt.title,dt.instructions,
+         dt.category,dt.required_rule,auth.uid()
+  from public.document_requirement_templates dt
+  left join public.clients client on client.id=v_process.client_id
+  where dt.organization_id=v_process.organization_id and dt.service_type=v_process.service_type
+    and dt.stage_id=v_next.id and dt.active=true
+    and (dt.scope_state is null or upper(dt.scope_state)=upper(client.state))
+    and (dt.scope_city is null or lower(dt.scope_city)=lower(client.city))
+  on conflict (process_id,template_id) do nothing;
+  get diagnostics v_doc_created=row_count;
+
+  return jsonb_build_object('process_id',p_process_id,'from_stage_id',v_current.id,'to_stage_id',v_next.id,'transition_type',v_type,'generated_tasks',v_created,'generated_document_requirements',v_doc_created,'pending_documents_override',v_doc_pending,'pending_exigencies_override',v_exigency_pending);
+end;
+$$;
+
