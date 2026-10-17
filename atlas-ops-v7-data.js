@@ -52,11 +52,22 @@
     return { data:result?.data || [], error:null };
   }
 
+  async function relatedByIds(table, columns, column, ids) {
+    const { client } = context();
+    const values = [...new Set((ids || []).filter(Boolean))];
+    if (!client || !values.length) return [];
+    const { data, error } = await client.from(table).select(columns).in(column,values);
+    if (missingSchema(error)) return [];
+    if (error) throw error;
+    return data || [];
+  }
+
   function emptyCentral(reason=null) {
     return {
       available: reason == null,
       reason,
-      tasks:[], blockers:[], processes:[], profiles:[], teams:[], operations:[]
+      tasks:[], blockers:[], processes:[], profiles:[], teams:[], operations:[], clients:[],
+      stages:[], costs:[], licenses:[], events:[]
     };
   }
 
@@ -72,15 +83,27 @@
       if (filters.process_id) q = q.eq('process_id', filters.process_id);
       return q;
     };
-    const [tasks, blockers, processes, profiles, teams, operations] = await Promise.all([
+    const [tasks, blockers, processes, profiles, teams, operations, clients, events] = await Promise.all([
       scoped('tasks','*',taskConfigure),
       scoped('process_blockers','*',q => filters.blocker_type ? q.eq('blocker_type',filters.blocker_type) : q),
       scoped('processes','*',q => filters.process_status ? q.eq('status',filters.process_status) : q),
       scoped('profiles','id,full_name,role,active'),
       scoped('teams','*'),
-      scoped('process_operations','*')
+      scoped('process_operations','*'),
+      scoped('clients','*'),
+      scoped('task_events','*',q => q.order('created_at',{ascending:false}))
     ]);
     if ([tasks,blockers,operations].some(result => result.unavailable)) return emptyCentral('schema_unavailable');
+
+    const processIds = processes.data.map(row => row.id);
+    const clientIds = clients.data.map(row => row.id);
+    const stageIds = [...operations.data.map(row => row.current_stage_id),...tasks.data.map(row => row.stage_id)].filter(Boolean);
+    const [stages,costs,licenses] = await Promise.all([
+      relatedByIds('workflow_stages','id,name,sla_days,position,workflow_template_id','id',stageIds),
+      relatedByIds('costs','*','process_id',processIds),
+      relatedByIds('licenses','*','client_id',clientIds)
+    ]);
+
     return {
       available:true,
       reason:null,
@@ -89,7 +112,12 @@
       processes:processes.data,
       profiles:profiles.data,
       teams:teams.data,
-      operations:operations.data
+      operations:operations.data,
+      clients:clients.data,
+      stages,
+      costs,
+      licenses,
+      events:events.data
     };
   }
 
