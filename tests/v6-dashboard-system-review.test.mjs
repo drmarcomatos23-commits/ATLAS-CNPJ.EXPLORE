@@ -22,3 +22,10 @@ test('bottom charts are clipped inside their own cards and never cover headers',
   assert.match(css, /\.atlas-bars:has\(\.atlas-chart-canvas\)\{[\s\S]*?overflow:hidden!important/i);
   assert.match(css, /\.atlas-bars>\.atlas-chart-canvas\.bars\{[\s\S]*?position:relative!important/i);
 });
+
+test('mobile KPI cards contain long labels and currency values without horizontal overflow', () => {
+  assert.match(css, /@media\s*\(max-width:760px\)[\s\S]*?\.atlas-kpi-copy\{[\s\S]*?min-width:0!important[\s\S]*?overflow:hidden!important/i);
+  assert.match(css, /@media\s*\(max-width:760px\)[\s\S]*?\.atlas-kpi-copy strong\{[\s\S]*?font-size:clamp\(14px,4\.2vw,19px\)!important[\s\S]*?max-width:100%!important[\s\S]*?overflow-wrap:anywhere!important/i);
+  assert.match(css, /@media\s*\(max-width:760px\)[\s\S]*?\.atlas-kpi-copy small[\s\S]*?overflow-wrap:anywhere!important/i);
+  assert.match(css, /@media\s*\(max-width:760px\)[\s\S]*?\.atlas-kpi-copy>span\{[\s\S]*?margin-top:auto!important/i);
+});
