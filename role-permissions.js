@@ -8,6 +8,10 @@
 
   const MODULES = [
     {name:'Dashboard', rows:[['dashboard.view','Acessar']]},
+    {name:'Central Operacional', rows:[['operations.view','Visualizar central operacional']]},
+    {name:'Tarefas', rows:[['tasks.view','Visualizar'],['tasks.create','Criar'],['tasks.edit','Editar'],['tasks.assign','Atribuir'],['tasks.complete','Concluir']]},
+    {name:'Fluxo operacional', rows:[['blockers.manage','Gerenciar bloqueios'],['workflow.advance','Avançar etapas'],['workflow.override','Forçar avanço com justificativa']]},
+    {name:'Equipes', rows:[['teams.manage','Administrar filas e equipes']]},
     {name:'Processos', rows:[['processes.view','Visualizar'],['processes.create','Criar'],['processes.edit','Editar'],['processes.archive','Arquivar']]},
     {name:'Empresas', rows:[['companies.view','Visualizar'],['companies.groups.view','Visualizar grupos empresariais'],['companies.create','Criar'],['companies.edit','Editar'],['companies.archive','Arquivar']]},
     {name:'Documentos', rows:[['documents.view','Visualizar'],['documents.upload','Anexar'],['documents.delete','Excluir']]},
@@ -20,6 +24,7 @@
 
   const PAGE_PERMISSIONS = {
     dashboard:'dashboard.view',
+    'central-operacional':'operations.view',
     processos:'processes.view',
     clientes:'companies.view',
     documentos:'documents.view',
@@ -101,6 +106,13 @@
     const p=pageName();
     const newProcess=document.getElementById('new-process-btn');
     if(newProcess)newProcess.classList.toggle('hidden',!window.atlasHasPermission('processes.create'));
+
+    if(p==='central-operacional'){
+      document.querySelectorAll('[data-v71-team-manage]').forEach(el=>el.classList.toggle('hidden',!window.atlasHasPermission('teams.manage')));
+      document.querySelectorAll('[data-v71-task-create]').forEach(el=>el.classList.toggle('hidden',!window.atlasHasPermission('tasks.create')));
+      document.querySelectorAll('[data-v71-task-complete]').forEach(el=>el.classList.toggle('hidden',!window.atlasHasPermission('tasks.complete')));
+      document.querySelectorAll('[data-v71-workflow-override]').forEach(el=>el.classList.toggle('hidden',!window.atlasHasPermission('workflow.override')));
+    }
 
     if(p==='processos'){
       document.querySelectorAll('[onclick^="openProcessModal"]').forEach(el=>{
