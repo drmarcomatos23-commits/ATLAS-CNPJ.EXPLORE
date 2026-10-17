@@ -44,3 +44,12 @@ test('chartjs company type canvas is isolated from legacy grid positioning', () 
   assert.match(css, /\.atlas-bars>\.atlas-chart-canvas\.bars\{[\s\S]*?grid-template-rows:none!important/i);
   assert.match(css, /\.atlas-chart-canvas\.bars canvas\{[\s\S]*?position:static!important/i);
 });
+
+test('donut center copy is drawn from the real chart arc center instead of a DOM overlay', () => {
+  assert.match(runtime, /const\s+centerTextPlugin\s*=\s*\{/i);
+  assert.match(runtime, /const\s+x\s*=\s*arc\.x/i);
+  assert.match(runtime, /const\s+y\s*=\s*arc\.y/i);
+  assert.match(runtime, /fillText\(String\(total\),x,y-/i);
+  assert.match(runtime, /fillText\(label,x,y\+/i);
+  assert.doesNotMatch(runtime, /<div class=\"atlas-chart-center\">/i);
+});
