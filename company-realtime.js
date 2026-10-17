@@ -2,20 +2,39 @@
   let channel = null;
   let refreshTimer = null;
 
+  const emptyOperationalData = () => ({
+    clients: [], groups: [], processes: [], templates: [], stages: [],
+    profiles: [], protocols: [], costs: [], licenses: []
+  });
+
   function currentPage() {
     const active = document.querySelector('#nav [data-page].active');
     return active?.dataset?.page || null;
   }
 
-  async function authenticatedContext() {
+  async function waitForAuthenticatedSession() {
     const db = window.atlasAuth?.client;
     const profile = window.atlasAuth?.getProfile?.();
-    if (!db || !profile?.id) return null;
+    if (!db || !profile?.id || !db.auth?.getSession) return null;
 
     const { data, error } = await db.auth.getSession();
     if (error || !data?.session?.access_token) return null;
 
     return { db, profile, session: data.session };
+  }
+
+  async function authenticatedContext() {
+    return waitForAuthenticatedSession();
+  }
+
+  const originalLoadOperationalData = window.loadOperationalData;
+  if (typeof originalLoadOperationalData === 'function' && !window.__atlasOperationalAuthGuardV6) {
+    window.loadOperationalData = async function loadOperationalDataAuthenticated(...args) {
+      const ctx = await waitForAuthenticatedSession();
+      if (!ctx) return emptyOperationalData();
+      return originalLoadOperationalData(...args);
+    };
+    window.__atlasOperationalAuthGuardV6 = true;
   }
 
   async function fetchClients() {
@@ -97,7 +116,8 @@
   window.atlasRealtime = {
     start: startRealtime,
     refreshCompanies: refreshCompaniesContext,
-    refreshCompanySelects
+    refreshCompanySelects,
+    waitForAuthenticatedSession
   };
 
   const originalShow = window.showApp;
