@@ -59,12 +59,41 @@
   grid-template-columns:138px minmax(0,1fr)!important;
 }
 .atlas-chart-canvas.donut{
+  position:relative!important;
   width:108px!important;
   height:108px!important;
+  margin:auto!important;
 }
 .atlas-chart-canvas.donut canvas{
   width:108px!important;
   height:108px!important;
+}
+.atlas-chart-center{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  line-height:1!important;
+  pointer-events:none!important;
+}
+.atlas-chart-center b{
+  display:block!important;
+  margin:0!important;
+  color:#0F1D3A!important;
+  font-size:18px!important;
+  font-weight:700!important;
+  line-height:1!important;
+}
+.atlas-chart-center small{
+  display:block!important;
+  margin-top:4px!important;
+  color:#6B7A99!important;
+  font-size:10px!important;
+  font-weight:500!important;
+  line-height:1.1!important;
 }
 .atlas-legend{
   align-self:center!important;
@@ -171,13 +200,14 @@
   }
   .atlas-status-body:has(.atlas-chart-canvas){grid-template-columns:110px minmax(0,1fr)!important}
   .atlas-chart-canvas.donut,.atlas-chart-canvas.donut canvas{width:92px!important;height:92px!important}
+  .atlas-chart-center b{font-size:16px!important}
+  .atlas-chart-center small{font-size:9px!important}
 }
 
-/* The dashboard itself stays desktop until 1100px, but the legacy shell hid the
-   sidebar at 1180px. This 1024–1180 bridge keeps the desktop composition intact
-   on common notebook/zoomed-browser viewports instead of making the whole page
-   jump to the left as in the reported screenshot. */
-@media (min-width:1024px) and (max-width:1180px){
+/* Desktop browsers can report a reduced CSS viewport under zoom even on a wide
+   monitor. Keep the full desktop shell while a fine/hover pointer is present;
+   touch devices continue to use the drawer/mobile layout. */
+@media (min-width:900px) and (max-width:1180px) and (hover:hover){
   #app-shell .sidebar{
     width:185px!important;
     transform:none!important;
@@ -187,6 +217,9 @@
     margin-left:185px!important;
   }
   #app-shell .mobile-menu-btn{
+    display:none!important;
+  }
+  #app-shell .mobile-nav-overlay{
     display:none!important;
   }
   #app-shell .nav-list{
