@@ -68,3 +68,47 @@ test('migration seeds the complete ATLAS 7.1 permission vocabulary without weake
   assert.match(normalized, /role_permissions/);
   assert.match(normalized, /on conflict\s*\(\s*organization_id\s*,\s*role\s*,\s*permission_key\s*\)/);
 });
+
+test('migration defines all ATLAS 7.1 atomic RPC contracts as SECURITY INVOKER', () => {
+  const rpcNames = [
+    'atlas_v71_activate_process','atlas_v71_create_task','atlas_v71_set_primary_task',
+    'atlas_v71_start_task','atlas_v71_complete_task','atlas_v71_open_blocker',
+    'atlas_v71_close_blocker','atlas_v71_advance_stage'
+  ];
+  for (const name of rpcNames) {
+    assert.match(normalized, new RegExp(`create or replace function public\\.${name}\\s*\\(`), `missing RPC ${name}`);
+    const start = normalized.indexOf(`create or replace function public.${name}`);
+    const next = normalized.indexOf('create or replace function public.', start + 1);
+    const body = normalized.slice(start, next < 0 ? undefined : next);
+    assert.match(body, /security invoker/, `${name} must be SECURITY INVOKER`);
+  }
+});
+
+test('task commands write immutable task events and workflow transition history', () => {
+  assert.match(normalized, /insert into public\.task_events/);
+  assert.match(normalized, /insert into public\.stage_transitions/);
+  assert.match(normalized, /'created'/);
+  assert.match(normalized, /'started'/);
+  assert.match(normalized, /'completed'/);
+});
+
+test('advance RPC rejects unfinished required work, requires force justification, and generates next-stage templates', () => {
+  const start = normalized.indexOf('create or replace function public.atlas_v71_advance_stage');
+  assert.ok(start >= 0, 'advance RPC missing');
+  const body = normalized.slice(start);
+  assert.match(body, /required\s*=\s*true|t\.required/);
+  assert.match(body, /status\s+not\s+in\s*\(\s*'completed'\s*,\s*'cancelled'\s*\)/);
+  assert.match(body, /p_force[^;]*p_justification|p_justification[^;]*p_force/);
+  assert.match(body, /raise exception/);
+  assert.match(body, /from public\.task_templates/);
+  assert.match(body, /insert into public\.tasks/);
+});
+
+test('blocker close is idempotent and closes its SLA pause once', () => {
+  const start = normalized.indexOf('create or replace function public.atlas_v71_close_blocker');
+  const end = normalized.indexOf('create or replace function public.', start + 1);
+  const body = normalized.slice(start, end < 0 ? undefined : end);
+  assert.match(body, /ended_at is null/);
+  assert.match(body, /update public\.sla_pauses/);
+  assert.match(body, /ended_at\s*=\s*coalesce\s*\(\s*ended_at/);
+});
