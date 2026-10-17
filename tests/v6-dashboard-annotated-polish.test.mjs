@@ -32,8 +32,8 @@ test('sidebar is reordered to the approved dashboard sequence', () => {
   assert.ok(runtime.includes("'dashboard','clientes','processos','licencas','documentos','custos','relatorios','config'"));
 });
 
-test('desktop-like 1024-1180 viewport keeps sidebar visible and workspace offset', () => {
-  assert.match(css, /@media\s*\(min-width:1024px\)\s*and\s*\(max-width:1180px\)/i);
+test('desktop-like 900-1180 viewport with hover keeps sidebar visible and workspace offset', () => {
+  assert.match(css, /@media\s*\(min-width:900px\)\s*and\s*\(max-width:1180px\)\s*and\s*\(hover:hover\)/i);
   assert.match(css, /#app-shell \.sidebar\{[\s\S]*?transform:none!important/i);
   assert.match(css, /#app-shell \.workspace\{[\s\S]*?margin-left:185px!important/i);
   assert.match(css, /#app-shell \.mobile-menu-btn\{[\s\S]*?display:none!important/i);
