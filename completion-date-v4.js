@@ -8,11 +8,12 @@
   let byCode = new Map();
   let refreshPromise = null;
   const db = () => window.atlasDb?.() || (typeof atlasDb === 'function' ? atlasDb() : null);
+  const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  async function refreshCompletionDates() {
+  async function refreshCompletionDates(clientOverride = null) {
     if (refreshPromise) return refreshPromise;
     refreshPromise = (async () => {
-      const client = db();
+      const client = clientOverride || db();
       if (!client) return byCode;
       const { data, error } = await client.from('processes').select('id,public_code,status,completed_at');
       if (!error) {
@@ -22,6 +23,16 @@
       return byCode;
     })().finally(() => { refreshPromise = null; });
     return refreshPromise;
+  }
+
+  async function refreshWhenAuthenticated(maxAttempts = 20) {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const profile = window.atlasAuth?.getProfile?.();
+      const client = window.atlasAuth?.client;
+      if (profile && client) return refreshCompletionDates(client);
+      if (attempt < maxAttempts - 1) await wait(150);
+    }
+    return byCode;
   }
 
   function completionText(rec) {
@@ -97,7 +108,7 @@
     let tries = 0;
     const timer = setInterval(async () => {
       tries += 1;
-      await refreshCompletionDates();
+      await refreshWhenAuthenticated(1);
       if (decorateReport(popup) || tries >= 30 || popup.closed) clearInterval(timer);
     }, 100);
   }
@@ -119,16 +130,16 @@
 
   document.addEventListener('click', ev => {
     if (ev.target.closest?.('[data-page="processos"], [data-page="relatorios"], #process-save, [type="submit"]')) {
-      setTimeout(refreshCompletionDates, 250);
-      setTimeout(refreshCompletionDates, 900);
+      setTimeout(refreshWhenAuthenticated, 250);
+      setTimeout(refreshWhenAuthenticated, 900);
     }
   });
 
   const observer = new MutationObserver(() => decorateSystem(document));
   document.addEventListener('DOMContentLoaded', () => {
     observer.observe(document.body, { childList: true, subtree: true });
-    refreshCompletionDates();
+    refreshWhenAuthenticated();
   });
 
-  window.atlasCompletionDatesRefresh = refreshCompletionDates;
+  window.atlasCompletionDatesRefresh = refreshWhenAuthenticated;
 })();
