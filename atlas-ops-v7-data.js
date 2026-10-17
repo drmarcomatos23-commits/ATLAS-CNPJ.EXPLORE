@@ -67,7 +67,7 @@
       available: reason == null,
       reason,
       tasks:[], blockers:[], pauses:[], processes:[], profiles:[], teams:[], operations:[], clients:[],
-      stages:[], costs:[], licenses:[], events:[]
+      stages:[], costs:[], licenses:[], events:[], formalExigencies:[], documentaryAvailable:false
     };
   }
 
@@ -83,7 +83,7 @@
       if (filters.process_id) q = q.eq('process_id', filters.process_id);
       return q;
     };
-    const [tasks, blockers, pauses, processes, profiles, teams, operations, clients, events] = await Promise.all([
+    const [tasks, blockers, pauses, processes, profiles, teams, operations, clients, events, formalExigencies] = await Promise.all([
       scoped('tasks','*',taskConfigure),
       scoped('process_blockers','*',q => filters.blocker_type ? q.eq('blocker_type',filters.blocker_type) : q),
       scoped('sla_pauses','*'),
@@ -92,7 +92,8 @@
       scoped('teams','*'),
       scoped('process_operations','*'),
       scoped('clients','*'),
-      scoped('task_events','*',q => q.order('created_at',{ascending:false}))
+      scoped('task_events','*',q => q.order('created_at',{ascending:false})),
+      scoped('process_exigencies','*')
     ]);
     if ([tasks,blockers,pauses,operations].some(result => result.unavailable)) return emptyCentral('schema_unavailable');
 
@@ -119,7 +120,9 @@
       stages,
       costs,
       licenses,
-      events:events.data
+      events:events.data,
+      formalExigencies:formalExigencies.data,
+      documentaryAvailable:!formalExigencies.unavailable
     };
   }
 
