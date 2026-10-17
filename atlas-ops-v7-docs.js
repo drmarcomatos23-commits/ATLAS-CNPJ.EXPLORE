@@ -139,7 +139,7 @@
  }
  async function renderOn(root,detail){
   const id=detail?.process?.id;
-  const container=root.querySelector('[data-v71-doc-process]');
+  const container=root.matches?.('[data-v71-doc-process]')?root:root.querySelector('[data-v71-doc-process]');
   if(!container||!id)return;
   if(!await available()){container.innerHTML='<div class="v71-capability-note">Gestão Documental 7.1 preparada para homologação. O Dossiê Digital atual permanece disponível sem alterações.</div>';return;}
   try {
