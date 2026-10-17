@@ -66,7 +66,7 @@
     return {
       available: reason == null,
       reason,
-      tasks:[], blockers:[], processes:[], profiles:[], teams:[], operations:[], clients:[],
+      tasks:[], blockers:[], pauses:[], processes:[], profiles:[], teams:[], operations:[], clients:[],
       stages:[], costs:[], licenses:[], events:[]
     };
   }
@@ -83,9 +83,10 @@
       if (filters.process_id) q = q.eq('process_id', filters.process_id);
       return q;
     };
-    const [tasks, blockers, processes, profiles, teams, operations, clients, events] = await Promise.all([
+    const [tasks, blockers, pauses, processes, profiles, teams, operations, clients, events] = await Promise.all([
       scoped('tasks','*',taskConfigure),
       scoped('process_blockers','*',q => filters.blocker_type ? q.eq('blocker_type',filters.blocker_type) : q),
+      scoped('sla_pauses','*'),
       scoped('processes','*',q => filters.process_status ? q.eq('status',filters.process_status) : q),
       scoped('profiles','id,full_name,role,active'),
       scoped('teams','*'),
@@ -93,7 +94,7 @@
       scoped('clients','*'),
       scoped('task_events','*',q => q.order('created_at',{ascending:false}))
     ]);
-    if ([tasks,blockers,operations].some(result => result.unavailable)) return emptyCentral('schema_unavailable');
+    if ([tasks,blockers,pauses,operations].some(result => result.unavailable)) return emptyCentral('schema_unavailable');
 
     const processIds = processes.data.map(row => row.id);
     const clientIds = clients.data.map(row => row.id);
@@ -109,6 +110,7 @@
       reason:null,
       tasks:tasks.data,
       blockers:blockers.data,
+      pauses:pauses.data,
       processes:processes.data,
       profiles:profiles.data,
       teams:teams.data,
