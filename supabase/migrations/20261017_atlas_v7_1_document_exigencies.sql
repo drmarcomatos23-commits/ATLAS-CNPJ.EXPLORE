@@ -411,6 +411,22 @@ grant execute on function public.atlas_v71_create_exigency(uuid,text,text,text,t
 grant execute on function public.atlas_v71_mark_exigency_responded(uuid,uuid,text,text) to authenticated;
 grant execute on function public.atlas_v71_close_exigency(uuid,boolean,text) to authenticated;
 
+-- Impede que o formulário legado contorne as validações em processos já ativados na 7.1.
+create or replace function public.atlas_v71_guard_active_stage_change()
+returns trigger language plpgsql security invoker set search_path=public as $
+begin
+ if new.current_stage_id is distinct from old.current_stage_id
+   and exists(select 1 from public.process_operations
+              where process_id=old.id and organization_id=old.organization_id)
+   and current_setting('atlas_v71.stage_transition',true) is distinct from 'approved' then
+   raise exception 'Use Concluir etapa e avançar na Central Operacional; alteração direta de etapa não permitida';
+ end if;
+ return new;
+end $;
+create trigger atlas_v71_guard_stage_change
+before update of current_stage_id on public.processes
+for each row execute function public.atlas_v71_guard_active_stage_change();
+
 -- Complementa o motor 7.1 APÓS criação das tabelas documentais: guardas transacionais.
 create or replace function public.atlas_v71_advance_stage(p_process_id uuid, p_force boolean default false, p_justification text default null)
 returns jsonb
@@ -460,6 +476,7 @@ begin
   if not found then raise exception 'Processo já está na etapa final'; end if;
 
   v_type := case when p_force then 'forced' else 'normal' end;
+  perform set_config('atlas_v71.stage_transition','approved',true);
   update public.processes set current_stage_id=v_next.id,status=case when lower(v_next.name) like 'conclu%' then 'completed' else 'in_progress' end where id=p_process_id;
   update public.process_operations set current_stage_id=v_next.id,stage_started_at=now(),updated_at=now() where process_id=p_process_id;
 
