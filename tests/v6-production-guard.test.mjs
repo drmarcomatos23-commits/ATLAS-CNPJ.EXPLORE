@@ -27,6 +27,10 @@ const requiredPages = [
   'config'
 ];
 
+const allowedV6Migrations = new Set([
+  '20261017_audit_remediation_v6.sql'
+]);
+
 test('V6 preserves functional shell hooks used by authentication and navigation', () => {
   for (const id of requiredIds) {
     assert.match(index, new RegExp(`id=["']${id}["']`), `missing #${id}`);
@@ -36,11 +40,12 @@ test('V6 preserves functional shell hooks used by authentication and navigation'
   }
 });
 
-test('V6 does not add database migrations', () => {
+test('V6 permits only the explicitly audited preview migration', () => {
   const names = readdirSync(migrationsDir, { withFileTypes: true })
     .filter(entry => entry.isFile())
-    .map(entry => entry.name);
-  assert.equal(names.some(name => /v6/i.test(name)), false, 'V6 must not add a Supabase migration');
+    .map(entry => entry.name)
+    .filter(name => /v6/i.test(name));
+  assert.deepEqual(names.sort(), [...allowedV6Migrations].sort(), 'unexpected V6 Supabase migration detected');
 });
 
 test('Vercel config does not hard-code production promotion or aliases', () => {
