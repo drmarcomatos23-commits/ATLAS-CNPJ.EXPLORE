@@ -10,6 +10,37 @@
     { label:'Outros', value:12 }
   ];
 
+  const centerTextPlugin = {
+    id:'atlasCenterText',
+    afterDatasetsDraw(chart,args,pluginOptions={}) {
+      if (chart.config.type !== 'doughnut') return;
+      const arc = chart.getDatasetMeta(0)?.data?.[0];
+      if (!arc) return;
+
+      const total = Number(pluginOptions.total ?? 0);
+      const label = String(pluginOptions.label || 'processos');
+      const x = arc.x;
+      const y = arc.y;
+      const innerRadius = Number(arc.innerRadius || 40);
+      const totalSize = Math.max(16, Math.min(20, Math.round(innerRadius * .44)));
+      const labelSize = Math.max(9, Math.min(11, Math.round(innerRadius * .24)));
+      const totalY = Math.max(7, Math.round(totalSize * .42));
+      const labelY = Math.max(11, Math.round(labelSize * 1.05));
+      const ctx = chart.ctx;
+
+      ctx.save();
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillStyle='#0F1D3A';
+      ctx.font=`700 ${totalSize}px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.fillText(String(total),x,y-totalY);
+      ctx.fillStyle='#6B7A99';
+      ctx.font=`500 ${labelSize}px Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
+      ctx.fillText(label,x,y+labelY);
+      ctx.restore();
+    }
+  };
+
   function removeLegacyFidelityLayers() {
     LEGACY_LAYER_IDS.forEach(id => document.getElementById(id)?.remove());
   }
@@ -105,8 +136,6 @@
       .atlas-chart-canvas{position:relative;min-width:0}
       .atlas-chart-canvas.donut{width:82px;height:82px;margin:auto}
       .atlas-chart-canvas.donut canvas{width:82px!important;height:82px!important}
-      .atlas-chart-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-      .atlas-chart-center b{font-size:12px;color:#0F1D3A}.atlas-chart-center small{font-size:5.5px;color:#6B7A99}
       .atlas-chart-canvas.bars{height:98px;width:100%}
       .atlas-chart-canvas.bars canvas{width:100%!important;height:98px!important}
       .atlas-status-body:has(.atlas-chart-canvas){grid-template-columns:96px minmax(0,1fr)}
@@ -166,13 +195,20 @@
 
     destroyCharts();
     const total = statusRows.reduce((s,x)=>s+x.value,0);
-    statusBody.innerHTML = `<div class="atlas-chart-canvas donut"><canvas id="atlas-status-chart"></canvas><div class="atlas-chart-center"><b>${total}</b><small>processos</small></div></div><div class="atlas-legend">${statusRows.map((r,i)=>`<div><i style="background:${['#1565D8','#22A861','#F7931E','#19B5E8','#98A5B9'][i]}"></i><span>${r.label}</span><b>${r.value}</b><small>${total?Math.round(r.value/total*100):0}%</small></div>`).join('')}</div>`;
+    statusBody.innerHTML = `<div class="atlas-chart-canvas donut"><canvas id="atlas-status-chart"></canvas></div><div class="atlas-legend">${statusRows.map((r,i)=>`<div><i style="background:${['#1565D8','#22A861','#F7931E','#19B5E8','#98A5B9'][i]}"></i><span>${r.label}</span><b>${r.value}</b><small>${total?Math.round(r.value/total*100):0}%</small></div>`).join('')}</div>`;
     barsBody.innerHTML = `<div class="atlas-chart-canvas bars"><canvas id="atlas-type-chart"></canvas></div>`;
 
     chartInstances.push(new Chart(document.getElementById('atlas-status-chart'), {
       type:'doughnut',
       data:{labels:statusRows.map(x=>x.label),datasets:[{data:statusRows.map(x=>x.value),backgroundColor:['#1565D8','#22A861','#F7931E','#19B5E8','#98A5B9'],borderWidth:0,hoverOffset:2}]},
-      options:{responsive:true,maintainAspectRatio:false,cutout:'67%',plugins:{legend:{display:false},tooltip:{enabled:true}}}
+      plugins:[centerTextPlugin],
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        cutout:'67%',
+        layout:{padding:0},
+        plugins:{legend:{display:false},tooltip:{enabled:true},atlasCenterText:{total,label:'processos'}}
+      }
     }));
 
     chartInstances.push(new Chart(document.getElementById('atlas-type-chart'), {
