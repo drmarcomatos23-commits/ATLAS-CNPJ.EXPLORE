@@ -55,7 +55,12 @@
   }
 
   function loadRealDataDashboard(){
-    loadScriptOnce('/atlas-real-data-v7.js?v=7.0','atlas-real-data-v7','AtlasRealDataV7');
+    if(window.AtlasRealDataV7||document.querySelector('script[data-atlas-real-data-v7]'))return;
+    const script=document.createElement('script');
+    script.src='/atlas-real-data-v7.js?v=7.0';
+    script.async=false;
+    script.dataset.atlasRealDataV7='1';
+    document.head.appendChild(script);
   }
 
   function loadOperationalProcessV71(){
