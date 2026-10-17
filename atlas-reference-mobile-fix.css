@@ -204,3 +204,22 @@
   .atlas-pipeline{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
   .atlas-pipeline-track,.atlas-pipeline-counts{min-width:620px!important}
 }
+
+/* O scroll horizontal deve mover apenas as etapas. O cabeçalho e o CTA
+   "Ver todos os processos" permanecem ancorados no card. */
+@media (max-width:760px), (max-width:1180px) and (orientation:landscape) and (max-height:520px){
+  .atlas-pipeline>header{
+    position:sticky!important;
+    left:0!important;
+    width:100%!important;
+    box-sizing:border-box!important;
+    z-index:8!important;
+    background:#fff!important;
+  }
+  .atlas-pipeline::after{
+    position:sticky!important;
+    left:0!important;
+    z-index:2!important;
+    background:#fff!important;
+  }
+}
