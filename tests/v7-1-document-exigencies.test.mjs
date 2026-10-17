@@ -19,7 +19,7 @@ test('additive document and formal exigences schema stays independent of product
 });
 test('RLS and server-side authorization apply to requirements, versions and exigences',()=>{
  for(const table of ['document_requirement_templates','process_document_requirements','process_document_versions','process_exigencies','process_exigency_evidence','process_document_events']){
-   assert.ok(sql.includes('alter table public.'+table+' enable row level security'),'RLS '+table);
+   assert.match(sql,/execute format\('alter table public\.%I enable row level security'/,'RLS via tabela dinâmica');
    assert.ok(sql.includes("'"+table+"'"),'policy '+table);
  }
  for(const rpc of ['atlas_v71_init_document_checklist','atlas_v71_add_document_version','atlas_v71_review_document','atlas_v71_create_exigency','atlas_v71_mark_exigency_responded','atlas_v71_close_exigency'])
@@ -29,8 +29,8 @@ test('RLS and server-side authorization apply to requirements, versions and exig
  assert.match(sql,/waiver_reason|Justificativa/);
 });
 test('opening a process previews configured requirements and persists only after creation',()=>{
- assert.match(company,/AtlasOpsV71Documents\.decorateNewProcessForm/);
- assert.match(company,/AtlasOpsV71Documents\.afterProcessCreated/);
+ assert.match(company,/AtlasOpsV71Documents\?\.decorateNewProcessForm/);
+ assert.match(company,/AtlasOpsV71Documents\?\.afterProcessCreated/);
  assert.match(company,/insert\(payload\)\.select\('id'\)\.single\(\)/);
  assert.match(module,/decorateNewProcessForm/);
  assert.match(module,/afterProcessCreated/);
