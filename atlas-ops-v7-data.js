@@ -121,6 +121,14 @@
     };
   }
 
+  async function loadTaskTemplates(stageId) {
+    if (!stageId) throw new TypeError('stageId é obrigatório');
+    const cap = await capabilities();
+    if (!cap.available) return [];
+    const result = await scoped('task_templates','*',q => q.eq('stage_id',stageId).eq('active',true).order('suggested_order',{ascending:true}));
+    return result.data;
+  }
+
   async function loadTeams() {
     const cap = await capabilities();
     if (!cap.available) return [];
@@ -151,6 +159,7 @@
     capabilities,
     loadCentral,
     loadProcess,
+    loadTaskTemplates,
     loadTeams,
     loadHolidays,
     rpc,
