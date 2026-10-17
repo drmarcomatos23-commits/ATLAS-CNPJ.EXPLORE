@@ -56,7 +56,7 @@ jobs:
           node --check dashboard-v4.js
           node --check dashboard-v6.js
           node --check atlas-reference-final.js
-          node --check legalizacao.js
+          node --check atlas-real-data-v7.js
           node --check company-360-v5.js
           node --check company-hierarchy-v5-1.js
           node --check establishment-context-v5-1.js
