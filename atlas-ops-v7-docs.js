@@ -16,7 +16,7 @@
   if(typeof window.modalShell==='function'){window.modalShell(title,html);return document.getElementById('atlas-modal-root')||document;}
   throw Error('Modal do ATLAS indisponível');
  }
- function goBack(id){window.AtlasOpsV71Process?.openOperationalProcess?.(id);}
+ function goBack(id){if(window.AtlasOpsV71Process?.refreshProcess)window.AtlasOpsV71Process.refreshProcess();else window.AtlasOpsV71Process?.openOperationalProcess?.(id);}
  function processForm(target) {
   const {db,profile}=context();
   if(!db||!profile?.organization_id||!target)return false;
@@ -99,6 +99,7 @@
   const approved=data.requirements.filter(r=>r.status==='approved').length;
   const pending=data.requirements.filter(r=>!['approved','waived'].includes(r.status)).length;
   const header='<div class="v71-doc-heading"><div><h3>Checklist documental</h3><small>'+data.requirements.length+' exigidos · '+approved+' aprovados · '+pending+' pendentes de conferência</small></div>'+
+   (has('documents.upload')?'<button class="btn btn-muted" type="button" data-v71-doc-add>Enviar arquivo</button>':'')+
    (has('documents.review')?'<button class="btn btn-muted" type="button" data-v71-doc-manual>Novo documento exigido</button>':'')+
    (has('documents.templates.manage')?'<button class="btn btn-muted" type="button" data-v71-doc-config>Gerenciar modelos documentais</button>':'')+'</div>';
   const rows=data.requirements.map(r=>{
@@ -122,6 +123,7 @@
  function renderExigencies(host,data){
   const open=data.exigencies.filter(activeExigency).length;
   host.innerHTML='<div class="v71-doc-heading"><div><h3>Exigências formais</h3><small>'+open+' em aberto · respostas somente são cumpridas após aceite explícito</small></div>'+
+   (has('documents.upload')?'<button class="btn btn-muted" type="button" data-v71-exigency-file-add>Enviar arquivo</button>':'')+
    (has('exigencies.manage')?'<button class="btn btn-primary" type="button" data-v71-exigency-new>Registrar exigência</button>':'')+'</div>'+
    (data.exigencies.length?data.exigencies.map(x=>{
     const evidence=data.evidence.filter(v=>v.exigency_id===x.id);
@@ -186,7 +188,7 @@
   const root=modal('Enviar arquivo', '<form class="v71-doc-form" data-v71-doc-upload-form><label>Arquivo<input required type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.txt"></label><label>Categoria<select name="category"><option>'+escapeHtml(requirement?.category||'Outros')+'</option><option>Societário</option><option>Documento pessoal</option><option>Comprovante</option><option>Fiscal</option><option>Protocolo</option><option>Licença</option><option>Outros</option></select></label><div class="v71-doc-actions"><button type="submit" class="btn btn-primary">Enviar arquivo</button></div></form>');
   formListen(root,'[data-v71-doc-upload-form]',async form=>{
    const docId=await uploadFile(detail.process.id,detail.process.client_id,form);
-   try{await call('atlas_v71_add_document_version',{p_requirement_id:requirement.id,p_document_id:docId});}
+   try{if(requirement?.id)await call('atlas_v71_add_document_version',{p_requirement_id:requirement.id,p_document_id:docId});}
    catch(err){window.alert('Arquivo salvo no Dossiê Digital, porém não vinculado ao checklist: '+message(err));}
    goBack(detail.process.id);
   });
@@ -272,6 +274,8 @@
   container.querySelectorAll('[data-v71-doc-review]').forEach(b=>b.addEventListener('click',()=>{
    const req=data.requirements.find(r=>r.id===b.dataset.v71DocReview);if(req)reviewModal(detail,req).catch(alertError);
   }));
+  container.querySelector('[data-v71-doc-add]')?.addEventListener('click',()=>uploadModal(detail,null).catch(alertError));
+  container.querySelector('[data-v71-exigency-file-add]')?.addEventListener('click',()=>uploadModal(detail,null).catch(alertError));
   container.querySelector('[data-v71-doc-manual]')?.addEventListener('click',()=>manualModal(detail).catch(alertError));
   container.querySelector('[data-v71-doc-config]')?.addEventListener('click',()=>templatesModal(detail).catch(alertError));
   container.querySelector('[data-v71-exigency-new]')?.addEventListener('click',()=>exigencyModal(detail,data).catch(alertError));
@@ -286,7 +290,7 @@
   document.dispatchEvent(new CustomEvent('atlas:v71:document-counts',{detail:{processId,pending:data.requirements.filter(r=>!['approved','waived'].includes(r.status)).length,exigencies:data.exigencies.filter(activeExigency).length}}));
  }
  function bindProcessActions(root,detail){
-  if(root.querySelector('[data-v71-doc-process]'))renderOn(root,detail).catch(alertError);
+  root.querySelectorAll('[data-v71-doc-process]').forEach(element=>renderOn(element,detail).catch(alertError));
  }
  window.AtlasOpsV71Documents=Object.freeze({available,templatesFor,decorateNewProcessForm,afterProcessCreated,documentPanel,exigenciesPanel,bindProcessActions,load});
 })();
