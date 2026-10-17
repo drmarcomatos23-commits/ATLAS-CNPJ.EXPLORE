@@ -3,13 +3,13 @@
     'Empresas':'Base atual',
     'Processos em andamento':'Ativos agora',
     'Licenças vencendo':'Próximos 30 dias',
-    'Honorários (mês)':'Competência do mês',
-    'Pendências':'Atenções atuais',
     'Documentos':'Arquivos cadastrados'
   };
 
   function text(value){return String(value??'').trim();}
   function norm(value){return text(value).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+  function number(value){const n=Number(value);return Number.isFinite(n)?n:0;}
+  function formatCurrency(value){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:2,maximumFractionDigits:2}).format(number(value));}
 
   function legalNatureRaw(company={}){
     return text(company.legal_nature||company.natureza_juridica||company.company_type||company.metadata?.cnpj_sync?.legal_nature||'');
@@ -48,6 +48,22 @@
     return processes.filter(process=>!isClosedProcess(process)).length;
   }
 
+  function financialPendingStats(costs=[]){
+    const unpaid=(Array.isArray(costs)?costs:[]).filter(cost=>{
+      const status=norm(cost?.payment_status||cost?.status||'');
+      return !!status && status!=='paid' && status!=='pago' && status!=='quitado' && status!=='settled';
+    });
+    return {
+      count:unpaid.length,
+      total:unpaid.reduce((sum,cost)=>sum+number(cost?.amount),0)
+    };
+  }
+
+  function operationalPendingCount(data={}){
+    const summary=window.AtlasV4Core?.buildPendingSummary?.(data)||{};
+    return number(summary.cliente)+number(summary.equipe)+number(summary.orgao);
+  }
+
   async function fetchDocuments(){
     const db=window.atlasDb?.()||window.atlasAuth?.client;
     if(!db?.from)return [];
@@ -80,28 +96,43 @@
       type:cost.type||cost.fee_kind||cost.cost_type||''
     }));
     const documents=Array.isArray(raw.documents)?raw.documents:await fetchDocuments();
+    const normalized={...raw,clients,companies:clients,processes,costs,documents};
+    const operationalPending=operationalPendingCount(normalized);
+    const financialPending=financialPendingStats(costs);
     return {
-      ...raw,
-      clients,
-      companies:clients,
-      processes,
-      costs,
-      documents,
-      pending:Array.isArray(raw.pending)?raw.pending:[]
+      ...normalized,
+      pending:Array.isArray(raw.pending)?raw.pending:[],
+      pendingCount:operationalPending,
+      financialPending
     };
   }
 
-  function patchKpiFacts(activeCount){
+  function patchKpiFacts(activeCount,operationalPending,financialPending){
     document.querySelectorAll('.atlas-kpi').forEach(card=>{
-      const label=text(card.querySelector('.atlas-kpi-copy small')?.textContent);
+      const labelEl=card.querySelector('.atlas-kpi-copy small');
+      const valueEl=card.querySelector('.atlas-kpi-copy strong');
+      const trendEl=card.querySelector('.atlas-kpi-copy em');
+      const actionEl=card.querySelector('.atlas-kpi-copy span');
+      const label=text(labelEl?.textContent);
       const fact=KPI_FACTS[label];
-      if(fact){
-        const trend=card.querySelector('.atlas-kpi-copy em');
-        if(trend)trend.textContent=fact;
+      if(fact&&trendEl)trendEl.textContent=fact;
+
+      if(label==='Processos em andamento'&&valueEl){
+        valueEl.textContent=new Intl.NumberFormat('pt-BR').format(activeCount);
       }
-      if(label==='Processos em andamento'){
-        const value=card.querySelector('.atlas-kpi-copy strong');
-        if(value)value.textContent=new Intl.NumberFormat('pt-BR').format(activeCount);
+
+      if(label==='Honorários (mês)'){
+        if(labelEl)labelEl.textContent='Financeiro Pendente';
+        if(valueEl)valueEl.textContent=formatCurrency(financialPending.total);
+        if(trendEl)trendEl.textContent=`${new Intl.NumberFormat('pt-BR').format(financialPending.count)} lançamentos pendentes`;
+        if(actionEl)actionEl.textContent='Ver financeiro →';
+      }
+
+      if(label==='Pendências'){
+        if(labelEl)labelEl.textContent='Pendências Operacionais';
+        if(valueEl)valueEl.textContent=new Intl.NumberFormat('pt-BR').format(operationalPending);
+        if(trendEl)trendEl.textContent='Exigências e providências';
+        if(actionEl)actionEl.textContent='Ver exigências →';
       }
     });
     const typeCard=[...document.querySelectorAll('.atlas-card')].find(card=>card.querySelector('h2')?.textContent?.trim()==='EMPRESAS POR TIPO');
@@ -116,6 +147,8 @@
     const raw=typeof originalLoad==='function'?await originalLoad():{};
     const enriched=await enrich(raw||{});
     const activeCount=activeProcessCount(enriched.processes);
+    const operationalPending=number(enriched.pendingCount);
+    const financialPending=enriched.financialPending||{count:0,total:0};
     const previousLoad=window.loadOperationalData;
     window.loadOperationalData=async()=>enriched;
     let model=null;
@@ -124,8 +157,14 @@
     }finally{
       window.loadOperationalData=previousLoad;
     }
-    if(model?.kpis)model.kpis.activeProcesses=activeCount;
-    patchKpiFacts(activeCount);
+    if(model?.kpis){
+      model.kpis.activeProcesses=activeCount;
+      model.kpis.pending=operationalPending;
+      model.kpis.operationalPending=operationalPending;
+      model.kpis.financialPending=financialPending.total;
+      model.kpis.financialPendingCount=financialPending.count;
+    }
+    patchKpiFacts(activeCount,operationalPending,financialPending);
     return model;
   }
 
@@ -142,6 +181,8 @@
     legalNatureBucket,
     dashboardStageName,
     activeProcessCount,
+    financialPendingStats,
+    operationalPendingCount,
     KPI_FACTS
   };
 
