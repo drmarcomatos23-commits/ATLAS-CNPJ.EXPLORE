@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
+import vm from 'node:vm';
 const read = path => existsSync(new URL('../'+path,import.meta.url)) ? readFileSync(new URL('../'+path,import.meta.url),'utf8') : '';
 const sql=read('supabase/migrations/20261017_atlas_v7_1_document_exigencies.sql');
 const module=read('atlas-ops-v7-docs.js');
@@ -66,4 +67,27 @@ test('loader and mobile styles preserve V7.1 process integration',()=>{
  assert.match(loader,/atlas-ops-v7-docs\.js\?v=7\.1/);
  assert.match(css,/\.v71-doc-panel/);
  assert.match(css,/@media\(max-width:760px\)[\s\S]*v71-doc-/);
+});
+
+test('document module and connected application modules parse as modern JavaScript',()=>{
+ for(const file of ['atlas-ops-v7-docs.js','atlas-ops-v7-ui.js','atlas-ops-v7-process.js','company-flow.js','pwa-v5-1.js'])
+   assert.doesNotThrow(()=>new vm.Script(read(file),{filename:file}),file);
+});
+test('stage advancement requires document acceptance and allows only audited override',()=>{
+ assert.match(sql,/v_doc_pending/);
+ assert.match(sql,/v_exigency_pending/);
+ assert.match(sql,/d\.required_rule='required'/);
+ assert.match(sql,/d\.status not in \('approved','waived'\)/);
+ assert.match(sql,/p_force/);
+ assert.match(sql,/p_justification/);
+ assert.match(sql,/v_doc_created/);
+});
+test('exigency submission is distinct from formal acceptance and carries file evidence',()=>{
+ assert.match(sql,/p_evidence_document_id|p_document_id/);
+ assert.match(sql,/status='responded'/);
+ assert.match(sql,/status='accepted'/);
+ assert.match(sql,/evidence_kind='response'/);
+ assert.match(sql,/accepted_at/);
+ assert.match(module,/Registrar resposta/);
+ assert.match(module,/Aceite pelo órgão/);
 });
