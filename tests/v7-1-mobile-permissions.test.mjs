@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const roleSource = readFileSync(new URL('../role-permissions.js', import.meta.url), 'utf8');
-const index = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const uiPath = new URL('../atlas-ops-v7-ui.js', import.meta.url);
 const uiSource = existsSync(uiPath) ? readFileSync(uiPath, 'utf8') : '';
+const dataSource = readFileSync(new URL('../atlas-ops-v7-data.js', import.meta.url), 'utf8');
 
 const permissions = [
   'operations.view','tasks.view','tasks.create','tasks.edit','tasks.assign',
@@ -20,10 +20,12 @@ test('permission matrix exposes the full ATLAS 7.1 operational vocabulary', () =
   assert.match(roleSource, /Equipes/);
 });
 
-test('Central Operacional route is protected by operations.view and present in navigation', () => {
+test('Central Operacional route is protected by operations.view and injected without replacing existing routes', () => {
   assert.match(roleSource, /['"]central-operacional['"]\s*:\s*['"]operations\.view['"]/);
-  assert.match(index, /data-page=["']central-operacional["']/);
-  assert.match(index, />\s*Central Operacional\s*</);
+  assert.match(uiSource, /data-page=["']central-operacional["']/);
+  assert.match(uiSource, /Central Operacional/);
+  assert.match(uiSource, /ensureCentralNavItem/);
+  assert.match(uiSource, /data-page=["']processos["']/);
 });
 
 test('admin remains unconditional while mutation permissions stay matrix-driven for other roles', () => {
@@ -45,8 +47,11 @@ test('legacy process activation is review-first and never automatic on page load
   assert.doesNotMatch(domReady, /activateProcess\s*\(/, 'legacy activation cannot run automatically on DOMContentLoaded');
 });
 
-test('activation preview loads task templates but only confirms after explicit user action', () => {
-  assert.match(uiSource, /task_templates/);
+test('activation preview obtains stage templates through the data adapter and only confirms after explicit action', () => {
+  assert.match(dataSource, /function loadTaskTemplates/);
+  assert.match(dataSource, /scoped\(['"]task_templates['"]/);
+  assert.match(dataSource, /loadTaskTemplates/);
+  assert.match(uiSource, /Data\.loadTaskTemplates/);
   assert.match(uiSource, /task_template_id|templateIds/);
   assert.match(uiSource, /data-v71-activate-confirm|confirmLegacyActivation/);
   assert.match(uiSource, /data-v71-activate-cancel|cancel/i);
