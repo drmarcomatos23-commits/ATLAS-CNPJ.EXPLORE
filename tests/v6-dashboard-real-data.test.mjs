@@ -2,42 +2,50 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const legalizacao = fs.readFileSync('legalizacao.js','utf8');
-const dashboard = fs.readFileSync('dashboard-v6.js','utf8');
-const finalDashboard = fs.readFileSync('atlas-reference-final.js','utf8');
+const adapter = fs.readFileSync('atlas-real-data-v7.js','utf8');
+const loader = fs.readFileSync('pwa-v5-1.js','utf8');
 
-test('operational loader includes real documents and excludes archived companies/processes', () => {
-  assert.match(legalizacao, /documents:\[\]/);
-  assert.match(legalizacao, /db\.from\('documents'\)\.select\('\*'\)/);
-  assert.match(legalizacao, /db\.from\('clients'\)\.select\('\*'\)\.is\('deleted_at',null\)/);
-  assert.match(legalizacao, /db\.from\('processes'\)\.select\('\*'\)\.is\('deleted_at',null\)/);
-  assert.match(legalizacao, /'documents'/);
+test('real-data adapter is loaded without changing the production shell contract', () => {
+  assert.match(loader, /atlas-real-data-v7\.js\?v=7\.0/);
+  assert.match(loader, /data-atlas-real-data-v7|dataset\.atlasRealDataV7/);
+  assert.match(adapter, /window\.AtlasRealDataV7/);
 });
 
-test('dashboard recognizes real fee fields, service type and nested CNPJ legal nature', () => {
-  assert.match(dashboard, /fee_kind/);
-  assert.match(dashboard, /cost_type/);
-  assert.match(dashboard, /service_type/);
-  assert.match(dashboard, /cnpj_sync/);
-  assert.match(dashboard, /legal_nature/);
-  assert.match(dashboard, /Não informado/);
+test('adapter uses real documents and removes archived companies/processes from dashboard data', () => {
+  assert.match(adapter, /db\.from\('documents'\)\.select\('\*'\)/);
+  assert.match(adapter, /filter\(client=>!client\?\.deleted_at\)/);
+  assert.match(adapter, /filter\(process=>!process\?\.deleted_at\)/);
+  assert.match(adapter, /documents,/);
+  assert.match(adapter, /pending:Array\.isArray\(raw\.pending\)\?raw\.pending:\[\]/);
+});
+
+test('adapter recognizes real fee fields and nested CNPJ legal nature', () => {
+  assert.match(adapter, /fee_kind/);
+  assert.match(adapter, /cost_type/);
+  assert.match(adapter, /metadata\?\.cnpj_sync\?\.legal_nature/);
+  assert.match(adapter, /Não informado/);
+  assert.match(adapter, /Empresário Individual/);
 });
 
 test('real workflow stages map into the six approved dashboard buckets', () => {
-  assert.match(dashboard, /registro/i);
-  assert.match(dashboard, /inscri[cç][oõ]es/i);
-  assert.match(dashboard, /conclu[ií]do/i);
+  assert.match(adapter, /registro/);
+  assert.match(adapter, /inscri/);
+  assert.match(adapter, /conclu/);
+  assert.match(adapter, /Junta Comercial/);
+  assert.match(adapter, /Alvará Municipal/);
+  assert.match(adapter, /Pós-abertura \/ Regularização/);
 });
 
-test('active process KPI stays based on all non-closed processes', () => {
-  assert.doesNotMatch(finalDashboard, /model\.kpis\.activeProcesses\s*=/);
+test('active process KPI is calculated from every non-closed real process', () => {
+  assert.match(adapter, /function activeProcessCount/);
+  assert.match(adapter, /!isClosedProcess\(process\)/);
+  assert.match(adapter, /model\.kpis\.activeProcesses=activeCount/);
 });
 
-test('final dashboard contains no illustrative mock values or fixed trend percentages', () => {
-  assert.doesNotMatch(finalDashboard, /MOCK_/);
-  assert.doesNotMatch(finalDashboard, /useMockOnlyWhenMissing/);
-  assert.doesNotMatch(finalDashboard, /\+8%|\+12%|\+33%|\+18%|\+17%|\+21%/);
-  assert.match(finalDashboard, /Base atual/);
-  assert.match(finalDashboard, /Próximos 30 dias/);
-  assert.match(finalDashboard, /Competência do mês/);
+test('fixed illustrative trend percentages are replaced with factual labels', () => {
+  assert.match(adapter, /'Empresas':'Base atual'/);
+  assert.match(adapter, /'Processos em andamento':'Ativos agora'/);
+  assert.match(adapter, /'Licenças vencendo':'Próximos 30 dias'/);
+  assert.match(adapter, /'Honorários \(mês\)':'Competência do mês'/);
+  assert.match(adapter, /'Documentos':'Arquivos cadastrados'/);
 });
