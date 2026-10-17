@@ -397,6 +397,13 @@ begin
 end $$;
 
 -- Aplicar permissões de execução; nenhuma função atual de produção é substituída.
+revoke all on function public.atlas_v71_init_document_checklist(uuid) from public,anon;
+revoke all on function public.atlas_v71_add_document_version(uuid,uuid) from public,anon;
+revoke all on function public.atlas_v71_review_document(uuid,text,text) from public,anon;
+revoke all on function public.atlas_v71_create_exigency(uuid,text,text,text,text,date,date,uuid,uuid) from public,anon;
+revoke all on function public.atlas_v71_mark_exigency_responded(uuid,uuid,text,text) from public,anon;
+revoke all on function public.atlas_v71_close_exigency(uuid,boolean,text) from public,anon;
+
 grant execute on function public.atlas_v71_init_document_checklist(uuid) to authenticated;
 grant execute on function public.atlas_v71_add_document_version(uuid,uuid) to authenticated;
 grant execute on function public.atlas_v71_review_document(uuid,text,text) to authenticated;
