@@ -1,85 +1,208 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#f5f2eb" />
-  <meta name="description" content="ATLAS CNPJ.EXPLORE 5.1 · consulta empresarial com dashboard, explorador dinâmico de dados e impressão em PDF." />
-  <title>ATLAS CNPJ.EXPLORE</title>
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="stylesheet" href="/styles.css?v=5.1.0" />
-  <script src="/app.js?v=5.1.0" type="module"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07192b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ATLAS">
+<meta name="description" content="ATLAS Legalização e Gerenciamento — gestão de legalização empresarial, processos, custos, documentos e licenças.">
+<title>ATLAS Legalização e Gerenciamento</title>
+<link rel="manifest" href="/manifest.webmanifest?v=5.1">
+<link rel="icon" href="/atlas-pwa-icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/legalizacao.css?v=3.58">
+<link rel="stylesheet" href="/company-flow.css?v=3.41">
+<link rel="stylesheet" href="/business-extensions.css?v=3.61">
+<link rel="stylesheet" href="/license-compliance.css?v=3.65">
+<link rel="stylesheet" href="/role-permissions.css?v=3.41">
+<link rel="stylesheet" href="/mobile-responsive.css?v=3.41">
+<link rel="stylesheet" href="/knowledge-base.css?v=3.41">
+<link rel="stylesheet" href="/sidebar-follow.css?v=3.45">
+<link rel="stylesheet" href="/training-manuals.css?v=3.60">
+<link rel="stylesheet" href="/pwa-v5-1.css?v=5.1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.min.js" defer></script>
+<script src="/legalizacao.js?v=3.51" defer></script>
+<script src="/process-completion-guard-v5.js?v=5.0" defer></script>
+<script src="/company-flow.js?v=3.50" defer></script>
+<script src="/company-registration.js?v=3.63" defer></script>
+<script src="/cnpj-refresh-all-v4.js?v=4.2" defer></script>
+<script src="/client-archive.js?v=3.56" defer></script>
+<script src="/company-partners.js?v=3.63" defer></script>
+<script src="/company-360-v5.js?v=5.0" defer></script>
+<script src="/process-financial.js?v=3.58" defer></script>
+<script src="/report-emission.js?v=3.59" defer></script>
+<script src="/financial-costs.js?v=3.58" defer></script>
+<script src="/license-compliance.js?v=3.65" defer></script>
+<script src="/dashboard-compliance.js?v=3.44" defer></script>
+<script src="/session-profile-fix.js?v=3.12" defer></script>
+<script src="/atlas-auth.js?v=3.7" defer></script>
+<script src="/role-permissions.js?v=3.58" defer></script>
+<script src="/company-realtime.js?v=3.41" defer></script>
+<script src="/mobile-responsive.js?v=3.42" defer></script>
+<script src="/knowledge-base.js?v=3.60" defer></script>
+<script src="/training-manuals.js?v=3.65" defer></script>
+<link rel="stylesheet" href="/process-cartilha.css?v=3.57">
+<link rel="stylesheet" href="/dashboard-v4.css?v=4.0">
+<link rel="stylesheet" href="/operations-v4.css?v=4.0">
+<link rel="stylesheet" href="/command-center-v4.css?v=4.1">
+<link rel="stylesheet" href="/atlas-ui-v4.css?v=4.0">
+<link rel="stylesheet" href="/atlas-sidebar-v4.css?v=4.2">
+<link rel="stylesheet" href="/mobile-v4.css?v=4.2">
+<link rel="stylesheet" href="/dashboard-v5.css?v=5.0">
+<link rel="stylesheet" href="/dashboard-v6.css?v=6.0">
+<link rel="stylesheet" href="/operations-v5.css?v=5.0">
+<link rel="stylesheet" href="/company-360-v5.css?v=5.0">
+<link rel="stylesheet" href="/company-hierarchy-v5-1.css?v=5.1">
+<link rel="stylesheet" href="/enterprise-family-v5-1.css?v=5.1">
+<link rel="stylesheet" href="/atlas-v5.css?v=5.0">
+<link rel="stylesheet" href="/iconography-v5-1.css?v=5.1">
+<link rel="stylesheet" href="/mobile-app-v4.css?v=4.4">
+<link rel="stylesheet" href="/mobile-v5.css?v=5.1">
+<link rel="stylesheet" href="/modules-v6.css?v=6.0">
+<link rel="stylesheet" href="/atlas-v6.css?v=6.0">
+<link rel="stylesheet" href="/mobile-v6.css?v=6.0">
 </head>
 <body>
-  <div class="app-shell">
-    <header class="site-header">
-      <div class="brand-group">
-        <img src="/logo-atlas.png" alt="ATLAS CNPJ.EXPLORE" class="brand-logo" />
-        <div class="brand-copy">
-          <span class="eyebrow">INTELIGÊNCIA CADASTRAL</span>
-          <h1>ATLAS CNPJ.EXPLORE</h1>
-          <p>Consulte dados empresariais, explore informações cadastrais e gere relatórios completos em PDF.</p>
+<section id="login-screen" class="login-screen">
+  <div class="login-hero">
+    <img class="login-logo" src="/atlas-sidebar-brand.svg?v=4.4" alt="ATLAS Legalização e Gerenciamento" onerror="this.style.display='none';this.parentElement.classList.add('login-logo-fallback')">
+    <span class="login-kicker">AMBIENTE SEGURO DE ACESSO</span>
+    <h1>Legalização empresarial com visão de ponta a ponta.</h1>
+    <p>Centralize processos, custos, documentos, licenças e comunicação com clientes em uma única operação.</p>
+    <div class="login-security">
+      <span>● Sessão individual</span><span>● Perfis de acesso</span><span>● Banco protegido por RLS</span>
+    </div>
+  </div>
+  <div class="login-panel">
+    <div class="login-card auth-card">
+      <span class="eyebrow">ATLAS LEGALIZAÇÃO E GERENCIAMENTO</span>
+      <div id="auth-login-view">
+        <h2>Acessar sistema</h2>
+        <p class="sub">Entre com seu e-mail e senha cadastrados.</p>
+        <form id="login-form">
+          <div class="field"><label for="login-email">E-mail</label><input id="login-email" type="email" autocomplete="username" required placeholder="nome@empresa.com.br"></div>
+          <div class="field"><label for="login-password">Senha</label><div class="password-field"><input id="login-password" type="password" autocomplete="current-password" required placeholder="Sua senha"><button class="password-toggle" type="button" data-toggle-password="login-password" aria-label="Mostrar senha">◉</button></div></div>
+          <div class="auth-options"><label class="remember"><input id="remember-session" type="checkbox" checked> Manter sessão neste dispositivo</label><button id="forgot-password-btn" class="link-btn" type="button">Esqueci minha senha</button></div>
+          <button id="login-submit" class="btn btn-primary auth-main-btn" type="submit">Entrar no ATLAS</button>
+        </form>
+        <div id="login-message" class="auth-message hidden"></div>
+        <button id="first-access-btn" class="first-access-btn hidden" type="button"><span>Primeira configuração</span><strong>Ativar conta Administrador →</strong></button>
+      </div>
+      <div id="auth-bootstrap-view" class="hidden">
+        <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
+        <h2>Primeiro acesso</h2>
+        <p class="sub">Crie o primeiro Administrador do ATLAS. Depois desta ativação, novos usuários serão criados dentro do sistema.</p>
+        <form id="bootstrap-form">
+          <div class="field"><label for="bootstrap-name">Nome completo</label><input id="bootstrap-name" required autocomplete="name" placeholder="Nome do administrador"></div>
+          <div class="field"><label for="bootstrap-email">E-mail</label><input id="bootstrap-email" type="email" required autocomplete="email" placeholder="administrador@empresa.com.br"></div>
+          <div class="field"><label for="bootstrap-password">Senha</label><div class="password-field"><input id="bootstrap-password" type="password" minlength="10" required autocomplete="new-password" placeholder="Mínimo de 10 caracteres"><button class="password-toggle" type="button" data-toggle-password="bootstrap-password" aria-label="Mostrar senha">◉</button></div></div>
+          <div class="field"><label for="bootstrap-confirm">Confirmar senha</label><input id="bootstrap-confirm" type="password" minlength="10" required autocomplete="new-password"></div>
+          <div class="field"><label for="bootstrap-code">Código de implantação</label><input id="bootstrap-code" required autocomplete="off" placeholder="ATLAS-XXXX-XXXX-XXXX" style="text-transform:uppercase"></div>
+          <button id="bootstrap-submit" class="btn btn-primary auth-main-btn" type="submit">Criar Administrador</button>
+        </form>
+        <div id="bootstrap-message" class="auth-message hidden"></div>
+      </div>
+      <div id="auth-reset-view" class="hidden">
+        <button class="auth-back" type="button" data-auth-view="login">← Voltar</button>
+        <h2>Recuperar senha</h2>
+        <p class="sub">Informe seu e-mail. Se a conta existir, enviaremos as instruções de recuperação.</p>
+        <form id="reset-form">
+          <div class="field"><label for="reset-email">E-mail</label><input id="reset-email" type="email" required autocomplete="email" placeholder="nome@empresa.com.br"></div>
+          <button class="btn btn-primary auth-main-btn" type="submit">Enviar recuperação</button>
+        </form>
+        <div id="reset-message" class="auth-message hidden"></div>
+      </div>
+      <div id="auth-new-password-view" class="hidden">
+        <h2>Definir nova senha</h2>
+        <p class="sub">Crie uma nova senha para concluir a recuperação da conta.</p>
+        <form id="new-password-form">
+          <div class="field"><label for="new-password">Nova senha</label><input id="new-password" type="password" minlength="10" required autocomplete="new-password"></div>
+          <div class="field"><label for="new-password-confirm">Confirmar senha</label><input id="new-password-confirm" type="password" minlength="10" required autocomplete="new-password"></div>
+          <button class="btn btn-primary auth-main-btn" type="submit">Atualizar senha</button>
+        </form>
+        <div id="new-password-message" class="auth-message hidden"></div>
+      </div>
+      <div class="auth-footer"><span id="auth-status-dot"></span><span id="auth-status-text">Conectando ao ambiente seguro...</span></div>
+    </div>
+  </div>
+</section>
+<div id="app-shell" class="app-shell hidden">
+  <aside class="sidebar">
+    <div class="brand-box"><img class="brand-logo" src="/atlas-dashboard-brand.svg?v=4.2" alt="ATLAS" onerror="this.style.display='none';this.parentElement.classList.add('logo-fallback')"></div>
+    <nav id="nav" class="nav-list">
+      <div class="nav-group-title">Visão Geral</div>
+      <button class="nav-item active" data-page="dashboard" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">⌂</span><span>Dashboard</span></button>
+      <div class="nav-group-title">Operação</div>
+      <button class="nav-item" data-page="processos" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">▤</span><span>Processos</span></button>
+      <button class="nav-item" data-page="clientes" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Empresas</span></button>
+      <button class="nav-item" data-page="licencas" data-roles="admin,operacao,cliente,auditoria"><span class="nav-ico">✓</span><span>Licenças</span></button>
+      <button class="nav-item" data-page="exigencias" data-roles="admin,operacao,auditoria"><span class="nav-ico">!</span><span>Exigências</span></button>
+      <button class="nav-item" data-page="documentos" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">□</span><span>Documentos</span></button>
+      <button class="nav-item" data-page="integracoes" data-roles="admin,operacao"><span class="nav-ico">⌘</span><span>Integrações</span></button>
+      <div class="nav-group-title">Gestão</div>
+      <button class="nav-item" data-page="custos" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">R$</span><span>Financeiro</span></button>
+      <button class="nav-item" data-page="relatorios" data-roles="admin,operacao,financeiro,auditoria"><span class="nav-ico">▥</span><span>Relatórios</span></button>
+      <div class="nav-group-title">ATLAS</div>
+      <button class="nav-item" data-page="conhecimento" data-roles="admin,operacao,financeiro,cliente,auditoria"><span class="nav-ico">?</span><span>Base de Conhecimento</span></button>
+      <button class="nav-item" data-page="treinamento" data-roles="admin,operacao,financeiro,auditoria,cliente"><span class="nav-ico">▣</span><span>Treinamento</span></button>
+      <div class="nav-group-title">Administração</div>
+      <button class="nav-item" data-page="usuarios" data-roles="admin"><span class="nav-ico">♙</span><span>Usuários</span></button>
+      <button class="nav-item" data-page="config" data-roles="admin"><span class="nav-ico">⚙</span><span>Configurações</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-brand">
+        <img class="sidebar-footer-icon" src="/atlas-pwa-icon.svg" alt="" aria-hidden="true">
+        <div class="sidebar-footer-copy">
+          <strong class="sidebar-footer-title">ATLAS</strong>
+          <span class="sidebar-footer-subtitle">Legalização e Gerenciamento</span>
         </div>
       </div>
-      <div class="status-card">
-        <span class="status-title">Conectividade</span>
-        <strong id="connect-status">Verificando conexão...</strong>
-        <a href="https://docs.cnpj.ws/referencia-de-api/api-publica/consultando-cnpj" target="_blank" rel="noreferrer">Documentação da API ↗</a>
+      <span class="sidebar-footer-badge"><i class="sidebar-footer-status-dot" aria-hidden="true"></i>Produção 5.1</span>
+    </div>
+  </aside>
+  <div id="mobile-nav-overlay" class="mobile-nav-overlay" aria-hidden="true"></div>
+  <div class="workspace">
+    <header class="topbar">
+      <button id="mobile-menu-btn" class="mobile-menu-btn" type="button" aria-label="Abrir menu" aria-expanded="false">☰</button>
+      <div class="global-search"><input id="global-search" placeholder="Buscar empresas, processos, documentos..."></div>
+      <div class="top-actions">
+        <button class="bell" aria-label="Notificações">♧</button>
+        <div class="user-block"><div id="user-avatar" class="avatar">--</div><div><strong id="user-name">Usuário</strong><small id="user-role">ATLAS Legalização</small></div></div>
+        <button id="logout-btn" class="logout-btn" type="button" title="Sair">↪</button>
       </div>
     </header>
-
-    <main class="main-layout">
-      <section class="search-card">
-        <div class="search-head">
-          <div>
-            <span class="section-kicker">CONSULTA</span>
-            <h2>Buscar empresa por CNPJ</h2>
-          </div>
-          <div class="badge-inline">Fonte: publica.cnpj.ws</div>
-        </div>
-
-        <form id="search-form" novalidate>
-          <label for="cnpj-input">Número do CNPJ</label>
-          <div class="search-row">
-            <div class="input-shell" id="input-wrap">
-              <span class="input-icon">⌕</span>
-              <input id="cnpj-input" name="cnpj" type="text" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00" maxlength="18" aria-describedby="cnpj-help" />
-              <span class="input-counter" id="input-count">0/14</span>
-            </div>
-            <button type="submit" class="primary-btn" id="submit-btn" disabled>Consultar CNPJ</button>
-          </div>
-          <div class="helper-row" id="cnpj-help">
-            <span id="cnpj-help-text">Digite os 14 números do CNPJ. O sistema valida os dígitos verificadores automaticamente.</span>
-            <span>Até 3 novas consultas por minuto/IP, conforme limite da API pública.</span>
-          </div>
-        </form>
-      </section>
-
-      <section id="notice" hidden></section>
-
-      <section id="loading" class="loading-card" hidden aria-live="polite">
-        <span class="loader"></span>
-        <div>
-          <strong>Consultando dados da empresa</strong>
-          <p>Buscando informações cadastrais pela API CNPJws...</p>
-        </div>
-      </section>
-
-      <section id="empty" class="empty-card">
-        <div class="empty-icon">◎</div>
-        <div>
-          <strong>Pronto para consultar</strong>
-          <p>Informe um CNPJ válido para visualizar o dashboard executivo e o explorador completo dos dados retornados.</p>
-        </div>
-      </section>
-
-      <section id="results" hidden aria-live="polite"></section>
+    <main class="main">
+      <div class="page-head"><div><span id="page-kicker" class="eyebrow">VISÃO GERAL</span><h1 id="page-title">Dashboard</h1><p id="page-desc"></p></div><button id="new-process-btn" class="btn btn-primary" type="button">＋ Novo processo</button></div>
+      <div id="page-content"></div>
     </main>
-
-    <footer class="site-footer">
-      <span>ATLAS CNPJ.EXPLORE</span>
-      <span>Cadastro principal: CNPJws · Conferência opcional: BrasilAPI e OpenCNPJ</span>
-    </footer>
+    <footer class="system-legal-footer"><span>© 2026 Marco Matos. Este programa é de propriedade de Marco Matos. Proibida a reprodução, distribuição ou utilização não autorizada. Todos os direitos reservados.</span></footer>
   </div>
+</div>
+<div id="atlas-modal-root"></div>
+<!-- permissions-deploy-3.24 -->
+<!-- redeploy-3.24-2026-09-30-0923 -->
+<!-- redeploy-mobile-processes-3.35 -->
+<!-- redeploy-process-count-3.36 -->
+<script src="/process-cartilha.js?v=3.66" defer></script>
+<script src="/atlas-v4-core.js?v=4.0" defer></script>
+<script src="/iconography-v5-1.js?v=5.1" defer></script>
+<script src="/mobile-app-v4.js?v=4.4" defer></script>
+<script src="/dashboard-v4.js?v=4.0" defer></script>
+<script src="/operations-v4.js?v=4.0" defer></script>
+<script src="/dashboard-license-route-v4.js?v=4.1" defer></script>
+<script src="/process-service-edit-v4.js?v=4.1" defer></script>
+<script src="/status-ptbr-v4.js?v=4.1" defer></script>
+<script src="/command-center-v4.js?v=4.0" defer></script>
+<script src="/sidebar-accordion-v4.js?v=4.1" defer></script>
+<script src="/dashboard-brand-guard-v4.js?v=4.2" defer></script>
+<script src="/company-hierarchy-v5-1.js?v=5.1" defer></script>
+<script src="/enterprise-family-v5-1.js?v=5.1" defer></script>
+<script src="/pwa-v5-1.js?v=5.1" defer></script>
+<script src="/atlas-v6-shell.js?v=6.0" defer></script>
+<script src="/dashboard-v6.js?v=6.0" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+<script src="/atlas-reference-final.js?v=1.0" defer></script>
+<script src="/atlas-reference-runtime.js?v=1.0" defer></script>
 </body>
 </html>

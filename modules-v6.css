@@ -1,0 +1,165 @@
+:root {
+  --v6-module-radius: 12px;
+  --v6-module-border: #d8e4f0;
+  --v6-module-shadow: 0 6px 20px rgba(4,39,75,.055);
+  --v6-module-head: #082d59;
+  --v6-module-muted: #6b8099;
+}
+
+#app-shell:not([data-v6-page="dashboard"]) .main {
+  padding: 22px 24px 28px;
+  background: #f4f8fc;
+}
+#app-shell:not([data-v6-page="dashboard"]) .main > .page-head {
+  min-height: 86px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 0 0 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--v6-module-border);
+  border-radius: var(--v6-module-radius);
+  background: #fff;
+  box-shadow: var(--v6-module-shadow);
+}
+#app-shell .page-head .eyebrow { color: #0a77cf; font-size: 10px; font-weight: 800; letter-spacing: .14em; }
+#app-shell .page-head h1 { margin: 3px 0 0; color: var(--v6-module-head); font-size: 25px; line-height: 1.1; }
+#app-shell .page-head p { margin: 6px 0 0; color: var(--v6-module-muted); font-size: 12px; }
+
+#app-shell .surface,
+#app-shell .card,
+#app-shell .panel,
+#app-shell .company-card,
+#app-shell .process-card,
+#app-shell .license-card,
+#app-shell .report-card,
+#app-shell .settings-card {
+  border: 1px solid var(--v6-module-border);
+  border-radius: var(--v6-module-radius);
+  background: #fff;
+  box-shadow: var(--v6-module-shadow);
+}
+
+#app-shell .table-wrap {
+  overflow: auto;
+  border: 1px solid var(--v6-module-border);
+  border-radius: var(--v6-module-radius);
+  background: #fff;
+  box-shadow: var(--v6-module-shadow);
+}
+#app-shell table { width: 100%; border-collapse: separate; border-spacing: 0; color: #173b65; background: #fff; }
+#app-shell table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 12px 14px;
+  color: #496681;
+  background: #f5f9fd;
+  border-bottom: 1px solid #dce7f1;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+#app-shell table tbody td { padding: 12px 14px; border-bottom: 1px solid #edf2f7; font-size: 12px; vertical-align: middle; }
+#app-shell table tbody tr:last-child td { border-bottom: 0; }
+#app-shell table tbody tr:hover td { background: #f8fbfe; }
+
+#app-shell .filters,
+#app-shell .filters-row,
+#app-shell .filter-bar,
+#app-shell .toolbar,
+#app-shell .actions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--v6-module-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+#app-shell .field { min-width: 0; }
+#app-shell .field label { display: block; margin-bottom: 6px; color: #365877; font-size: 11px; font-weight: 700; }
+#app-shell .field input,
+#app-shell .field select,
+#app-shell .field textarea,
+#app-shell input[type="text"],
+#app-shell input[type="email"],
+#app-shell input[type="number"],
+#app-shell input[type="date"],
+#app-shell select,
+#app-shell textarea {
+  min-height: 42px;
+  box-sizing: border-box;
+  color: #153b65;
+  background: #fff;
+  border: 1px solid #cbdbea;
+  border-radius: 9px;
+  outline: 0;
+  font: inherit;
+  font-size: 13px;
+}
+#app-shell .field input,
+#app-shell .field select,
+#app-shell .field textarea { width: 100%; padding: 9px 11px; }
+#app-shell .field textarea { min-height: 92px; resize: vertical; }
+#app-shell .field input:focus,
+#app-shell .field select:focus,
+#app-shell .field textarea:focus,
+#app-shell input:focus,
+#app-shell select:focus,
+#app-shell textarea:focus { border-color: #58a0d9; box-shadow: 0 0 0 3px rgba(14,118,205,.10); }
+
+#app-shell .btn,
+#app-shell .mini-btn,
+#app-shell button.btn {
+  min-height: 38px;
+  border-radius: 9px;
+  font-weight: 700;
+  transition: transform .12s ease, box-shadow .12s ease, opacity .12s ease;
+}
+#app-shell .btn:hover,
+#app-shell .mini-btn:hover { transform: translateY(-1px); }
+#app-shell .btn-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #0a76d0, #075da9);
+  border: 1px solid #07589f;
+  box-shadow: 0 5px 12px rgba(6,91,163,.18);
+}
+#app-shell .mini-btn { color: #0968bd; background: #f6fbff; border: 1px solid #c9dfef; }
+#app-shell button:disabled,
+#app-shell .btn:disabled { opacity: .48; cursor: not-allowed; transform: none; }
+
+#atlas-modal-root .atlas-modal,
+.atlas-modal,
+.modal-card,
+.dialog-card {
+  border: 1px solid #d5e2ee;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(2,31,60,.25);
+}
+#atlas-modal-root .atlas-modal header,
+.atlas-modal .modal-head,
+.modal-card .modal-head { border-bottom: 1px solid #e7eef5; color: #082d59; }
+
+#app-shell .badge,
+#app-shell .status-badge,
+#app-shell .pill { border-radius: 999px; font-weight: 700; }
+#app-shell .muted,
+#app-shell small { color: var(--v6-module-muted); }
+#app-shell .empty-state,
+#app-shell .loading-box { border: 1px dashed #cbdbe9; border-radius: 10px; background: #fbfdff; color: #6d829a; }
+
+#app-shell [data-page-content="clientes"],
+#app-shell [data-page-content="processos"],
+#app-shell [data-page-content="licencas"],
+#app-shell [data-page-content="documentos"],
+#app-shell [data-page-content="custos"],
+#app-shell [data-page-content="relatorios"],
+#app-shell [data-page-content="config"] { min-width: 0; }

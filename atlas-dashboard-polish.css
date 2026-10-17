@@ -1,0 +1,279 @@
+/* ATLAS Legalização — annotated dashboard polish.
+   Loaded after readability/mobile layers. Visual-only corrections. */
+
+.atlas-final-dashboard{
+  position:relative;
+  isolation:isolate;
+  background:transparent!important;
+  overflow:hidden;
+}
+
+/* Continue the corporate glass-building composition behind the full dashboard,
+   while preserving contrast of white cards and text. */
+.atlas-final-dashboard::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:-2;
+  background:
+    linear-gradient(180deg,rgba(243,246,251,.62) 0%,rgba(243,246,251,.82) 34%,rgba(243,246,251,.94) 100%),
+    url('/assets/atlas-legalizacao-hero-v6.svg') center top/cover no-repeat;
+  opacity:.08;
+  pointer-events:none;
+}
+.atlas-final-dashboard::after{
+  content:"";
+  position:absolute;
+  inset:180px 0 0;
+  z-index:-1;
+  background:linear-gradient(180deg,rgba(243,246,251,.22),rgba(243,246,251,.82));
+  pointer-events:none;
+}
+
+.atlas-final-body{background:transparent!important}
+
+/* Keep panel headers above chart canvases. */
+.atlas-card>header{
+  position:relative;
+  z-index:3;
+  background:#fff;
+}
+
+/* Bottom row: one visual baseline, consistent card proportions. */
+.atlas-bottom-grid{
+  align-items:stretch!important;
+  grid-auto-rows:1fr!important;
+}
+.atlas-bottom-grid>.atlas-card{
+  min-height:218px!important;
+  height:100%!important;
+}
+.atlas-status-body{
+  min-height:162px!important;
+  grid-template-columns:138px minmax(0,1fr)!important;
+  gap:18px!important;
+  align-items:center!important;
+  padding:18px 20px!important;
+}
+.atlas-status-body:has(.atlas-chart-canvas){
+  grid-template-columns:138px minmax(0,1fr)!important;
+}
+.atlas-chart-canvas.donut{
+  position:relative!important;
+  width:108px!important;
+  height:108px!important;
+  margin:auto!important;
+}
+.atlas-chart-canvas.donut canvas{
+  width:108px!important;
+  height:108px!important;
+}
+.atlas-chart-center{
+  position:absolute!important;
+  inset:0!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  justify-content:center!important;
+  text-align:center!important;
+  line-height:1!important;
+  pointer-events:none!important;
+}
+.atlas-chart-center b{
+  display:block!important;
+  margin:0!important;
+  color:#0F1D3A!important;
+  font-size:18px!important;
+  font-weight:700!important;
+  line-height:1!important;
+}
+.atlas-chart-center small{
+  display:block!important;
+  margin-top:4px!important;
+  color:#6B7A99!important;
+  font-size:10px!important;
+  font-weight:500!important;
+  line-height:1.1!important;
+}
+.atlas-legend{
+  align-self:center!important;
+  justify-self:start!important;
+  width:100%!important;
+  max-width:285px!important;
+}
+.atlas-legend>div{
+  grid-template-columns:9px minmax(105px,1fr) 32px 38px!important;
+  gap:7px!important;
+  margin:6px 0!important;
+  font-size:10px!important;
+}
+.atlas-legend b,.atlas-legend small{font-size:10px!important}
+
+/* Chart.js replaces the original 5-column HTML with one wrapper. The legacy
+   .atlas-bars>div grid rule must not apply to that canvas wrapper, otherwise
+   the chart is pulled upward into the card header. */
+.atlas-bars:has(.atlas-chart-canvas){
+  position:relative!important;
+  z-index:1!important;
+  height:164px!important;
+  min-height:164px!important;
+  padding:17px 24px 10px!important;
+  display:block!important;
+  overflow:hidden!important;
+}
+.atlas-bars>.atlas-chart-canvas.bars{
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  height:142px!important;
+  min-height:142px!important;
+  grid-template-rows:none!important;
+  align-items:initial!important;
+  overflow:hidden!important;
+}
+.atlas-chart-canvas.bars canvas{
+  position:static!important;
+  display:block!important;
+  width:100%!important;
+  height:142px!important;
+  max-height:142px!important;
+}
+
+@media (min-width:1181px){
+  /* Root cause of the large vertical holes: grouped navigation was distributed
+     as multiple layout blocks. Keep the menu as one compact continuous flow. */
+  #app-shell .nav-list{
+    display:block!important;
+    padding:6px 10px 96px!important;
+  }
+  #app-shell .v6-nav-group{
+    display:block!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  #app-shell .v6-functional-group-title,
+  #app-shell .nav-group-title{
+    display:none!important;
+    height:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  #app-shell .nav-item{
+    min-height:42px!important;
+    height:42px!important;
+    margin:2px 0!important;
+  }
+  #app-shell .nav-item[data-page="exigencias"],
+  #app-shell .nav-item[data-page="integracoes"],
+  #app-shell .nav-item[data-page="conhecimento"],
+  #app-shell .nav-item[data-page="treinamento"],
+  #app-shell .nav-item[data-page="usuarios"]{display:none!important}
+
+  #app-shell .brand-box{
+    height:82px!important;
+    min-height:82px!important;
+    padding:10px 15px 8px!important;
+  }
+  #app-shell .brand-box .brand-logo{
+    width:150px!important;
+    max-height:61px!important;
+  }
+
+  /* Keep user controls anchored at the bottom while menu content remains compact. */
+  #app-shell .sidebar-footer{
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+  }
+}
+
+@media (max-width:1180px){
+  .atlas-final-dashboard::before{opacity:.06}
+  .atlas-bottom-grid>.atlas-card{min-height:0!important}
+  .atlas-status-body{
+    min-height:0!important;
+    grid-template-columns:110px minmax(0,1fr)!important;
+    gap:12px!important;
+    padding:14px!important;
+  }
+  .atlas-status-body:has(.atlas-chart-canvas){grid-template-columns:110px minmax(0,1fr)!important}
+  .atlas-chart-canvas.donut,.atlas-chart-canvas.donut canvas{width:92px!important;height:92px!important}
+  .atlas-chart-center b{font-size:16px!important}
+  .atlas-chart-center small{font-size:9px!important}
+}
+
+/* Desktop browsers can report a reduced CSS viewport under zoom even on a wide
+   monitor. Keep the full desktop shell while a fine/hover pointer is present;
+   touch devices continue to use the drawer/mobile layout. */
+@media (min-width:900px) and (max-width:1180px) and (hover:hover){
+  #app-shell .sidebar{
+    width:185px!important;
+    transform:none!important;
+  }
+  #app-shell .workspace{
+    width:calc(100% - 185px)!important;
+    margin-left:185px!important;
+  }
+  #app-shell .mobile-menu-btn{
+    display:none!important;
+  }
+  #app-shell .mobile-nav-overlay{
+    display:none!important;
+  }
+  #app-shell .nav-list{
+    display:block!important;
+    padding:6px 10px 96px!important;
+  }
+  #app-shell .v6-nav-group{
+    display:block!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  #app-shell .v6-functional-group-title,
+  #app-shell .nav-group-title{
+    display:none!important;
+    height:0!important;
+    min-height:0!important;
+    margin:0!important;
+    padding:0!important;
+  }
+  #app-shell .nav-item{
+    min-height:42px!important;
+    height:42px!important;
+    margin:2px 0!important;
+    padding-left:12px!important;
+    gap:9px!important;
+    font-size:12px!important;
+  }
+  #app-shell .nav-ico{
+    width:20px!important;
+    min-width:20px!important;
+    height:20px!important;
+  }
+  #app-shell .nav-ico svg{
+    width:18px!important;
+    height:18px!important;
+  }
+  #app-shell .nav-item[data-page="exigencias"],
+  #app-shell .nav-item[data-page="integracoes"],
+  #app-shell .nav-item[data-page="conhecimento"],
+  #app-shell .nav-item[data-page="treinamento"],
+  #app-shell .nav-item[data-page="usuarios"]{display:none!important}
+  #app-shell .brand-box{
+    height:82px!important;
+    min-height:82px!important;
+    padding:10px 14px 8px!important;
+  }
+  #app-shell .brand-box .brand-logo{
+    width:148px!important;
+    max-height:60px!important;
+  }
+  #app-shell .sidebar-footer{
+    position:absolute!important;
+    left:0!important;
+    right:0!important;
+    bottom:0!important;
+  }
+}

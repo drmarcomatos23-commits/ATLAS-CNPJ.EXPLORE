@@ -1,0 +1,65 @@
+name: ATLAS Legalizacao V5 Checks
+
+on:
+  push:
+    branches:
+      - atlas-legalizacao-v5
+      - atlas-legalizacao-v5.1
+      - atlas-legalizacao-v5.1-ui-compact
+      - atlas-legalizacao-v6-mockup-exato
+      - atlas-legalizacao-auditoria-fixes-20261016
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: V6 production guard
+        run: node --test tests/v6-production-guard.test.mjs
+      - name: V6 shell contract
+        run: node --test tests/v6-shell-contract.test.mjs
+      - name: V6 role navigation
+        run: node --test tests/v6-role-navigation.test.mjs
+      - name: V4 sidebar reference
+        run: node --test tests/v4-sidebar-reference.test.mjs
+      - name: V4 dashboard footer brand
+        run: node --test tests/v4-dashboard-footer-brand.test.mjs
+      - name: V4 login reference
+        run: node --test tests/v4-login-reference.test.mjs
+      - name: V4 mobile layout
+        run: node --test tests/v4-mobile-layout.test.mjs
+      - name: V4 theme system
+        run: node --test tests/v4-theme-system.test.mjs
+      - name: V4 visual fidelity
+        run: node --test tests/v4-visual-fidelity.test.mjs
+      - name: Legacy V4 remaining contracts
+        run: node --test tests/v4-cnpj-authoritative-lock.test.mjs tests/v4-completed-service-edit.test.mjs tests/v4-completion-date-sidebar-accordion.test.mjs tests/v4-dashboard-integration.test.mjs tests/v4-finance-notifications-behavior.test.mjs tests/v4-finance-notifications-db-contract.test.mjs tests/v4-finance-notifications-ui.test.mjs tests/v4-legacy-functions.test.mjs tests/v4-process-object-shape.test.mjs tests/v4-process-open-cell-guard.test.mjs tests/v4-real-shape.test.mjs tests/v4-regression-contract.test.mjs tests/v4-report-brand-patch.test.mjs tests/v4-report-loader.test.mjs tests/v4-report-visual.test.mjs tests/v4-security-process-actions.test.mjs
+      - name: Legacy atlas contracts
+        run: node --test tests/atlas-*.test.mjs
+      - name: Legacy V5 contracts
+        run: node --test tests/v5-*.test.mjs
+      - name: Legacy V5.1 contracts
+        run: node --test tests/v5-1-*.test.mjs
+      - name: Legacy module contracts
+        run: node --test tests/cnpj-*.test.mjs tests/command-*.test.mjs tests/company-*.test.mjs tests/dashboard-*.test.mjs tests/mobile-*.test.mjs tests/modules-*.test.mjs tests/operations-*.test.mjs tests/process-*.test.mjs tests/role-*.test.mjs tests/support-*.test.mjs
+      - name: Run test suite
+        run: npm test
+      - name: Syntax check V5.1 modules
+        run: |
+          node --check dashboard-v4.js
+          node --check company-360-v5.js
+          node --check company-hierarchy-v5-1.js
+          node --check establishment-context-v5-1.js
+          node --check enterprise-family-v5-1.js
+          node --check client-archive.js
+          node --check command-center-v4.js
+          node --check iconography-v5-1.js
+          node --check pwa-v5-1.js
+          node --check sw-v5-1.js
+          node --check api/cnpj.js

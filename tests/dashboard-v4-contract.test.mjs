@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+test('dashboard 4 contém blocos aprovados',()=>{const s=fs.readFileSync('dashboard-v4.js','utf8');for(const x of ['Processos ativos','Atrasados','Pendências de cliente','Licenças ≤ 30 dias','Honorários a receber','Taxas a pagar','Minha Operação Hoje','Saúde da Operação','Central de Pendências','Central de Licenças'])assert.ok(s.includes(x),x);});
+test('index carrega camada 4 por último',()=>{const s=fs.readFileSync('index.html','utf8');assert.ok(s.includes('/atlas-v4-core.js'));assert.ok(s.includes('/dashboard-v4.css'));assert.ok(s.includes('/dashboard-v4.js'));assert.ok(s.indexOf('/dashboard-v4.js')>s.indexOf('/dashboard-compliance.js'));});

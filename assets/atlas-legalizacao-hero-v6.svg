@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 420" role="img" aria-label="Edifícios corporativos envidraçados">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#053c6c"/>
+      <stop offset="0.46" stop-color="#0d6aa6"/>
+      <stop offset="1" stop-color="#e9f7ff"/>
+    </linearGradient>
+    <linearGradient id="glass1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b4f83"/>
+      <stop offset="0.55" stop-color="#1978ad"/>
+      <stop offset="1" stop-color="#d8f1ff"/>
+    </linearGradient>
+    <linearGradient id="glass2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#d5f2ff" stop-opacity=".92"/>
+      <stop offset="1" stop-color="#357ca5" stop-opacity=".82"/>
+    </linearGradient>
+    <linearGradient id="sun" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".92"/>
+    </linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+  <rect width="1600" height="420" fill="url(#sky)"/>
+  <circle cx="1480" cy="300" r="74" fill="#fff7d7" opacity=".85" filter="url(#soft)"/>
+  <g opacity=".98">
+    <path d="M610 420V145l184-82v357z" fill="#063c68"/>
+    <path d="M794 420V63l150 72v285z" fill="#0c5c8f"/>
+    <path d="M890 420V18l226 48v354z" fill="url(#glass1)"/>
+    <path d="M1116 420V66l190 65v289z" fill="#2b7eaa"/>
+    <path d="M1265 420V160l156 34v226z" fill="url(#glass2)"/>
+    <path d="M1418 420V225l112 20v175z" fill="#75b2d0"/>
+  </g>
+  <g stroke="#b9e2f6" stroke-opacity=".36" stroke-width="2">
+    <path d="M920 22v398M964 31v389M1008 40v380M1052 49v371M1096 58v362"/>
+    <path d="M890 98h226M890 146h226M890 194h226M890 242h226M890 290h226M890 338h226"/>
+    <path d="M1148 78v342M1190 92v328M1232 106v314M1274 120v300"/>
+    <path d="M1116 155h190M1116 205h190M1116 255h190M1116 305h190M1116 355h190"/>
+    <path d="M650 128v292M698 107v313M746 85v335"/>
+    <path d="M610 194h184M610 244h184M610 294h184M610 344h184"/>
+  </g>
+  <path d="M980 0h620v420H760z" fill="url(#sun)" opacity=".18"/>
+  <g opacity=".28" fill="#d8f4ff">
+    <path d="M0 300L190 242l130 36 160-72 128 55v159H0z"/>
+    <path d="M1320 332l82-60 49 24 62-46 87 38v132h-280z"/>
+  </g>
+</svg>

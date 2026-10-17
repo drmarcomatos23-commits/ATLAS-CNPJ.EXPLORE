@@ -1,0 +1,7 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';
+const read=f=>fs.readFileSync(f,'utf8');
+test('fluxo de processo continua conectado ao modal legado',()=>{const d=read('dashboard-v4.js'),o=read('operations-v4.js'),l=read('legalizacao.js');assert.ok(d.includes('openAtlasV4Process'));assert.ok(d.includes('openProcessModal'));assert.ok(o.includes('openAtlasV4Process'));assert.ok(l.includes('window.openProcessModal=openProcessModal'));});
+test('alteração de status, conclusão e reabertura permanecem na cadeia do processo',()=>{const l=read('legalizacao.js')+read('company-flow.js')+read('process-financial.js');for(const x of ['status','completed','completed_at','processes'])assert.ok(l.includes(x),x);assert.ok(/update\([^)]*\)/.test(l));});
+test('cartilha permanece disponível para processo concluído',()=>{const s=read('process-cartilha.js');assert.ok(/cartilha/i.test(s));assert.ok(/completed/i.test(s));assert.ok(/window\./.test(s));});
+test('financeiro mantém pagamento e ação de pago',()=>{const s=read('process-financial.js')+read('financial-costs.js');assert.ok(s.includes('payment_status'));assert.ok(/paid|pago/i.test(s));assert.ok(/update\(/.test(s));});
+test('licenças documentos e relatórios seguem roteados',()=>{const i=read('index.html'),l=read('legalizacao.js');for(const p of ['licencas','documentos','relatorios'])assert.ok(i.includes(`data-page="${p}"`));for(const fn of ['licensePage','docsPage','reportsPage'])assert.ok(l.includes(fn),fn);});
