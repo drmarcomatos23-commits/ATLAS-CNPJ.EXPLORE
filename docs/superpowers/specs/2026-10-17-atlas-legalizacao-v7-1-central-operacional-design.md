@@ -44,6 +44,8 @@ Nova camada operacional:
 
 `processes -> stage_transitions`
 
+`business_calendar_holidays`
+
 A responsabilidade de cada unidade deve ser clara:
 
 - `task_templates`: define tarefas padrão por etapa/fluxo.
@@ -52,9 +54,10 @@ A responsabilidade de cada unidade deve ser clara:
 - `teams`: filas operacionais.
 - `team_members`: membros e vínculos de equipe.
 - `task_dependencies`: dependências entre tarefas.
-- `process_blockers`: impedimentos operacionais.
+- `process_blockers`: impedimentos operacionais e histórico de bloqueio.
 - `sla_pauses`: períodos em que o SLA interno fica suspenso.
-- `stage_transitions`: histórico das mudanças de etapa.
+- `stage_transitions`: histórico das mudanças de etapa e seus marcos temporais.
+- `business_calendar_holidays`: feriados considerados no cálculo de dias úteis, com escopo e origem identificáveis.
 
 ## 4. Modelo de tarefa
 
@@ -77,7 +80,6 @@ Cada tarefa deve suportar, no mínimo:
 - `started_at`
 - `completed_at`
 - `sla_days` opcional
-- `blocked` boolean derivado ou controlado por evento
 - `created_by`
 - `completed_by`
 - `created_at`
@@ -96,6 +98,8 @@ Status permitidos:
 
 Não deve haver status operacional livre em texto.
 
+O estado de bloqueio não será mantido em um boolean independente. A fonte de verdade será a existência de bloqueio aberto em `process_blockers`. Quando o bloqueio estiver associado a uma tarefa, a alteração do status da tarefa e a abertura/encerramento do bloqueio devem ocorrer de forma consistente e auditável. O histórico deve registrar o status anterior para permitir retomada correta após o desbloqueio.
+
 ## 5. Próxima Ação Principal
 
 Um processo pode ter múltiplas tarefas ativas, mas somente uma deve ser a Próxima Ação Principal.
@@ -107,6 +111,7 @@ Regras:
 3. A troca não ocorre silenciosamente: deve existir confirmação ou registro claro da alteração.
 4. Se uma tarefa depende de outra ainda aberta, ela não deve ser sugerida como próxima ação.
 5. O painel do processo deve destacar a próxima ação acima das demais tarefas.
+6. A unicidade da Próxima Ação Principal deve ser protegida também na camada de persistência, evitando duas tarefas principais ativas no mesmo processo.
 
 ## 6. Tarefas automáticas e manuais
 
@@ -163,6 +168,7 @@ Campos mínimos:
 - tarefa relacionada opcional;
 - tipo;
 - motivo;
+- status anterior da tarefa, quando aplicável;
 - início;
 - fim;
 - criado por;
@@ -170,6 +176,8 @@ Campos mínimos:
 - observações.
 
 Bloqueios externos podem pausar o SLA interno. Bloqueio interno, por padrão, não deve mascarar desempenho da equipe e não pausa SLA automaticamente.
+
+Ao encerrar bloqueio de tarefa, o sistema retoma o status anterior válido, salvo escolha explícita do usuário por outro status permitido.
 
 ## 9. SLA
 
@@ -189,7 +197,7 @@ Cada pausa de SLA precisa registrar:
 - responsável pela classificação;
 - vínculo com bloqueio.
 
-O calendário útil deve ser configurável e preparado para considerar fins de semana e feriados aplicáveis.
+O calendário útil deve considerar fins de semana e os feriados cadastrados em `business_calendar_holidays`. A 7.1 deve permitir que a organização mantenha esse calendário de forma auditável; integrações automáticas com fontes externas de feriados ficam fora do escopo inicial.
 
 ## 10. Conclusão e avanço de etapa
 
@@ -207,6 +215,8 @@ Ao confirmar:
 4. iniciar medição da nova etapa;
 5. gerar tarefas automáticas da nova etapa;
 6. registrar evento de auditoria.
+
+A transição e a geração das tarefas da nova etapa devem ser tratadas como uma unidade consistente: falha intermediária não pode deixar o processo em nova etapa sem suas tarefas obrigatórias.
 
 ### Exceção administrativa
 
@@ -393,7 +403,25 @@ A 7.1 deve preparar os dados para relatórios como:
 
 Não é objetivo desta fase construir toda a camada avançada de BI; é objetivo garantir a captura correta dos dados necessários.
 
-## 19. Permissões
+## 19. Navegação e identidade visual
+
+A versão 7.1 deve preservar as rotas e os módulos existentes do ATLAS Legalização. Novas telas operacionais não podem remover, renomear de forma incompatível ou quebrar recursos atuais como Empresas/CNPJs, Licenças, Documentos, Financeiro, Relatórios, Integrações, Base de Conhecimento, Treinamento, Usuários e demais módulos já existentes.
+
+A direção visual aprovada para as novas telas segue a identidade ATLAS Legalização:
+
+- sidebar azul-marinho;
+- área principal clara;
+- logo oficial sem recriação ou reinterpretação;
+- azul para ações e navegação operacional;
+- dourado como acento institucional;
+- verde, amarelo/laranja e vermelho para estados semânticos;
+- cards claros, bordas sutis, cantos arredondados e hierarquia visual limpa;
+- densidade compatível com uso profissional diário;
+- comportamento responsivo específico para mobile.
+
+Os mockups aprovados definem a organização conceitual das telas. Na implementação, o layout deve ser harmonizado com o sistema atual, sem descaracterizar a identidade já aprovada ou eliminar funcionalidades existentes.
+
+## 20. Permissões
 
 A versão 7.1 deve respeitar o modelo atual de autenticação e perfis.
 
@@ -408,7 +436,7 @@ Diretrizes:
 
 RLS e políticas de banco devem ser desenhadas antes de qualquer migração produtiva.
 
-## 20. Tratamento de erro e consistência
+## 21. Tratamento de erro e consistência
 
 Requisitos:
 
@@ -420,7 +448,7 @@ Requisitos:
 - falhas de rede devem apresentar estado recuperável e não gerar falsa confirmação;
 - operações críticas devem ser transacionais no banco quando aplicável.
 
-## 21. Auditoria
+## 22. Auditoria
 
 Eventos relevantes devem ser rastreáveis:
 
@@ -439,7 +467,7 @@ Eventos relevantes devem ser rastreáveis:
 
 Histórico operacional não deve ser sobrescrito silenciosamente.
 
-## 22. Mobile
+## 23. Mobile
 
 Mobile não deve ser uma simples redução do desktop.
 
@@ -461,7 +489,7 @@ Ações rápidas previstas:
 - criar pendência;
 - abrir processo.
 
-## 23. Segurança e dados
+## 24. Segurança e dados
 
 - Não aplicar alterações no banco de produção durante desenvolvimento sem aprovação expressa.
 - Migrar somente após revisão de schema, RLS, índices e dependências.
@@ -470,7 +498,7 @@ Ações rápidas previstas:
 - Não expor campos administrativos a futuros perfis de cliente.
 - Manter compatibilidade com autenticação atual.
 
-## 24. Estratégia de desenvolvimento
+## 25. Estratégia de desenvolvimento
 
 Todo desenvolvimento deve ocorrer em branch separada e preview.
 
@@ -494,7 +522,7 @@ Ordem recomendada:
 14. validação funcional;
 15. aprovação de eventual migração e produção.
 
-## 25. Testes obrigatórios
+## 26. Testes obrigatórios
 
 A implementação seguirá TDD.
 
@@ -509,7 +537,7 @@ Cobertura mínima esperada:
 - bloqueio externo;
 - bloqueio interno;
 - pausa/retomada de SLA;
-- contagem de dias úteis;
+- contagem de dias úteis e feriados configurados;
 - conclusão de etapa;
 - prevenção de avanço com pendência obrigatória;
 - transição administrativa justificada;
@@ -519,7 +547,7 @@ Cobertura mínima esperada:
 - mobile/overflow dos principais painéis;
 - preservação das rotas e módulos existentes.
 
-## 26. Fora de escopo da 7.1
+## 27. Fora de escopo da 7.1
 
 Ficam para versões seguintes:
 
@@ -533,7 +561,7 @@ Ficam para versões seguintes:
 
 A 7.1 deve preparar arquitetura e dados para essas evoluções sem implementá-las prematuramente.
 
-## 27. Critérios de aceite
+## 28. Critérios de aceite
 
 A versão 7.1 será considerada pronta para preview quando:
 
