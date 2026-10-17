@@ -6,6 +6,7 @@ const css = fs.readFileSync('atlas-reference-mobile.css','utf8');
 const fixCss = fs.readFileSync('atlas-reference-mobile-fix.css','utf8');
 const runtime = fs.readFileSync('atlas-reference-runtime.js','utf8');
 const mobileRuntime = fs.readFileSync('mobile-responsive.js','utf8');
+const mobileAppRuntime = fs.readFileSync('mobile-app-v4.js','utf8');
 
 test('final mobile dashboard removes duplicate legacy header and dashboard FAB', () => {
   assert.match(css, /data-v6-page="dashboard"[^}]*page-head/s);
@@ -36,12 +37,14 @@ test('mobile final dashboard uses two KPI columns and natural page scroll', () =
 });
 
 test('final dashboard keeps the native mobile bottom navigation visible', () => {
-  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#atlas-mobile-bottom-nav\s*\{[^}]*display:\s*grid\s*!important/s);
-  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#app-shell\[data-v6-page="dashboard"\]\s+\.workspace\s*\{[^}]*padding-bottom:\s*calc\(/s);
+  assert.match(mobileAppRuntime, /syncDashboardChrome/);
+  assert.match(mobileAppRuntime, /bottom\.style\.setProperty\(['"]display['"],['"]grid['"],['"]important['"]\)/);
+  assert.match(mobileAppRuntime, /workspace\.style\.setProperty\(['"]padding-bottom['"],['"]calc\(84px \+ env\(safe-area-inset-bottom\)\)['"],['"]important['"]\)/);
 });
 
 test('final dashboard topbar scrolls naturally instead of sticking under iOS browser chrome', () => {
-  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#app-shell\[data-v6-page="dashboard"\]\s+\.topbar\s*\{[^}]*position:\s*relative\s*!important[^}]*top:\s*auto\s*!important/s);
+  assert.match(mobileAppRuntime, /topbar\.style\.setProperty\(['"]position['"],['"]relative['"],['"]important['"]\)/);
+  assert.match(mobileAppRuntime, /topbar\.style\.setProperty\(['"]top['"],['"]auto['"],['"]important['"]\)/);
 });
 
 test('phone landscape has an explicit final-dashboard layout instead of falling back to tablet desktop rules', () => {
