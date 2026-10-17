@@ -35,6 +35,15 @@ test('mobile final dashboard uses two KPI columns and natural page scroll', () =
   assert.match(css, /-webkit-overflow-scrolling:\s*touch/);
 });
 
+test('final dashboard keeps the native mobile bottom navigation visible', () => {
+  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#atlas-mobile-bottom-nav\s*\{[^}]*display:\s*grid\s*!important/s);
+  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#app-shell\[data-v6-page="dashboard"\]\s+\.workspace\s*\{[^}]*padding-bottom:\s*calc\(/s);
+});
+
+test('final dashboard topbar scrolls naturally instead of sticking under iOS browser chrome', () => {
+  assert.match(fixCss, /body\.atlas-final-dashboard-active\s+#app-shell\[data-v6-page="dashboard"\]\s+\.topbar\s*\{[^}]*position:\s*relative\s*!important[^}]*top:\s*auto\s*!important/s);
+});
+
 test('phone landscape has an explicit final-dashboard layout instead of falling back to tablet desktop rules', () => {
   assert.match(fixCss, /orientation:\s*landscape/);
   assert.match(fixCss, /max-height:\s*520px/);
