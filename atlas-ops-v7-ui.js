@@ -200,6 +200,9 @@
       const last = lastEventByProcess.get(process.id)?.created_at || operationByProcess.get(process.id)?.updated_at || process.started_at || process.created_at;
       return last && daysSince(last) >= 7;
     });
+    const openExigencies=(raw.formalExigencies||[]).filter(x=>!['accepted','cancelled'].includes(x.status));
+    const exigencyProcessIds=new Set(openExigencies.map(x=>x.process_id));
+    const documentaryAvailable=Boolean(raw.documentaryAvailable);
     const costsPending = (raw.costs || []).filter(cost => !['paid','pago','received','recebido'].includes(String(cost.payment_status || '').toLowerCase()));
     const financeProcesses = new Set([
       ...activeTasks.filter(task => task.status==='waiting_finance').map(task => task.process_id),
@@ -232,7 +235,7 @@
     return {
       today,currentUserId,processById,clientById,profileById,teamById,stageById,operationByProcess,blockersByProcess,slaByProcess,
       tasks,activeTasks,tasksToday,overdueTasks,processOutSla,blockedProcesses,staleProcesses,waitingClient,waitingAgency,
-      financeProcesses,licenseAlerts,teamLoad,responsibleLoad,critical,costsPending
+      financeProcesses,licenseAlerts,teamLoad,responsibleLoad,critical,costsPending,openExigencies,exigencyProcessIds,documentaryAvailable
     };
   }
 
@@ -264,6 +267,7 @@
     if (f.queue==='today' && !model.tasksToday.includes(task)) return false;
     if (f.queue==='overdue' && !model.overdueTasks.includes(task)) return false;
     if (f.queue==='outsideSla' && !task.outsideSla) return false;
+    if (f.queue==='exigencies' && !model.exigencyProcessIds.has(task.process_id)) return false;
     if (f.queue==='blocked' && !task.blockers.length) return false;
     if (f.queue==='waitingClient' && !model.waitingClient.has(task.process_id)) return false;
     if (f.queue==='waitingAgency' && !model.waitingAgency.has(task.process_id)) return false;
@@ -329,6 +333,7 @@
         ${kpi('Tarefas atrasadas',model.overdueTasks.length,'overdue','!','danger','Tarefas ativas com prazo vencido')}
         ${kpi('Processos fora do SLA',model.processOutSla.length,'outsideSla','⌛','danger','SLA interno da etapa excedido')}
         ${kpi('Processos bloqueados',model.blockedProcesses.length,'blocked','Ⅱ','warning','Bloqueios ativos registrados')}
+        ${model.documentaryAvailable?kpi('Exigências formais',model.openExigencies.length,'exigencies','!','danger','Exigências de órgãos ainda não aceitas'):''}
         ${kpi('Aguardando cliente',model.waitingClient.size,'waitingClient','C','warning','Processos dependentes do cliente')}
         ${kpi('Aguardando órgão',model.waitingAgency.size,'waitingAgency','O','purple','Processos dependentes de órgão público')}
         ${kpi('Financeiro pendente',model.financeProcesses.size,'finance','R$','warning','Tarefas ou lançamentos financeiros pendentes')}
@@ -339,6 +344,12 @@
         <aside class="v71-side-stack">
           <section class="v71-panel"><div class="v71-panel-head"><h3>Carga por equipe</h3><span>Tarefas ativas</span></div>${loadRows(model.teamLoad,maxTeam)}</section>
           <section class="v71-panel"><div class="v71-panel-head"><h3>Carga por responsável</h3><span>Tarefas ativas</span></div>${loadRows(model.responsibleLoad,maxResponsible)}</section>
+          <section class="v71-panel"><div class="v71-panel-head"><h3>Exigências formais</h3><span>${model.documentaryAvailable?model.openExigencies.length+' abertas':'Em homologação'}</span></div>
+            ${!model.documentaryAvailable?'<div class="v71-empty">Aguardando homologação do módulo documental.</div>':
+              model.openExigencies.length?'<div class="v71-list">'+[...model.openExigencies].sort((a,b)=>String(a.due_on||'9999').localeCompare(String(b.due_on||'9999'))).slice(0,6).map(x=>
+                '<div class="v71-list-row"><div><strong>'+e(x.title)+'</strong><small>'+e(x.agency)+' · '+e(x.due_on||'Sem prazo informado')+'</small></div><button class="v71-process-link" type="button" data-v71-process-open="'+e(x.process_id)+'">Abrir</button></div>'
+              ).join('')+'</div>':'<div class="v71-empty">Nenhuma exigência formal aberta.</div>'}
+          </section>
           <section class="v71-panel"><div class="v71-panel-head"><h3>Licenças e prazos</h3><span>Próximos 30 dias</span></div>${licensesHtml(model)}</section>
         </aside>
       </div>
