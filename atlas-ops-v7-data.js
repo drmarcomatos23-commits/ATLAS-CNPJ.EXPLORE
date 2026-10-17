@@ -126,7 +126,7 @@
   async function loadProcess(processId) {
     if (!processId) throw new TypeError('processId é obrigatório');
     const cap = await capabilities();
-    if (!cap.available) return { available:false, reason:cap.reason, process:null, operation:null, tasks:[], blockers:[], pauses:[], transitions:[], events:[], documents:[] };
+    if (!cap.available) return { available:false, reason:cap.reason, process:null, operation:null, tasks:[], blockers:[], pauses:[], transitions:[], events:[], documents:[], dependencies:[], stages:[], profiles:[], teams:[], client:null };
     const [processes, operations, tasks, blockers, pauses, transitions, events, documents] = await Promise.all([
       scoped('processes','*',q => q.eq('id',processId)),
       scoped('process_operations','*',q => q.eq('process_id',processId)),
@@ -137,17 +137,31 @@
       scoped('task_events','*',q => q.eq('process_id',processId)),
       scoped('documents','*',q => q.eq('process_id',processId))
     ]);
+    const process=processes.data[0] || null;
+    const taskIds=tasks.data.map(row=>row.id);
+    const [clientRows,profiles,teams,dependencies,stages] = process ? await Promise.all([
+      scoped('clients','*',q=>q.eq('id',process.client_id)),
+      scoped('profiles','id,full_name,role,active'),
+      scoped('teams','*'),
+      taskIds.length ? scoped('task_dependencies','*',q=>q.in('task_id',taskIds)) : Promise.resolve({data:[],error:null}),
+      process.workflow_template_id ? relatedByIds('workflow_stages','id,name,sla_days,position,workflow_template_id,client_visible,notify_client','workflow_template_id',[process.workflow_template_id]) : Promise.resolve([])
+    ]) : [{data:[],error:null},{data:[],error:null},{data:[],error:null},{data:[],error:null},[]];
     return {
       available:true,
       reason:null,
-      process:processes.data[0] || null,
+      process,
       operation:operations.data[0] || null,
       tasks:tasks.data,
       blockers:blockers.data,
       pauses:pauses.data,
       transitions:transitions.data,
       events:events.data,
-      documents:documents.data
+      documents:documents.data,
+      dependencies:dependencies.data,
+      stages,
+      profiles:profiles.data,
+      teams:teams.data,
+      client:clientRows.data[0] || null
     };
   }
 
