@@ -168,6 +168,10 @@ begin
     not exists(select 1 from public.document_requirement_templates where id=new.template_id and organization_id=v_org) then
   raise exception 'Modelo documental de outra organização';
  end if;
+ if tg_table_name='process_document_requirements' and new.document_id is not null and
+    not exists(select 1 from public.documents where id=new.document_id and process_id=new.process_id and organization_id=v_org) then
+  raise exception 'Documento do requisito não pertence ao processo';
+ end if;
  if tg_table_name='process_document_versions' and
     not exists(select 1 from public.process_document_requirements where id=new.requirement_id and process_id=new.process_id and organization_id=v_org) then
   raise exception 'Requisito incompatível com o processo';
@@ -386,7 +390,7 @@ begin
   update public.process_exigencies set status='accepted',accepted_at=now(),accepted_by=auth.uid(),
   acceptance_notes=p_justification,updated_at=now() where id=v_e.id returning * into v_e;
  else
-  update public.process_exigencies set status='reopened',accepted_at=null,accepted_by=null,
+  update public.process_exigencies set status='reopened',responded_at=null,response_protocol=null,response_summary=null,accepted_at=null,accepted_by=null,
   acceptance_notes=p_justification,updated_at=now() where id=v_e.id returning * into v_e;
  end if;
  return to_jsonb(v_e);
