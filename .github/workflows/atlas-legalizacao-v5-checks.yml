@@ -9,6 +9,7 @@ on:
       - atlas-legalizacao-v6-mockup-exato
       - atlas-legalizacao-auditoria-fixes-20261016
       - atlas-legalizacao-dados-reais-20261017
+      - atlas-legalizacao-v7-1-central-operacional-20261017
 
 jobs:
   test:
