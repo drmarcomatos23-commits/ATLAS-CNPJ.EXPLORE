@@ -2,6 +2,9 @@
 -- Depende, em ordem, das migrations v7.1 operational_engine e document_exigencies.
 -- Preserva documentos, histórico, exigências, custos e tarefas existentes.
 
+-- Uma falha de backfill ou DDL não pode deixar alterações parciais.
+begin;
+
 alter table public.document_requirement_templates
  add column if not exists scope_legal_nature text,
  add column if not exists scope_activity text;
@@ -19,6 +22,11 @@ alter table public.process_document_requirements
  add column if not exists manual_key uuid;
 
 -- Migrar estados antigos ANTES de instalar o novo conjunto de valores.
+-- Os triggers legados exigem a organização da sessão autenticada; migrations
+-- operam dados de TODAS as organizações, sem contexto JWT. Suspender somente
+-- validação/auditoria documental durante o backfill, na mesma transação.
+alter table public.process_document_requirements disable trigger v71_doc_requirement_links;
+alter table public.process_document_requirements disable trigger v71_doc_requirement_audit;
 alter table public.process_document_requirements
  drop constraint if exists process_document_requirements_status_check;
 update public.process_document_requirements
@@ -39,6 +47,9 @@ update public.process_document_requirements r set
  resolved_at=case when r.status in ('approved','waived') then coalesce(r.resolved_at,r.reviewed_at,r.updated_at) else r.resolved_at end,
  review_notes=case when r.status='returned' and nullif(trim(coalesce(r.review_notes,'')),'') is null then 'Revisão histórica — confirmar motivo' else r.review_notes end
  from public.processes p where p.id=r.process_id;
+
+alter table public.process_document_requirements enable trigger v71_doc_requirement_links;
+alter table public.process_document_requirements enable trigger v71_doc_requirement_audit;
 
 alter table public.process_document_requirements
  add constraint v72_doc_req_status_check check (status in ('not_requested','requested','received','in_review','approved','returned','waived')),
@@ -443,3 +454,5 @@ begin
   'pending_tasks',v_pending,'pending_documents',v_doc_pending,'pending_exigencies',v_exigency_pending,
   'pending_costs',v_cost_pending,'generated_tasks',v_created,'generated_document_requirements',v_doc_created);
 end $$;
+
+commit;
