@@ -343,6 +343,7 @@
       cnpjInput.value = d.length === 14 ? formatTaxId(d) : d;
     });
 
+    window.AtlasOpsV71Documents?.decorateNewProcessForm?.(document.getElementById('process-real-form'))?.catch?.(console.error);
     document.getElementById('process-real-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const btn = document.getElementById('proc-save-btn');
@@ -373,7 +374,7 @@
         completed_at: status === 'completed' ? new Date().toISOString() : null
       };
 
-      const { error } = await db.from('processes').insert(payload);
+      const {data:createdProcess, error} = await db.from('processes').insert(payload).select('id').single();
       if (error) {
         msg.textContent = error.message;
         msg.className = 'auth-message error span-2';
@@ -382,7 +383,9 @@
         return;
       }
 
+      const checklist=await window.AtlasOpsV71Documents?.afterProcessCreated?.(createdProcess?.id);
       closeAtlasModal();
+      if(checklist?.error)window.alert('Processo salvo, mas checklist documental não foi gerado: '+checklist.error);
       await processPage();
     });
   };
