@@ -164,32 +164,38 @@ begin
  if v_org is distinct from new.organization_id or v_org is distinct from public.current_org_id() then
   raise exception 'Processo ou organização inválidos';
  end if;
- if tg_table_name='process_document_requirements' and new.template_id is not null and
+ if tg_table_name='process_document_requirements' then
+  if new.template_id is not null and
     not exists(select 1 from public.document_requirement_templates where id=new.template_id and organization_id=v_org) then
-  raise exception 'Modelo documental de outra organização';
- end if;
- if tg_table_name='process_document_requirements' and new.document_id is not null and
+   raise exception 'Modelo documental de outra organização';
+  end if;
+  if new.document_id is not null and
     not exists(select 1 from public.documents where id=new.document_id and process_id=new.process_id and organization_id=v_org) then
-  raise exception 'Documento do requisito não pertence ao processo';
- end if;
- if tg_table_name='process_document_versions' and
-    not exists(select 1 from public.process_document_requirements where id=new.requirement_id and process_id=new.process_id and organization_id=v_org) then
-  raise exception 'Requisito incompatível com o processo';
- end if;
- if tg_table_name='process_exigency_evidence' and
-    not exists(select 1 from public.process_exigencies where id=new.exigency_id and process_id=new.process_id and organization_id=v_org) then
-  raise exception 'Exigência incompatível com o processo';
- end if;
- if tg_table_name in ('process_document_versions','process_exigency_evidence') and
-    not exists(select 1 from public.documents where id=new.document_id and process_id=new.process_id and organization_id=v_org) then
-  raise exception 'Documento não vinculado ao mesmo processo';
- end if;
- if tg_table_name='process_exigencies' and new.notice_document_id is not null and
+   raise exception 'Documento do requisito não pertence ao processo';
+  end if;
+ elsif tg_table_name='process_document_versions' then
+  if not exists(select 1 from public.process_document_requirements where id=new.requirement_id and process_id=new.process_id and organization_id=v_org) then
+   raise exception 'Requisito incompatível com o processo';
+  end if;
+  if not exists(select 1 from public.documents where id=new.document_id and process_id=new.process_id and organization_id=v_org) then
+   raise exception 'Documento não vinculado ao mesmo processo';
+  end if;
+ elsif tg_table_name='process_exigency_evidence' then
+  if not exists(select 1 from public.process_exigencies where id=new.exigency_id and process_id=new.process_id and organization_id=v_org) then
+   raise exception 'Exigência incompatível com o processo';
+  end if;
+  if not exists(select 1 from public.documents where id=new.document_id and process_id=new.process_id and organization_id=v_org) then
+   raise exception 'Documento não vinculado ao mesmo processo';
+  end if;
+ elsif tg_table_name='process_exigencies' then
+  if new.notice_document_id is not null and
     not exists(select 1 from public.documents where id=new.notice_document_id and process_id=new.process_id and organization_id=v_org) then
-  raise exception 'Notificação não vinculada ao processo';
+   raise exception 'Notificação não vinculada ao processo';
+  end if;
  end if;
  return new;
 end $$;
+
 create trigger v71_doc_requirement_links before insert or update on public.process_document_requirements
  for each row execute function public.atlas_v71_document_validate_links();
 create trigger v71_doc_version_links before insert on public.process_document_versions
