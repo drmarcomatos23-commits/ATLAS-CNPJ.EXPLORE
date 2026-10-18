@@ -6,6 +6,10 @@ const workflow=read('.github/workflows/atlas-v71-db-homologation.yml');
 const fixture=read('tests/fixtures/atlas-v72-pg-integration.sql');
 const baseline=read('tests/fixtures/atlas-v71-pg-baseline.sql');
 
+test('ephemeral PostgreSQL matches the production major version 17',()=>{
+ assert.match(workflow,/image:\s*postgres:17-alpine/);
+});
+
 test('ephemeral PostgreSQL applies v7.2 after both v7.1 migrations and runs v7.2 integration',()=>{
  const v71=workflow.indexOf('20261017_atlas_v7_1_document_exigencies.sql');
  const v72=workflow.indexOf('20261018_atlas_v7_2_checklist_operacional.sql');
