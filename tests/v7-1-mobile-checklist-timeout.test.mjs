@@ -25,7 +25,7 @@ test('document table probe has timeout and safely terminates when network reques
 });
 test('document post-save checklist cannot hold a successfully saved process hostage',async()=>{
  const api=isolated({
-  from:()=>({select:()=>({eq:()=>({limit:async()=>({data:[],error:null})})})}),
+  from:()=>({select:()=>({eq:()=>({limit:()=>({data:[],error:null})})})}),
   rpc:()=>new Promise(()=>{})
  });
  const result=await Promise.race([api.afterProcessCreated('process-id'),new Promise(resolve=>setTimeout(()=>resolve('stuck'),100))]);
