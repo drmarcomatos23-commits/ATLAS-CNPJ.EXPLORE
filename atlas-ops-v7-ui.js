@@ -201,11 +201,15 @@
       return last && daysSince(last) >= 7;
     });
     const openExigencies=(raw.formalExigencies||[]).filter(x=>!['accepted','cancelled'].includes(x.status));
+    const pendingDocuments=(raw.docRequirements||[]).filter(x=>!x.archived_at&&!['approved','waived'].includes(x.status));
+    const pendingDocumentProcessIds=new Set(pendingDocuments.map(x=>x.process_id));
+    const pendingSummary=window.AtlasOpsV72Pending?.summarize?.({requirements:raw.docRequirements||[],costs:raw.costs||[],exigencies:raw.formalExigencies||[],tasks:raw.tasks||[]})||null;
     const exigencyProcessIds=new Set(openExigencies.map(x=>x.process_id));
     const documentaryAvailable=Boolean(raw.documentaryAvailable);
     const costsPending = (raw.costs || []).filter(cost => !['paid','pago','received','recebido'].includes(String(cost.payment_status || '').toLowerCase()));
     const financeProcesses = new Set([
       ...activeTasks.filter(task => task.status==='waiting_finance').map(task => task.process_id),
+      ...pendingDocuments.filter(doc=>doc.pending_with==='financeiro').map(doc=>doc.process_id),
       ...costsPending.map(cost => cost.process_id).filter(Boolean)
     ]);
     const licenseAlerts = (raw.licenses || []).filter(license => {
@@ -216,10 +220,12 @@
     const overdueTasks = activeTasks.filter(task => task.dueKey && task.dueKey < today);
     const waitingClient = new Set([
       ...activeTasks.filter(task => task.status==='waiting_client').map(task => task.process_id),
+      ...pendingDocuments.filter(doc=>doc.pending_with==='cliente').map(doc=>doc.process_id),
       ...openBlockers.filter(blocker => blocker.blocker_type==='client').map(blocker => blocker.process_id)
     ]);
     const waitingAgency = new Set([
       ...activeTasks.filter(task => task.status==='waiting_agency').map(task => task.process_id),
+      ...pendingDocuments.filter(doc=>doc.pending_with==='orgao').map(doc=>doc.process_id),
       ...openBlockers.filter(blocker => blocker.blocker_type==='agency').map(blocker => blocker.process_id)
     ]);
 
@@ -235,7 +241,8 @@
     return {
       today,currentUserId,processById,clientById,profileById,teamById,stageById,operationByProcess,blockersByProcess,slaByProcess,
       tasks,activeTasks,tasksToday,overdueTasks,processOutSla,blockedProcesses,staleProcesses,waitingClient,waitingAgency,
-      financeProcesses,licenseAlerts,teamLoad,responsibleLoad,critical,costsPending,openExigencies,exigencyProcessIds,documentaryAvailable
+      financeProcesses,licenseAlerts,teamLoad,responsibleLoad,critical,costsPending,openExigencies,exigencyProcessIds,
+      pendingDocuments,pendingDocumentProcessIds,pendingSummary,documentaryAvailable
     };
   }
 
@@ -268,6 +275,7 @@
     if (f.queue==='overdue' && !model.overdueTasks.includes(task)) return false;
     if (f.queue==='outsideSla' && !task.outsideSla) return false;
     if (f.queue==='exigencies' && !model.exigencyProcessIds.has(task.process_id)) return false;
+    if (f.queue==='documents' && !model.pendingDocumentProcessIds.has(task.process_id)) return false;
     if (f.queue==='blocked' && !task.blockers.length) return false;
     if (f.queue==='waitingClient' && !model.waitingClient.has(task.process_id)) return false;
     if (f.queue==='waitingAgency' && !model.waitingAgency.has(task.process_id)) return false;
@@ -311,6 +319,10 @@
   }
 
   function centralTaskTable(model) {
+    if(centralFilterState.queue==='documents'){
+      if(!model.pendingDocuments.length)return '<div class="v71-empty">Nenhuma pendência documental registrada.</div>';
+      return `<div class="v71-task-table-wrap"><table class="v71-task-table"><thead><tr><th>Documento</th><th>Processo</th><th>Pendente com</th><th>Situação</th><th>Prazo</th></tr></thead><tbody>${model.pendingDocuments.slice(0,30).map(d=>`<tr><td>${e(d.title)}</td><td><button type="button" class="v71-process-link" data-v71-process-open="${e(d.process_id)}">${e(processCode(model.processById.get(d.process_id)))}</button></td><td>${e(d.pending_with||'Operação')}</td><td>${e(d.status)}</td><td>${e(dateLabel(d.due_on))}</td></tr>`).join('')}</tbody></table></div>`;
+    }
     const source=(centralFilterState.queue?model.activeTasks:model.critical).filter(task=>taskMatches(task,model)).slice(0,30);
     if(!source.length)return '<div class="v71-empty">Nenhuma tarefa corresponde aos filtros atuais.</div>';
     return `<div class="v71-task-table-wrap"><table class="v71-task-table"><thead><tr><th>Tarefa</th><th>Processo</th><th>Cliente</th><th>Etapa</th><th>Responsável</th><th>Prazo</th><th>Status</th><th>Prioridade</th></tr></thead><tbody>${source.map(task=>`<tr>
@@ -334,6 +346,7 @@
         ${kpi('Processos fora do SLA',model.processOutSla.length,'outsideSla','⌛','danger','SLA interno da etapa excedido')}
         ${kpi('Processos bloqueados',model.blockedProcesses.length,'blocked','Ⅱ','warning','Bloqueios ativos registrados')}
         ${model.documentaryAvailable?kpi('Exigências formais',model.openExigencies.length,'exigencies','!','danger','Exigências de órgãos ainda não aceitas'):''}
+        ${model.documentaryAvailable?kpi('Pendências documentais',model.pendingDocuments.length,'documents','☷','warning','Checklist por serviço e responsável'):''}
         ${kpi('Aguardando cliente',model.waitingClient.size,'waitingClient','C','warning','Processos dependentes do cliente')}
         ${kpi('Aguardando órgão',model.waitingAgency.size,'waitingAgency','O','purple','Processos dependentes de órgão público')}
         ${kpi('Financeiro pendente',model.financeProcesses.size,'finance','R$','warning','Tarefas ou lançamentos financeiros pendentes')}

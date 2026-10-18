@@ -34,7 +34,7 @@
   async function registerServiceWorker(){
     if(!('serviceWorker' in navigator))return;
     try{
-      const registration=await navigator.serviceWorker.register('/sw-v5-1.js?v=5.1',{scope:'/',updateViaCache:'none'});
+      const registration=await navigator.serviceWorker.register('/sw-v5-1.js?v=7.2',{scope:'/',updateViaCache:'none'});
       registration.update?.();
     }catch(error){
       console.warn('ATLAS PWA: service worker indisponível',error);
@@ -81,8 +81,10 @@
 
   loadEstablishmentContext();
   loadRealDataDashboard();
+  loadScriptOnce('/atlas-ops-v7-doc-model.js?v=7.2','atlas-ops-v72-doc-model','AtlasOpsV72DocumentModel');
+  loadScriptOnce('/atlas-ops-v7-pending.js?v=7.2','atlas-ops-v72-pending','AtlasOpsV72Pending');
   loadOperationalProcessV71();
-  loadScriptOnce('/atlas-ops-v7-docs.js?v=7.1.1-checklist','atlas-ops-v71-docs','AtlasOpsV71Documents');
+  loadScriptOnce('/atlas-ops-v7-docs.js?v=7.2-checklist','atlas-ops-v71-docs','AtlasOpsV71Documents');
 
   window.addEventListener('DOMContentLoaded',()=>{
     ensureInstallButton();

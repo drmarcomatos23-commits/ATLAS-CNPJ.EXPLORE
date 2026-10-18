@@ -35,7 +35,7 @@ test('opening a process previews configured requirements and persists only after
  assert.match(company,/insert\(payload\)\.select\('id'\)\.single\(\)/);
  assert.match(module,/decorateNewProcessForm/);
  assert.match(module,/afterProcessCreated/);
- assert.match(module,/atlas_v71_init_document_checklist/);
+ assert.match(module,/atlas_v72_init_document_checklist/);
  assert.match(module,/document_requirement_templates/);
  assert.match(module,/proc-service/);
 });
@@ -64,7 +64,7 @@ test('configurable administrative templates are permission gated and sensitive s
  assert.match(roles,/exigencies\.manage/);
 });
 test('loader and mobile styles preserve V7.1 process integration',()=>{
- assert.match(loader,/atlas-ops-v7-docs\.js\?v=7\.1/);
+ assert.match(loader,/atlas-ops-v7-docs\.js\?v=7\.2/);
  assert.match(css,/\.v71-doc-panel/);
  assert.match(css,/@media\(max-width:760px\)[\s\S]*v71-doc-/);
 });
@@ -73,13 +73,14 @@ test('document module and connected application modules parse as modern JavaScri
  for(const file of ['atlas-ops-v7-docs.js','atlas-ops-v7-ui.js','atlas-ops-v7-process.js','company-flow.js','pwa-v5-1.js'])
    assert.doesNotThrow(()=>new vm.Script(read(file),{filename:file}),file);
 });
-test('stage advancement requires document acceptance and allows only audited override',()=>{
+test('historical stage rule is superseded by advisory-only migration v7.2',()=>{
+ const v72=read('supabase/migrations/20261018_atlas_v7_2_checklist_operacional.sql');
  assert.match(sql,/v_doc_pending/);
  assert.match(sql,/v_exigency_pending/);
  assert.match(sql,/d\.required_rule='required'/);
  assert.match(sql,/d\.status not in \('approved','waived'\)/);
- assert.match(sql,/p_force/);
- assert.match(sql,/p_justification/);
+ assert.match(v72,/pending_at_transition/);
+ assert.doesNotMatch(v72,/if v_doc_pending > 0 and not p_force/i);
  assert.match(sql,/v_doc_created/);
 });
 test('exigency submission is distinct from formal acceptance and carries file evidence',()=>{

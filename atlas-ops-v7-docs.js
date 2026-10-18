@@ -6,7 +6,7 @@
  const context=()=>({db:window.atlasAuth?.client,profile:window.atlasAuth?.getProfile?.()});
  const message=e=>String(e?.message||e||'Erro desconhecido');
  const dt=d=>d?new Date(d).toLocaleDateString('pt-BR'):'—';
- const statuses={pending:'Pendente',submitted:'Enviado',in_review:'Em análise',approved:'Aprovado',rejected:'Reprovado',waived:'Dispensado',
+ const statuses={not_requested:'Não solicitado',requested:'Solicitado',received:'Recebido',returned:'Devolvido',pending:'Pendente',submitted:'Enviado',in_review:'Em conferência',approved:'Aprovado',rejected:'Reprovado',waived:'Dispensado',
   open:'Aberta',in_progress:'Em atendimento',responded:'Respondida — aguardando aceite',accepted:'Aceita pelo órgão',reopened:'Exigência reaberta',cancelled:'Cancelada'};
  // Referência exclusivamente visual até que a migração documental seja aprovada.
  // Itens não são criados, aprovados nem anexados sem o esquema e as políticas RLS do banco.
@@ -66,12 +66,15 @@
   ]
  };
  function referenceTemplatesFor(service){
+  if(window.AtlasOpsV72DocumentModel?.referenceTemplatesFor)return window.AtlasOpsV72DocumentModel.referenceTemplatesFor(service).map(x=>({...x,kind:x.required_rule==='conditional'?'condicional':'base'}));
+  if(!Object.hasOwn(REFERENCE_REQUIREMENTS,service)&&service!=='encerramento')return [];
   const key=service==='encerramento'?'baixa':service;
   return (REFERENCE_REQUIREMENTS[key]||REFERENCE_REQUIREMENTS.legalizacao_empresarial)
    .map(([title,instructions,kind])=>({title,instructions,kind}));
  }
  function referenceChecklistHtml(service){
   const items=referenceTemplatesFor(service);
+  if(!items.length)return '<div class="v71-doc-reference-note">Serviço sem modelo configurado; solicite configuração ao administrador.</div>';
   return '<div class="v71-doc-reference-note" role="note"><strong>Prévia orientativa — ainda sem gravação</strong>'+
    '<p>Relação inicial para conferência, não é uma exigência legal universal. Confirme natureza jurídica, CNAEs, município e órgão responsável. '+
    'Esta lista não está gravada no processo: a ativação do checklist definitivo depende da estrutura documental no banco.</p></div>'+
@@ -168,10 +171,10 @@
       form.querySelector('#proc-client')?.value),READ_TIMEOUT_MS);
      if(!host.isConnected||number!==requestNumber)return;
      host.innerHTML=rows.length?
-      '<ul class="v71-doc-preview-list">'+rows.map(r=>
-       '<li><strong>'+escapeHtml(r.title)+'</strong> <small>'+
+      '<div class="v71-doc-preview-list">'+rows.map(r=>
+       '<label class="v72-doc-draft-item"><input type="checkbox" checked data-v72-doc-choice="'+escapeHtml(r.id)+'"><span><strong>'+escapeHtml(r.title)+'</strong> <small>'+
        escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+
-       '</small></li>').join('')+'</ul>':
+       '</small><input class="v72-doc-draft-reason" data-v72-doc-reason="'+escapeHtml(r.id)+'" placeholder="Motivo se não aplicável"></span></label>').join('')+'</div>':
       '<div class="v71-doc-reference-footer">Nenhum modelo configurado para este serviço e localidade. O administrador poderá cadastrar modelos específicos.</div>'+referenceChecklistHtml(form.querySelector('#proc-service')?.value);
     }
    } catch(error) {
@@ -188,16 +191,34 @@
    form.querySelector('#'+id)?.addEventListener('change',()=>{void reload();}));
   return reload();
  }
- async function afterProcessCreated(processId){
-  if(!processId)return {available:false};
-  if(!await available())return {available:false};
+ function collectDraft(form){
+  return [...(form?.querySelectorAll?.('[data-v72-doc-choice]')||[])].map(choice=>({
+    templateId:choice.dataset.v72DocChoice,applicable:choice.checked,
+    reason:form.querySelector?.('[data-v72-doc-reason="'+choice.dataset.v72DocChoice+'"]')?.value?.trim()||''
+  }));
+ }
+ async function afterProcessCreated(processId,form){
+  if(!processId)return {ok:false,retryable:false,error:'Processo sem identificador'};
+  if(!await available())return {ok:false,retryable:true,error:'Estrutura documental indisponível neste ambiente'};
   try {
-   const created=await bounded(call('atlas_v71_init_document_checklist',{p_process_id:processId}),RPC_TIMEOUT_MS);
+   const created=await bounded(call('atlas_v72_init_document_checklist',{p_process_id:processId}),RPC_TIMEOUT_MS);
+   const draft=collectDraft(form);
+   if(draft.some(d=>!d.applicable&&!d.reason))throw Error('Informe a justificativa para cada documento marcado como não aplicável.');
+   if(draft.some(d=>!d.applicable)){
+    const {db,profile}=context();
+    const {data,error}=await bounded(db.from('process_document_requirements').select('id,template_id')
+     .eq('organization_id',profile.organization_id).eq('process_id',processId));
+    if(error)throw error;
+    for(const choice of draft.filter(x=>!x.applicable)){
+     const row=(data||[]).find(x=>x.template_id===choice.templateId);
+     if(row)await bounded(call('atlas_v72_update_requirement',{p_requirement_id:row.id,p_patch:{status:'waived',applicability:'not_applicable',reason:choice.reason}}),RPC_TIMEOUT_MS);
+    }
+   }
    document.dispatchEvent(new CustomEvent('atlas:v71:documents-changed',{detail:{processId}}));
-   return {available:true,created:Number(created||0)};
+   return {ok:true,available:true,created:Number(created||0)};
   }catch(error){
    console.warn('ATLAS 7.1: não foi possível confirmar geração do checklist',error);
-   return {available:true,error:'Não foi possível confirmar a geração do checklist. Consulte o processo antes de tentar novamente.'};
+   return {ok:false,available:true,retryable:true,error:'Não foi possível confirmar a geração do checklist: '+message(error)+'. Tentar novamente não duplica os itens.'};
   }
  }
  function documentPanel(detail){
@@ -221,35 +242,55 @@
   }));
   const {data:files,error}=await db.from('documents').select('id,name,category,storage_key,created_at').eq('organization_id',org).eq('process_id',processId).order('created_at',{ascending:false});
   if(error)throw error;
-  return {...Object.fromEntries(results),files:files||[]};
+  const {data:profiles,error:profileError}=await db.from('profiles').select('id,full_name,role,active').eq('organization_id',org);
+  if(profileError)throw profileError;
+  return {...Object.fromEntries(results),files:files||[],profiles:profiles||[]};
  }
  function fileLink(doc){
   return '<button type="button" data-v71-doc-open="'+escapeHtml(doc.id)+'" class="v71-doc-link">'+escapeHtml(doc.name||'Arquivo')+'</button>';
  }
- function renderChecklist(host,data,processId) {
-  const approved=data.requirements.filter(r=>r.status==='approved').length;
-  const pending=data.requirements.filter(r=>!['approved','waived'].includes(r.status)).length;
-  const header='<div class="v71-doc-heading"><div><h3>Checklist documental</h3><small>'+data.requirements.length+' exigidos · '+approved+' aprovados · '+pending+' pendentes de conferência</small></div>'+
+ function renderChecklist(host,data,processId,detail){
+  const active=data.requirements.filter(r=>!r.archived_at);
+  const summary=window.AtlasOpsV72DocumentModel?.summarizeRequirements(active)||{
+   total:active.length,completed:active.filter(r=>['approved','waived'].includes(r.status)).length,
+   open:active.filter(r=>!['approved','waived'].includes(r.status)).length,overdue:0,dueSoon:0,byOrigin:{cliente:0,financeiro:0,orgao:0,operacao:0}
+  };
+  const combined=window.AtlasOpsV72Pending?.summarize?.({requirements:active,costs:detail?.costs||[],exigencies:data.exigencies,tasks:detail?.tasks||[]});
+  const header='<div class="v71-doc-heading"><div><h3>Checklist documental</h3><small>'+summary.total+' itens · '+summary.completed+' aprovados/dispensados · '+summary.open+' em aberto · '+summary.overdue+' vencidos</small></div>'+
    (has('documents.upload')?'<button class="btn btn-muted" type="button" data-v71-doc-add>Enviar arquivo</button>':'')+
    (has('documents.review')?'<button class="btn btn-muted" type="button" data-v71-doc-manual>Novo documento exigido</button>':'')+
    (has('documents.templates.manage')?'<button class="btn btn-muted" type="button" data-v71-doc-config>Gerenciar modelos documentais</button>':'')+'</div>';
-  const rows=data.requirements.map(r=>{
+  const originLabels={cliente:'Cliente',financeiro:'Financeiro',orgao:'Órgão',operacao:'Operação'};
+  const options=(values)=>values.map(([value,label])=>'<option value="'+escapeHtml(value)+'">'+escapeHtml(label)+'</option>').join('');
+  const toolbar='<div class="v72-doc-toolbar" role="search">'+
+   '<label>Buscar<input type="search" data-v72-search placeholder="Documento"></label>'+
+   '<label>Situação<select data-v72-filter-status>'+options([['','Todas'],...Object.entries(statuses).filter(([key])=>['not_requested','requested','received','in_review','approved','returned','waived'].includes(key))])+'</select></label>'+
+   '<label>Pendente com<select data-v72-filter-origin>'+options([['','Todos'],...Object.entries(originLabels)])+'</select></label>'+
+   '<label>Responsável<select data-v72-filter-assignee>'+options([['','Todos'],...data.profiles.filter(p=>p.active).map(p=>[p.id,p.full_name||p.id])])+'</select></label>'+
+   '<label>Prazo<select data-v72-filter-due>'+options([['','Todos'],['overdue','Vencidos'],['soon','Próximos 3 dias'],['none','Sem prazo']])+'</select></label></div>';
+  const total=combined?'<p class="v72-doc-pending-summary">Alertas do processo: '+combined.totalOpen+' abertos · Cliente '+combined.byOrigin.cliente+' · Financeiro '+combined.byOrigin.financeiro+' · Órgão '+combined.byOrigin.orgao+' · Operação '+combined.byOrigin.operacao+'. Não impedem avanço de etapas.</p>':'';
+  const rows=active.map(r=>{
    const file=data.files.find(f=>f.id===r.document_id);
    const versions=data.versions.filter(v=>v.requirement_id===r.id).length;
-   const notes=r.review_notes||r.waiver_reason||'';
-   const actions=(has('documents.upload')?'<button class="btn btn-muted" type="button" data-v71-doc-upload="'+escapeHtml(r.id)+'">Enviar arquivo</button>':'')+
-      (has('documents.review')?'<button class="btn btn-muted" type="button" data-v71-doc-review="'+escapeHtml(r.id)+'">Conferir documento</button>':'');
-   return '<div class="v71-doc-item"><div class="v71-doc-item-main"><strong>'+escapeHtml(r.title)+'</strong><span>'+
-      escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+' · '+escapeHtml(r.category)+
-      '</span>'+ (r.instructions?'<small>'+escapeHtml(r.instructions)+'</small>':'') +
-      (file?'<small>Arquivo: '+fileLink(file)+' · Versão '+versions+'</small>':'<small>Arquivo ainda não entregue.</small>')+
-      (notes?'<small>Conferência: '+escapeHtml(notes)+'</small>':'')+
-      '</div><div class="v71-doc-item-action"><span class="v71-doc-status '+escapeHtml(r.status)+'">'+escapeHtml(docStatus(r.status))+'</span>'+actions+'</div></div>';
+   const notes=r.notes||r.review_notes||r.waiver_reason||'';
+   const assignee=data.profiles.find(p=>p.id===r.assigned_to);
+   const actions=(has('documents.upload')?'<button class="btn btn-muted" type="button" data-v71-doc-upload="'+escapeHtml(r.id)+'">Anexar</button>':'')+
+    (has('documents.review')?'<button class="btn btn-primary" type="button" data-v72-doc-edit="'+escapeHtml(r.id)+'">Atualizar</button>':'');
+   const versionsHtml=versions?'<small>Versões vinculadas: '+versions+' · '+data.versions.filter(v=>v.requirement_id===r.id).map(v=>{
+    const fileVersion=data.files.find(f=>f.id===v.document_id);return fileVersion?fileLink(fileVersion):'';
+   }).join(' ')+'</small>':'';
+   return '<article class="v71-doc-item v72-doc-item" data-v72-doc-item="'+escapeHtml(r.id)+'" data-status="'+escapeHtml(r.status)+'" data-origin="'+escapeHtml(r.pending_with||'')+'" data-assignee="'+escapeHtml(r.assigned_to||'')+'" data-due="'+escapeHtml(r.due_on||'')+'" data-title="'+escapeHtml(String(r.title).toLocaleLowerCase('pt-BR'))+'">'+
+    '<div class="v71-doc-item-main"><strong>'+escapeHtml(r.title)+'</strong><span>'+escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+' · '+escapeHtml(r.category||'Outros')+'</span>'+
+    (r.instructions?'<small>'+escapeHtml(r.instructions)+'</small>':'')+
+    '<small>Pendente com: '+escapeHtml(originLabels[r.pending_with]||'Ninguém')+' · Responsável: '+escapeHtml(assignee?.full_name||'Não atribuído')+' · Prazo: '+escapeHtml(dt(r.due_on))+'</small>'+
+    (file?'<small>Documento: '+fileLink(file)+'</small>':versions?'':'<small>Documento ainda não recebido</small>')+versionsHtml+
+    (notes?'<small>Observações: '+escapeHtml(notes)+'</small>':'')+'</div><div class="v71-doc-item-action"><span class="v71-doc-status '+escapeHtml(r.status)+'">'+escapeHtml(docStatus(r.status))+'</span>'+
+    '<span class="v72-doc-origin">'+escapeHtml(originLabels[r.pending_with]||'Sem pendência')+'</span>'+actions+'</div></article>';
   }).join('');
-  const legacy=data.files.filter(f=>!data.requirements.some(r=>r.document_id===f.id));
-  host.innerHTML=header+(rows||'<div class="v71-empty">Nenhum documento exigido configurado para este processo.</div>')+
-    '<section class="v71-doc-existing"><h4>Demais arquivos do Dossiê Digital</h4>'+
-    (legacy.length?legacy.map(f=>'<div>'+fileLink(f)+'</div>').join(''):'<small>Nenhum arquivo adicional vinculado.</small>')+'</section>';
+  const legacy=data.files.filter(f=>!data.versions.some(v=>v.document_id===f.id)&&!active.some(r=>r.document_id===f.id));
+  host.innerHTML=header+total+toolbar+(rows||'<div class="v71-empty">Nenhum modelo configurado para este serviço/processo. O administrador pode incluir requisitos.</div>')+
+   '<section class="v71-doc-existing"><h4>Demais arquivos do Dossiê Digital</h4>'+
+   (legacy.length?legacy.map(f=>'<div>'+fileLink(f)+'</div>').join(''):'<small>Nenhum arquivo adicional vinculado.</small>')+'</section>';
  }
  function renderExigencies(host,data){
   const open=data.exigencies.filter(activeExigency).length;
@@ -275,18 +316,16 @@
   if(!await available()){
    container.innerHTML=container.dataset.v71DocKind==='exigencies'?
     '<div class="v71-capability-note"><strong>Exigências formais indisponíveis</strong><p>A estrutura de registro e acompanhamento de exigências ainda não foi ativada neste banco. Nenhuma exigência pode ser confirmada nesta prévia.</p></div>':
-    referenceChecklistHtml(detail.process?.service_type)+
-     '<div class="v71-capability-note">Checklist persistente ainda indisponível. O Dossiê Digital atual permanece acessível pela navegação existente.</div>';
+    '<div class="v71-capability-note">Checklist operacional indisponível. Nenhum requisito está vinculado a este processo neste ambiente. Tentar novamente após habilitação da estrutura documental.</div>';
    return;
   }
   try {
    const data=await bounded(load(id));
    if(!container.isConnected)return;
    if(container.dataset.v71DocKind==='exigencies')renderExigencies(container,data);
-   else renderChecklist(container,data,id);
+   else renderChecklist(container,data,id,detail);
    wire(container,data,detail);
-  }catch(error){container.innerHTML='<div class="error-box">Não foi possível carregar os dados documentais: '+escapeHtml(message(error))+'</div>'+
-   (container.dataset.v71DocKind==='exigencies'?'':referenceChecklistHtml(detail.process?.service_type));}
+  }catch(error){container.innerHTML='<div class="error-box">Não foi possível carregar os dados documentais: '+escapeHtml(message(error))+'. Tentar novamente.</div>';}
  }
  async function openDocument(docId){
   const {db}=context();
@@ -338,15 +377,37 @@
    goBack(detail.process.id);
   });
  }
+ async function operationalModal(detail,data,requirement){
+  if(!has('documents.review'))throw Error('Sem permissão para alterar o checklist');
+  const origins=[['','Nenhuma'],['cliente','Cliente'],['financeiro','Financeiro'],['orgao','Órgão público'],['operacao','Operação']];
+  const states=[['not_requested','Não solicitado'],['requested','Solicitado'],['received','Recebido'],['in_review','Em conferência'],['approved','Aprovado'],['returned','Devolvido'],['waived','Dispensado']];
+  const options=(values,selected)=>values.map(([v,label])=>'<option value="'+escapeHtml(v)+'"'+(v===selected?' selected':'')+'>'+escapeHtml(label)+'</option>').join('');
+  const root=modal('Controle documental — '+requirement.title,
+   '<form class="v71-doc-form v72-doc-edit-form" data-v72-doc-edit-form>'+
+   '<label>Situação<select name="status">'+options(states,requirement.status)+'</select></label>'+
+   '<label>Pendente com<select name="pending_with">'+options(origins,requirement.pending_with||'')+'</select></label>'+
+   '<label>Responsável interno<select name="assigned_to">'+options([['','Não atribuído'],...data.profiles.filter(p=>p.active).map(p=>[p.id,p.full_name||p.id])],requirement.assigned_to||'')+'</select></label>'+
+   '<label>Prazo<input name="due_on" type="date" value="'+escapeHtml(requirement.due_on||'')+'"></label>'+
+   '<label>Aplicabilidade<select name="applicability">'+options([['to_confirm','A confirmar'],['applicable','Aplicável'],['not_applicable','Não aplicável']],requirement.applicability||'to_confirm')+'</select></label>'+
+   '<label>Observações<textarea name="notes">'+escapeHtml(requirement.notes||'')+'</textarea></label>'+
+   '<label>Justificativa (obrigatória para devolução/dispensa)<textarea name="reason">'+escapeHtml(requirement.waiver_reason||requirement.review_notes||'')+'</textarea></label>'+
+   '<p>Arquivos e comprovantes são vinculados ao requisito. O recebimento não equivale à aprovação.</p>'+
+   '<div class="v71-doc-actions"><button class="btn btn-primary" type="submit">Salvar situação</button></div></form>');
+  formListen(root,'[data-v72-doc-edit-form]',async form=>{
+   const patch={status:String(form.get('status')||''),pending_with:String(form.get('pending_with')||'')||null,
+    assigned_to:String(form.get('assigned_to')||'')||null,due_on:String(form.get('due_on')||'')||null,
+    applicability:String(form.get('applicability')||'to_confirm'),notes:String(form.get('notes')||''),reason:String(form.get('reason')||'')};
+   await call('atlas_v72_update_requirement',{p_requirement_id:requirement.id,p_patch:patch});
+   goBack(detail.process.id);
+  });
+ }
  async function manualModal(detail){
   const root=modal('Novo documento exigido','<form class="v71-doc-form" data-v71-doc-manual-form><label>Documento solicitado<input name="title" required></label><label>Instruções<textarea name="instructions"></textarea></label><label>Obrigatoriedade<select name="required"><option value="conditional">Condicional</option><option value="required">Obrigatório</option><option value="optional">Opcional</option></select></label><div class="v71-doc-actions"><button class="btn btn-primary" type="submit">Adicionar ao checklist</button></div></form>');
+  const key=typeof crypto!=='undefined'&&typeof crypto.randomUUID==='function'?crypto.randomUUID():null;
   formListen(root,'[data-v71-doc-manual-form]',async form=>{
-   const {db,profile}=context();
-   const {error}=await db.from('process_document_requirements').insert({
-    organization_id:profile.organization_id,process_id:detail.process.id,stage_id:detail.process.current_stage_id,
-    title:form.get('title'),instructions:form.get('instructions'),required_rule:form.get('required'),created_by:profile.id
-   });
-   if(error)throw error;goBack(detail.process.id);
+   await call('atlas_v72_add_manual_requirement',{p_process_id:detail.process.id,p_title:String(form.get('title')||''),
+    p_required_rule:form.get('required'),p_manual_key:key,p_instructions:String(form.get('instructions')||'')});
+   goBack(detail.process.id);
   });
  }
  function docSelect(data){return '<option value="">Selecione o documento do processo</option>'+data.files.map(f=>'<option value="'+escapeHtml(f.id)+'">'+escapeHtml(f.name)+'</option>').join('');}
@@ -405,7 +466,28 @@
  }
  function wire(container,data,detail){
   const processId=detail.process.id;
+  const filter=()=>{
+   const status=container.querySelector('[data-v72-filter-status]')?.value||'';
+   const origin=container.querySelector('[data-v72-filter-origin]')?.value||'';
+   const assignee=container.querySelector('[data-v72-filter-assignee]')?.value||'';
+   const due=container.querySelector('[data-v72-filter-due]')?.value||'';
+   const query=(container.querySelector('[data-v72-search]')?.value||'').toLocaleLowerCase('pt-BR').trim();
+   const today=new Date().toISOString().slice(0,10);
+   container.querySelectorAll('[data-v72-doc-item]').forEach(row=>{
+    const days=row.dataset.due?Math.round((Date.parse(row.dataset.due+'T00:00:00Z')-Date.parse(today+'T00:00:00Z'))/86400000):null;
+    row.hidden=Boolean((status&&row.dataset.status!==status)||(origin&&row.dataset.origin!==origin)||
+     (assignee&&row.dataset.assignee!==assignee)||(query&&!String(row.dataset.title||'').includes(query))||
+     (due==='none'&&days!==null)||(due==='overdue'&&(days===null||days>=0))||
+     (due==='soon'&&(days===null||days<0||days>3)));
+   });
+  };
+  container.querySelectorAll('[data-v72-filter-status],[data-v72-filter-origin],[data-v72-filter-assignee],[data-v72-filter-due],[data-v72-search]')
+   .forEach(field=>{field.addEventListener('change',filter);field.addEventListener('input',filter);});
   container.querySelectorAll('[data-v71-doc-open]').forEach(b=>b.addEventListener('click',()=>openDocument(b.dataset.v71DocOpen).catch(alertError)));
+  container.querySelectorAll('[data-v72-doc-edit]').forEach(b=>b.addEventListener('click',()=>{
+   const item=data.requirements.find(r=>r.id===b.dataset.v72DocEdit);
+   if(item)operationalModal(detail,data,item).catch(alertError);
+  }));
   container.querySelectorAll('[data-v71-doc-upload]').forEach(b=>b.addEventListener('click',()=>{
    const req=data.requirements.find(r=>r.id===b.dataset.v71DocUpload);if(req)uploadModal(detail,req).catch(alertError);
   }));

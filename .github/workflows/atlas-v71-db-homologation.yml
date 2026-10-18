@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - atlas-legalizacao-v7-1-central-operacional-20261017
+      - feat/atlas-checklist-operacional-v72
   workflow_dispatch:
 
 jobs:
@@ -41,3 +42,7 @@ jobs:
         run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017_atlas_v7_1_document_exigencies.sql
       - name: Execute authenticated document/exigency/RLS integration tests
         run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/atlas-v71-pg-integration.sql
+      - name: Apply V7.2 operational checklist migration in disposable database
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261018_atlas_v7_2_checklist_operacional.sql
+      - name: Verify durable checklist, audit, ownership and advisory-only advance
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/atlas-v72-pg-integration.sql

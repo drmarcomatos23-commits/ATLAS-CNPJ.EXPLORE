@@ -75,14 +75,13 @@ test('the checklist heading remains accurate for services other than opening',as
  assert.doesNotMatch(getSection().innerHTML,/Checklist de documentos na abertura/i);
 });
 
-test('existing process without document schema displays a read-only reference checklist',async()=>{
+test('existing process without document schema never suggests reference items are attached',async()=>{
  const {api,panel}=fixture('alteracao_societaria');
  api.bindProcessActions({querySelectorAll:()=>[panel]},
   {process:{id:'sample-process',service_type:'alteracao_societaria'}});
  await new Promise(resolve=>setImmediate(resolve));
- assert.match(panel.innerHTML,/Instrumento de alteração societária/i);
- assert.match(panel.innerHTML,/prévia orientativa/i);
- assert.match(panel.innerHTML,/não (?:está|será) gravad/i);
+ assert.match(panel.innerHTML,/Checklist operacional indisponível/i);
+ assert.doesNotMatch(panel.innerHTML,/Instrumento de alteração societária/i);
  assert.doesNotMatch(panel.innerHTML,/data-v71-doc-review|data-v71-doc-upload/,
   'a provisional preview must not display controls that imply persisted requirements');
 });
@@ -118,5 +117,5 @@ test('mobile PWA requests a fresh checklist script instead of reusing the cached
  vm.runInNewContext(loader,{window,document,navigator:{serviceWorker:{}},console:{warn(){}},setTimeout,clearTimeout});
  const checklist=scripts.find(s=>s.src?.includes('atlas-ops-v7-docs.js'));
  assert.ok(checklist,'checklist script must be requested by the PWA');
- assert.match(checklist.src,/atlas-ops-v7-docs\.js\?v=7\.1\.1-checklist/);
+ assert.match(checklist.src,/atlas-ops-v7-docs\.js\?v=7\.2-checklist/);
 });

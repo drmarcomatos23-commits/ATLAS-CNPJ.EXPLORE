@@ -8,7 +8,7 @@ const sw = await readFile(new URL('../sw-v5-1.js', import.meta.url), 'utf8');
 const pwa = await readFile(new URL('../pwa-v5-1.js', import.meta.url), 'utf8');
 
 test('PWA não entrega JavaScript e CSS antigos depois de uma nova revisão', () => {
-  assert.match(sw, /atlas-legalizacao-v5\.1-static-2/);
+  assert.match(sw, /atlas-legalizacao-v7\.2-checklist-preview/);
   assert.match(sw, /async function staticNetworkFirst/);
   assert.match(sw, /event\.respondWith\(staticNetworkFirst\(request\)\)/);
   assert.match(pwa, /updateViaCache:'none'/);

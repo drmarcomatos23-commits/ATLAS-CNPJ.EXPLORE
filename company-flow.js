@@ -383,10 +383,19 @@
         return;
       }
 
-      const checklist=await window.AtlasOpsV71Documents?.afterProcessCreated?.(createdProcess?.id);
-      closeAtlasModal();
-      if(checklist?.error)window.alert('Processo salvo, mas checklist documental não foi gerado: '+checklist.error);
-      await processPage();
+      const savedId=createdProcess?.id;
+      const confirmChecklist=async()=>{
+        const checklist=await window.AtlasOpsV71Documents?.afterProcessCreated?.(savedId,document.getElementById('process-real-form'));
+        if(checklist?.ok){closeAtlasModal();await processPage();return;}
+        msg.className='auth-message error span-2';
+        msg.textContent='Processo salvo; checklist documental ainda não gerado. '+(checklist?.error||'Confirme a disponibilidade da estrutura documental.');
+        const retry=document.createElement('button');retry.type='button';retry.className='btn btn-muted';
+        retry.textContent='Tentar novamente';
+        retry.addEventListener('click',async()=>{retry.disabled=true;await confirmChecklist();retry.disabled=false;});
+        msg.appendChild(retry);
+        btn.disabled=true;btn.textContent='Processo salvo';
+      };
+      await confirmChecklist();
     });
   };
   window.atlasQuickCompany={consultQuickCnpj,saveQuickCompany,toggleQuickCompany};

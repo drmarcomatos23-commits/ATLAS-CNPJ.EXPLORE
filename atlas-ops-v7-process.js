@@ -54,7 +54,7 @@
     }
     const pauseIntervals=Sla?.mergePauseIntervals?Sla.mergePauseIntervals((detail.pauses||[]).map(p=>({start:p.started_at,end:p.ended_at||new Date().toISOString()}))):[];
     const blockedHours=pauseIntervals.reduce((sum,p)=>sum+Math.max(0,(new Date(p.end)-new Date(p.start))/3600000),0);
-    return {process,operation,currentStage,stages,currentPosition,dependencies,taskById,eligible,activeTasks,primary,stageTasks,required,unfinishedRequired,pendingDocuments,pendingExigencies,documentaryAvailable,ready,openBlockers,sla,blockedHours,totalDays:dayDiff(process?.started_at||process?.created_at)};
+    return {process,operation,currentStage,stages,currentPosition,dependencies,taskById,eligible,activeTasks,primary,stageTasks,required,unfinishedRequired,pendingDocuments,pendingExigencies,costs:detail.costs||[],documentaryAvailable,ready,openBlockers,sla,blockedHours,totalDays:dayDiff(process?.started_at||process?.created_at)};
   }
 
   function modal(title,body){
@@ -127,10 +127,11 @@
   }
 
   function readiness(model){
-    if(!model.documentaryAvailable)return '<div class="v71-stage-ready pending"><div><strong>Avanço indisponível</strong><span>Aguardando homologação da estrutura documental do ATLAS 7.1.</span></div></div>';
-    if(model.ready&&has('workflow.advance'))return `<div class="v71-stage-ready"><div><strong>Etapa pronta para avanço</strong><span>Tarefas, documentos obrigatórios e exigências formais atendidos.</span></div><button class="btn btn-primary" type="button" data-v71-stage-advance>Concluir etapa e avançar</button></div>`;
-    const force=has('workflow.override')?'<button class="btn btn-muted" type="button" data-v71-force-advance>Avançar com exceção</button>':'';
-    return `<div class="v71-stage-ready pending"><div><strong>Etapa ainda não pode ser concluída</strong><span>${model.unfinishedRequired.length} tarefa(s), ${model.pendingDocuments.length} documento(s) obrigatórios e ${model.pendingExigencies.length} exigência(s) formal(is) pendente(s).</span></div>${force}</div>`;
+    const financePending=(model.costs||[]).filter(c=>!['paid','pago','quitado','received','recebido','cancelled','cancelado'].includes(String(c.payment_status||'pending').toLowerCase())).length;
+    const total=model.unfinishedRequired.length+model.pendingDocuments.length+model.pendingExigencies.length+financePending;
+    const note=model.documentaryAvailable?`${model.unfinishedRequired.length} tarefa(s), ${model.pendingDocuments.length} documento(s), ${financePending} custo(s) e ${model.pendingExigencies.length} exigência(s).`:'Checklist documental indisponível: contagem parcial de pendências.';
+    const action=has('workflow.advance')?'<button class="btn btn-primary" type="button" data-v71-stage-advance>Concluir etapa e avançar</button>':'';
+    return `<div class="v71-stage-ready ${total?'pending':''}"><div><strong>${total?'Há pendências — avanço permitido':'Etapa sem pendências registradas'}</strong><span>${e(note)} As pendências são alertas e permanecem abertas ao avançar.</span></div>${action}</div>`;
   }
 
   function overview(model,detail){
@@ -199,8 +200,11 @@
     root.querySelectorAll('[data-v71-task-complete]').forEach(button=>button.addEventListener('click',async()=>{await Engine.completeTask(button.dataset.v71TaskComplete,{processId:detail.process.id});await refreshProcess();}));
     root.querySelectorAll('[data-v71-task-block]').forEach(button=>button.addEventListener('click',()=>blockerModal(detail,button.dataset.v71TaskBlock)));
     root.querySelectorAll('[data-v71-blocker-close]').forEach(button=>button.addEventListener('click',async()=>{await Engine.closeBlocker(button.dataset.v71BlockerClose,{processId:detail.process.id});await refreshProcess();}));
-    root.querySelector('[data-v71-stage-advance]')?.addEventListener('click',async()=>{await Engine.advanceStage(detail.process.id,{force:false});await refreshProcess();});
-    root.querySelector('[data-v71-force-advance]')?.addEventListener('click',async()=>{if(!has('workflow.override'))return;const justification=window.prompt('Informe a justificativa para avançar com tarefas obrigatórias pendentes:')||'';if(!justification.trim())return;await Engine.advanceStage(detail.process.id,{force:true,justification});await refreshProcess();});
+    root.querySelector('[data-v71-stage-advance]')?.addEventListener('click',async()=>{
+      const note='Avançar para a próxima etapa? Pendências documentais, financeiras, de órgão e tarefas continuarão abertas.';
+      if(typeof window.confirm==='function'&&!window.confirm(note))return;
+      await Engine.advanceStage(detail.process.id,{force:false});await refreshProcess();
+    });
     root.querySelector('[data-v71-activate-legacy]')?.addEventListener('click',()=>UI.previewLegacyActivation(detail.process.id));
     root.querySelector('[data-v71-task-focus]')?.addEventListener('click',event=>{currentTab='tasks';renderDetail(detail);setTimeout(()=>document.querySelector(`[data-v71-task-row="${event.currentTarget.dataset.v71TaskFocus}"]`)?.scrollIntoView?.({block:'center'}),0);});
     if(model.primary)Engine.primaryTaskFor?.(detail.process.id);

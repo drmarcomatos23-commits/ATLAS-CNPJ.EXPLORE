@@ -682,7 +682,10 @@ async function openProcessModal(id=''){
  modalShell(id?'Editar processo':'Novo processo',`<form id="process-real-form" class="modal-form-grid">
    <div class="field span-2"><label>Título do processo *</label><input id="proc-title" required value="${esc(rec?.title||'')}"></div>
    <div class="field"><label>Empresa *</label><select id="proc-client" required>${clientSelectOptions(data,rec?.client_id||'')}</select></div>
-   <div class="field"><label>Tipo de serviço</label><input id="proc-service" value="${esc(rec?.service_type||'legalizacao_empresarial')}"></div>
+   <div class="field"><label>Tipo de serviço</label><select id="proc-service">${(
+    ['legalizacao_empresarial','abertura','alteracao_societaria','regularizacao','licenciamento','baixa','encerramento']
+    .concat(rec?.service_type&&!['legalizacao_empresarial','abertura','alteracao_societaria','regularizacao','licenciamento','baixa','encerramento'].includes(rec.service_type)?[rec.service_type]:[])
+   ).map(service=>`<option value="${esc(service)}" ${service===(rec?.service_type||'legalizacao_empresarial')?'selected':''}>${esc(service.replaceAll('_',' '))}</option>`).join('')}</select></div>
    <div class="field"><label>Etapa atual *</label><select id="proc-stage" required>${stagesFor.map(s=>`<option value="${s.id}" ${(rec?.current_stage_id||firstStage?.id)===s.id?'selected':''}>${esc(s.name)}</option>`).join('')}</select></div>
    <div class="field"><label>Responsável</label><select id="proc-owner"><option value="">Não atribuído</option>${data.profiles.filter(p=>['admin','operacao'].includes(p.role)).map(p=>`<option value="${p.id}" ${rec?.owner_id===p.id?'selected':''}>${esc(p.full_name)}</option>`).join('')}</select></div>
    <div class="field"><label>Prioridade</label><select id="proc-priority"><option value="low" ${rec?.priority==='low'?'selected':''}>Baixa</option><option value="normal" ${!rec||rec?.priority==='normal'?'selected':''}>Normal</option><option value="high" ${rec?.priority==='high'?'selected':''}>Alta</option><option value="urgent" ${rec?.priority==='urgent'?'selected':''}>Urgente</option></select></div>
@@ -694,23 +697,26 @@ async function openProcessModal(id=''){
  $('#process-real-form').addEventListener('submit',async e=>{
    e.preventDefault();const btn=$('#proc-save-btn');btn.disabled=true;btn.textContent='Salvando...';
    const payload={organization_id:atlasProfile().organization_id,client_id:$('#proc-client').value,workflow_template_id:template?.id||null,title:$('#proc-title').value.trim(),service_type:$('#proc-service').value.trim()||'legalizacao_empresarial',status:$('#proc-status').value,current_stage_id:$('#proc-stage').value||null,owner_id:$('#proc-owner').value||null,priority:$('#proc-priority').value,due_date:$('#proc-due').value||null,completed_at:$('#proc-status').value==='completed'?new Date().toISOString():null};
+   const serviceChanged=Boolean(rec&&rec.service_type!==payload.service_type);
+   if(serviceChanged&&!confirm('Alterar o serviço? O ATLAS arquivará os requisitos antigos sem excluir arquivos e histórico, e incluirá os requisitos do novo serviço.')){btn.disabled=false;btn.textContent='Salvar processo';return}
+   const selectedService=payload.service_type;
+   if(serviceChanged)delete payload.service_type;
    const q=id?db.from('processes').update(payload).eq('id',id):db.from('processes').insert(payload);
    const {error}=await q;
    if(error){const m=$('#proc-form-message');m.textContent=error.message;m.className='auth-message error span-2';btn.disabled=false;btn.textContent='Salvar processo';return}
+   if(serviceChanged){
+     const {error:reconcileError}=await db.rpc('atlas_v72_reconcile_checklist',{p_process_id:id,p_service_type:selectedService});
+     if(reconcileError){const m=$('#proc-form-message');m.textContent='Dados do processo salvos, mas não foi possível reconciliar o checklist: '+reconcileError.message;m.className='auth-message error span-2';btn.disabled=false;btn.textContent='Tentar novamente';return}
+   }
    closeAtlasModal();await processPage();
  });
 }
 window.openProcessModal=openProcessModal;
 
 async function advanceProcess(id){
- const db=atlasDb();const data=await loadOperationalData();
- const rec=data.processes.find(p=>p.id===id);if(!rec)return;
- const stagesFor=data.stages.filter(s=>s.workflow_template_id===rec.workflow_template_id).sort((a,b)=>a.position-b.position);
- const idx=stagesFor.findIndex(s=>s.id===rec.current_stage_id);
- if(idx<0||idx===stagesFor.length-1)return alert('O processo já está na última etapa.');
- const next=stagesFor[idx+1];
- const patch={current_stage_id:next.id,status:next.name==='Concluído'?'completed':'in_progress',completed_at:next.name==='Concluído'?new Date().toISOString():null};
- const {error}=await db.from('processes').update(patch).eq('id',id);
+ if(!confirm('Avançar etapa? Pendências de documentos, cliente, financeiro e órgãos permanecerão abertas e serão apenas sinalizadas.'))return;
+ const db=atlasDb();
+ const {error}=await db.rpc('atlas_v71_advance_stage',{p_process_id:id,p_force:false,p_justification:null});
  if(error)return alert('Não foi possível avançar: '+error.message);
  await processPage();
 }

@@ -30,17 +30,17 @@ test('process overview highlights exactly one primary action and stage readiness
   assert.match(processUi, /Próxima Ação/);
   assert.match(processUi, /is_primary_action/);
   assert.match(processUi, /required/);
-  assert.match(processUi, /Etapa pronta para avanço/);
+  assert.match(processUi, /Há pendências — avanço permitido/);
   assert.match(processUi, /Concluir etapa e avançar/);
   assert.match(processUi, /workflow\.advance/);
 });
 
-test('process detail exposes task actions, blocker actions and controlled forced advance', () => {
+test('process detail exposes task actions, blocker actions and advisory stage advance', () => {
   for (const call of ['setPrimaryTask','startTask','completeTask','openBlocker','closeBlocker','advanceStage','createManualTask']) {
     assert.match(processUi, new RegExp(`Engine\\.${call}\\(`), `missing engine action ${call}`);
   }
-  assert.match(processUi, /workflow\.override/);
-  assert.match(processUi, /justificativa/i);
+  assert.doesNotMatch(processUi, /data-v71-force-advance/);
+  assert.match(processUi, /Pendências documentais, financeiras, de órgão e tarefas continuarão abertas/i);
   assert.match(processUi, /Nova Tarefa/);
 });
 

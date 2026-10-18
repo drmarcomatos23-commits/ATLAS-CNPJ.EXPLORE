@@ -58,6 +58,15 @@ create table public.documents (
  category text,
  created_at timestamptz default now()
 );
+create table public.costs (
+ id uuid primary key default gen_random_uuid(),
+ organization_id uuid not null references public.organizations(id),
+ process_id uuid not null references public.processes(id),
+ description text not null,
+ payment_status text not null default 'pending',
+ due_date date,
+ amount numeric not null default 0
+);
 create table public.role_permissions (
  id uuid primary key default gen_random_uuid(),
  organization_id uuid not null references public.organizations(id),
@@ -83,15 +92,18 @@ create function public.has_atlas_permission(p_key text) returns boolean language
 alter table public.processes enable row level security;
 alter table public.clients enable row level security;
 alter table public.documents enable row level security;
+alter table public.costs enable row level security;
 alter table public.profiles enable row level security;
 create policy b_process on public.processes to authenticated using (organization_id=public.current_org_id()) with check (organization_id=public.current_org_id());
 create policy b_clients on public.clients to authenticated using (organization_id=public.current_org_id()) with check (organization_id=public.current_org_id());
 create policy b_documents on public.documents to authenticated using (organization_id=public.current_org_id()) with check (organization_id=public.current_org_id());
+create policy b_costs on public.costs to authenticated using (organization_id=public.current_org_id()) with check (organization_id=public.current_org_id());
 create policy b_profiles on public.profiles to authenticated using (organization_id=public.current_org_id()) with check (organization_id=public.current_org_id());
 
 grant usage on schema public,auth to authenticated;
 grant execute on all functions in schema public,auth to authenticated;
 grant select,insert,update on public.processes,public.clients,public.documents,public.profiles to authenticated;
+grant select,insert,update on public.costs to authenticated;
 grant select on public.organizations,public.workflow_stages,public.workflow_templates,public.role_permissions to authenticated;
 
 -- Org, actor e clientes artificiais; nenhuma informação real de cliente.
@@ -100,6 +112,9 @@ insert into public.organizations (id,name) values
  ('22222222-2222-4222-8222-222222222222','Outra organização');
 insert into public.profiles (id,organization_id,full_name,role) values
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','Admin de teste','admin'),
+ ('66666666-6666-4666-8666-666666666666','11111111-1111-4111-8111-111111111111','Financeiro de teste','financeiro'),
+ ('77777777-7777-4777-8777-777777777777','11111111-1111-4111-8111-111111111111','Auditor de teste','auditoria'),
+ ('abababab-abab-4bab-8bab-abababababab','11111111-1111-4111-8111-111111111111','Cliente de teste','cliente'),
  ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','22222222-2222-4222-8222-222222222222','Pessoa de outra organização','operacao');
 insert into public.clients(id,organization_id,legal_name,state,city) values
  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','11111111-1111-4111-8111-111111111111','Cliente sintético','SP','Santos');
@@ -109,7 +124,8 @@ insert into public.workflow_stages(id,workflow_template_id,position,name,sla_day
  ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','dddddddd-dddd-4ddd-8ddd-dddddddddddd',1,'Briefing',2),
  ('ffffffff-ffff-4fff-8fff-ffffffffffff','dddddddd-dddd-4ddd-8ddd-dddddddddddd',2,'Viabilidade',5);
 insert into public.processes(id,organization_id,client_id,workflow_template_id,current_stage_id,service_type,status) values
- ('99999999-9999-4999-8999-999999999999','11111111-1111-4111-8111-111111111111','cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','abertura','open');
+ ('99999999-9999-4999-8999-999999999999','11111111-1111-4111-8111-111111111111','cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','abertura','open'),
+ ('88888888-8888-4888-8888-888888888888','11111111-1111-4111-8111-111111111111','cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','abertura','open');
 
 -- GUC set by authenticated JWT adapter; only in the CI fixture.
 select set_config('atlas_test.org_id','11111111-1111-4111-8111-111111111111',false);

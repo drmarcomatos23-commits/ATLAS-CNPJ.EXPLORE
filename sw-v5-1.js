@@ -1,4 +1,4 @@
-const CACHE_NAME='atlas-legalizacao-v5.1-static-2';
+const CACHE_NAME='atlas-legalizacao-v7.2-checklist-preview';
 const CORE_ASSETS=['/index.html','/manifest.webmanifest','/atlas-pwa-icon.svg','/atlas-dashboard-brand.svg'];
 const STATIC_EXT=/\.(?:css|js|svg|png|webp|ico|woff2?)$/i;
 
