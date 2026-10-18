@@ -2,6 +2,9 @@
 -- Errors are deliberate when validating negative paths. Nothing here addresses production.
 \set ON_ERROR_STOP on
 set role authenticated;
+select set_config('atlas_test.org_id','11111111-1111-4111-8111-111111111111',false);
+select set_config('atlas_test.user_id','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',false);
+select set_config('atlas_test.role','admin',false);
 
 -- Process activation does not modify public production tenants.
 select public.atlas_v71_activate_process('99999999-9999-4999-8999-999999999999'::uuid);
