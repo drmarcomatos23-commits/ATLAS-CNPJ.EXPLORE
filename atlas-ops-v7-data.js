@@ -130,7 +130,7 @@
     if (!processId) throw new TypeError('processId é obrigatório');
     const cap = await capabilities();
     if (!cap.available) return { available:false, reason:cap.reason, process:null, operation:null, tasks:[], blockers:[], pauses:[], transitions:[], events:[], documents:[], dependencies:[], stages:[], profiles:[], teams:[], client:null };
-    const [processes, operations, tasks, blockers, pauses, transitions, events, documents] = await Promise.all([
+    const [processes, operations, tasks, blockers, pauses, transitions, events, documents, docRequirements, formalExigencies] = await Promise.all([
       scoped('processes','*',q => q.eq('id',processId)),
       scoped('process_operations','*',q => q.eq('process_id',processId)),
       scoped('tasks','*',q => q.eq('process_id',processId)),
@@ -138,7 +138,9 @@
       scoped('sla_pauses','*',q => q.eq('process_id',processId)),
       scoped('stage_transitions','*',q => q.eq('process_id',processId)),
       scoped('task_events','*',q => q.eq('process_id',processId)),
-      scoped('documents','*',q => q.eq('process_id',processId))
+      scoped('documents','*',q => q.eq('process_id',processId)),
+      scoped('process_document_requirements','*',q=>q.eq('process_id',processId)),
+      scoped('process_exigencies','*',q=>q.eq('process_id',processId))
     ]);
     const process=processes.data[0] || null;
     const taskIds=tasks.data.map(row=>row.id);
@@ -160,6 +162,9 @@
       transitions:transitions.data,
       events:events.data,
       documents:documents.data,
+      documentRequirements:docRequirements.data,
+      formalExigencies:formalExigencies.data,
+      documentaryAvailable:!docRequirements.unavailable&&!formalExigencies.unavailable,
       dependencies:dependencies.data,
       stages,
       profiles:profiles.data,
