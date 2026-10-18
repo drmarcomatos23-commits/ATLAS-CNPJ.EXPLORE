@@ -208,18 +208,21 @@ create trigger v71_exigency_evidence_links before insert on public.process_exige
 -- Auditoria originada por trigger, preenchendo actor_id a partir da sessão.
 create or replace function public.atlas_v71_document_audit()
 returns trigger language plpgsql security definer set search_path=public as $$
-declare v_row record;
+declare v_requirement_id uuid; v_exigency_id uuid;
 begin
  if tg_op='DELETE' then return old; end if;
- v_row:=new;
+ if tg_table_name='process_document_requirements' then
+  v_requirement_id:=new.id;
+ elsif tg_table_name='process_document_versions' then
+  v_requirement_id:=new.requirement_id;
+ elsif tg_table_name='process_exigencies' then
+  v_exigency_id:=new.id;
+ elsif tg_table_name='process_exigency_evidence' then
+  v_exigency_id:=new.exigency_id;
+ end if;
  insert into public.process_document_events(organization_id,process_id,requirement_id,exigency_id,event_type,actor_id,payload)
- values(new.organization_id,new.process_id,
-  case when tg_table_name='process_document_requirements' then new.id
-       when tg_table_name='process_document_versions' then new.requirement_id else null end,
-  case when tg_table_name='process_exigencies' then new.id
-       when tg_table_name='process_exigency_evidence' then new.exigency_id else null end,
-  tg_table_name||'.'||lower(tg_op),auth.uid(),
-  jsonb_build_object('record_id',new.id));
+ values(new.organization_id,new.process_id,v_requirement_id,v_exigency_id,
+        tg_table_name||'.'||lower(tg_op),auth.uid(),jsonb_build_object('record_id',new.id));
  return new;
 end $$;
 revoke all on function public.atlas_v71_document_audit() from public,anon,authenticated;
