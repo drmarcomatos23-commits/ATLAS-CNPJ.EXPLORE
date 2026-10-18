@@ -43,7 +43,10 @@
     const stageTasks=(detail.tasks||[]).filter(task=>task.stage_id===(currentStage?.id||process?.current_stage_id));
     const required=stageTasks.filter(task=>task.required);
     const unfinishedRequired=required.filter(task=>!['completed','cancelled'].includes(task.status));
-    const ready=unfinishedRequired.length===0;
+    const pendingDocuments=(detail.documentRequirements||[]).filter(doc=>doc.required_rule==='required'&&!['approved','waived'].includes(doc.status)&&(!doc.stage_id||doc.stage_id===(currentStage?.id||process?.current_stage_id)));
+    const pendingExigencies=(detail.formalExigencies||[]).filter(item=>!['accepted','cancelled'].includes(item.status));
+    const documentaryAvailable=detail.documentaryAvailable===true;
+    const ready=unfinishedRequired.length===0&&documentaryAvailable&&pendingDocuments.length===0&&pendingExigencies.length===0;
     const openBlockers=(detail.blockers||[]).filter(b=>!b.ended_at);
     let sla=null;
     if(operation?.stage_started_at&&currentStage?.sla_days!=null&&Sla?.slaSnapshot){
@@ -51,7 +54,7 @@
     }
     const pauseIntervals=Sla?.mergePauseIntervals?Sla.mergePauseIntervals((detail.pauses||[]).map(p=>({start:p.started_at,end:p.ended_at||new Date().toISOString()}))):[];
     const blockedHours=pauseIntervals.reduce((sum,p)=>sum+Math.max(0,(new Date(p.end)-new Date(p.start))/3600000),0);
-    return {process,operation,currentStage,stages,currentPosition,dependencies,taskById,eligible,activeTasks,primary,stageTasks,required,unfinishedRequired,ready,openBlockers,sla,blockedHours,totalDays:dayDiff(process?.started_at||process?.created_at)};
+    return {process,operation,currentStage,stages,currentPosition,dependencies,taskById,eligible,activeTasks,primary,stageTasks,required,unfinishedRequired,pendingDocuments,pendingExigencies,documentaryAvailable,ready,openBlockers,sla,blockedHours,totalDays:dayDiff(process?.started_at||process?.created_at)};
   }
 
   function modal(title,body){
@@ -124,9 +127,10 @@
   }
 
   function readiness(model){
-    if(model.ready&&has('workflow.advance'))return `<div class="v71-stage-ready"><div><strong>Etapa pronta para avanço</strong><span>Todas as tarefas obrigatórias desta etapa foram concluídas.</span></div><button class="btn btn-primary" type="button" data-v71-stage-advance>Concluir etapa e avançar</button></div>`;
+    if(!model.documentaryAvailable)return '<div class="v71-stage-ready pending"><div><strong>Avanço indisponível</strong><span>Aguardando homologação da estrutura documental do ATLAS 7.1.</span></div></div>';
+    if(model.ready&&has('workflow.advance'))return `<div class="v71-stage-ready"><div><strong>Etapa pronta para avanço</strong><span>Tarefas, documentos obrigatórios e exigências formais atendidos.</span></div><button class="btn btn-primary" type="button" data-v71-stage-advance>Concluir etapa e avançar</button></div>`;
     const force=has('workflow.override')?'<button class="btn btn-muted" type="button" data-v71-force-advance>Avançar com exceção</button>':'';
-    return `<div class="v71-stage-ready pending"><div><strong>Etapa ainda não pode ser concluída</strong><span>${model.unfinishedRequired.length} tarefa(s) obrigatória(s) pendente(s).</span></div>${force}</div>`;
+    return `<div class="v71-stage-ready pending"><div><strong>Etapa ainda não pode ser concluída</strong><span>${model.unfinishedRequired.length} tarefa(s), ${model.pendingDocuments.length} documento(s) obrigatórios e ${model.pendingExigencies.length} exigência(s) formal(is) pendente(s).</span></div>${force}</div>`;
   }
 
   function overview(model,detail){
