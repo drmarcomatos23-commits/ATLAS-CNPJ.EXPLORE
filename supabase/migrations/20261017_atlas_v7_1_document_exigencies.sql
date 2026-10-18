@@ -413,7 +413,7 @@ grant execute on function public.atlas_v71_close_exigency(uuid,boolean,text) to 
 
 -- Impede que o formulário legado contorne as validações em processos já ativados na 7.1.
 create or replace function public.atlas_v71_guard_active_stage_change()
-returns trigger language plpgsql security invoker set search_path=public as $
+returns trigger language plpgsql security invoker set search_path=public as $$
 begin
  if new.current_stage_id is distinct from old.current_stage_id
    and exists(select 1 from public.process_operations
@@ -422,7 +422,7 @@ begin
    raise exception 'Use Concluir etapa e avançar na Central Operacional; alteração direta de etapa não permitida';
  end if;
  return new;
-end $;
+end $$;
 create trigger atlas_v71_guard_stage_change
 before update of current_stage_id on public.processes
 for each row execute function public.atlas_v71_guard_active_stage_change();
