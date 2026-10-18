@@ -8,6 +8,77 @@
  const dt=d=>d?new Date(d).toLocaleDateString('pt-BR'):'—';
  const statuses={pending:'Pendente',submitted:'Enviado',in_review:'Em análise',approved:'Aprovado',rejected:'Reprovado',waived:'Dispensado',
   open:'Aberta',in_progress:'Em atendimento',responded:'Respondida — aguardando aceite',accepted:'Aceita pelo órgão',reopened:'Exigência reaberta',cancelled:'Cancelada'};
+ // Referência exclusivamente visual até que a migração documental seja aprovada.
+ // Itens não são criados, aprovados nem anexados sem o esquema e as políticas RLS do banco.
+ const REFERENCE_REQUIREMENTS={
+  abertura:[
+   ['Identificação e qualificação dos sócios e administradores','Nome, CPF, estado civil, profissão, endereço e dados de representação.','base'],
+   ['Documentos de identidade e CPF dos signatários','Conferir documentos pessoais conforme natureza jurídica e órgão registrador.','base'],
+   ['Endereço do estabelecimento e dados do imóvel','Endereço completo; verificar inscrição imobiliária, IPTU ou documento equivalente exigido pelo município.','base'],
+   ['Dados para elaboração do ato constitutivo','Denominação, objeto, capital, quotas, administração e demais cláusulas aplicáveis.','base'],
+   ['Atividades econômicas e CNAEs pretendidos','Descrição das atividades principal e secundárias.','base'],
+   ['Consulta de viabilidade do nome e do endereço','Conferir exigências do município e do órgão de registro.','condicional'],
+   ['Dados para registro e inscrição no CNPJ','Informações solicitadas pelos módulos aplicáveis da Redesim.','base'],
+   ['Procuração e poderes de representação','Se o procedimento for realizado por procurador.','condicional'],
+   ['Documentação de atividade regulamentada e licenças','A depender do CNAE, risco, localidade e órgão licenciador.','condicional']
+  ],
+  alteracao_societaria:[
+   ['Contrato social e alterações registradas','Conferir a versão consolidada e os atos anteriores.','base'],
+   ['Instrumento de alteração societária','Minuta com as deliberações, alterações e assinaturas cabíveis.','base'],
+   ['Identificação dos sócios e administradores envolvidos','Qualificação e documentos dos signatários quando exigidos.','base'],
+   ['Informações sobre capital, quotas e administração','Conforme os eventos societários a registrar.','condicional'],
+   ['Viabilidade de nome, endereço ou atividade','Quando a alteração envolver eventos sujeitos à consulta prévia.','condicional'],
+   ['Documentação de entrada, retirada ou representação','Instrumentos de cessão, anuências e procurações, conforme o caso.','condicional'],
+   ['Dados para atualização cadastral na Redesim','Eventos e informações cadastrais pertinentes ao ato.','base']
+  ],
+  baixa:[
+   ['CNPJ e atos constitutivos atualizados','Dados cadastrais e último instrumento registrado.','base'],
+   ['Distrato social ou ato de extinção','Documento pertinente à natureza jurídica e deliberação de encerramento.','base'],
+   ['Identificação e poderes dos signatários','Conferir representantes, sócios e procurações aplicáveis.','base'],
+   ['Dados para baixa cadastral na Redesim','Informações e eventos de baixa nos órgãos integrados.','base'],
+   ['Comprovantes e pendências fiscais, trabalhistas ou municipais','Verificar obrigações de encerramento aplicáveis à empresa.','condicional'],
+   ['Baixa de inscrições e licenças','Conferir inscrições estadual/municipal e alvarás existentes.','condicional']
+  ],
+  regularizacao:[
+   ['CNPJ e atos empresariais vigentes','Identificar a pessoa jurídica e seus representantes.','base'],
+   ['Intimação, exigência, auto ou apontamento da irregularidade','Documentação que descreve o problema a regularizar.','base'],
+   ['Protocolos e comprovantes anteriores','Histórico da solicitação perante os órgãos envolvidos.','base'],
+   ['Comprovantes fiscais, declarações ou pagamentos','Quando relacionados à pendência identificada.','condicional'],
+   ['Documentos do imóvel, atividade ou responsáveis','Conforme exigência específica do órgão.','condicional'],
+   ['Procuração e autorização de representação','Se houver representação por terceiros.','condicional']
+  ],
+  licenciamento:[
+   ['CNPJ e ato constitutivo vigente','Identificação e atividade da empresa.','base'],
+   ['Endereço e documentos do imóvel','Inscrição imobiliária, IPTU, contrato ou autorização conforme órgão e município.','base'],
+   ['Atividades e CNAEs exercidos no local','Descrição da operação, área utilizada e fatores de risco.','base'],
+   ['Viabilidade ou consulta de uso e ocupação do solo','Quando requerida pelo município.','condicional'],
+   ['Plantas, laudos, projetos e responsabilidade técnica','ART/RRT e documentos técnicos conforme a licença.','condicional'],
+   ['Autorizações específicas e licenças anteriores','Vigilância sanitária, meio ambiente, bombeiros ou outras autoridades, conforme atividade.','condicional']
+  ],
+  legalizacao_empresarial:[
+   ['CNPJ, contrato social e últimas alterações','Se a pessoa jurídica já estiver registrada.','base'],
+   ['Identificação dos responsáveis e procuradores','Qualificação, contatos e poderes de representação.','base'],
+   ['Dados do endereço e do imóvel','Incluindo documentação municipal pertinente.','base'],
+   ['Atividades e CNAEs','Detalhamento das operações exercidas ou pretendidas.','base'],
+   ['Consulta de viabilidade ou protocolo existente','Quando aplicável à etapa da legalização.','condicional'],
+   ['Comprovantes de inscrições tributárias','Estadual ou municipal, se existentes ou exigidos.','condicional'],
+   ['Licenças, alvarás e autorizações setoriais','Conforme atividade, risco e localidade.','condicional']
+  ]
+ };
+ function referenceTemplatesFor(service){
+  const key=service==='encerramento'?'baixa':service;
+  return (REFERENCE_REQUIREMENTS[key]||REFERENCE_REQUIREMENTS.legalizacao_empresarial)
+   .map(([title,instructions,kind])=>({title,instructions,kind}));
+ }
+ function referenceChecklistHtml(service){
+  const items=referenceTemplatesFor(service);
+  return '<div class="v71-doc-reference-note" role="note"><strong>Prévia orientativa — ainda sem gravação</strong>'+
+   '<p>Relação inicial para conferência, não é uma exigência legal universal. Confirme natureza jurídica, CNAEs, município e órgão responsável. '+
+   'Esta lista não está gravada no processo: a ativação do checklist definitivo depende da estrutura documental no banco.</p></div>'+
+   '<ul class="v71-doc-preview-list v71-doc-reference-list">'+items.map(item=>
+    '<li><span><strong>'+escapeHtml(item.title)+'</strong><small>'+escapeHtml(item.instructions)+'</small></span><small class="v71-doc-kind">'+
+     (item.kind==='condicional'?'Conforme o caso':'Base de conferência')+'</small></li>').join('')+'</ul>';
+ }
  const activeExigency=e=>!['accepted','cancelled'].includes(e.status);
  const docStatus=s=>statuses[s]||s;
  function alertError(err){window.alert('ATLAS 7.1: '+message(err));}
@@ -71,7 +142,7 @@
   const box=document.createElement('section');
   box.className='v71-doc-new span-2';
   box.dataset.v71DocNew='1';
-  box.innerHTML='<h3>Checklist de documentos na abertura</h3>'+
+  box.innerHTML='<h3>Checklist documental do processo</h3>'+
     '<p>Itens conforme serviço e localidade; confira as exigências específicas do órgão.</p>'+
     '<div class="v71-doc-new-status" data-v71-doc-preview role="status" aria-live="polite">Verificando modelos...</div>';
   footer.before(box);
@@ -80,13 +151,16 @@
    const number=++requestNumber;
    const host=box.querySelector('[data-v71-doc-preview]');
    if(!host?.isConnected)return;
-   host.textContent='Verificando modelos...';
+   host.innerHTML='<div class="v71-doc-reference-footer" role="status">Consultando modelos configurados...</div>'+
+    referenceChecklistHtml(form.querySelector('#proc-service')?.value);
    const retryHtml=(msg)=>escapeHtml(msg)+
     ' <button type="button" class="v71-doc-retry" data-v71-doc-retry>Tentar novamente</button>';
    try {
     if(!await available()){
      if(!host.isConnected||number!==requestNumber)return;
-     host.innerHTML=retryHtml('Checklist automático indisponível neste ambiente. A estrutura documental 7.1 ainda não está ativada ou a conexão falhou. Você pode salvar o processo normalmente.');
+     host.innerHTML=referenceChecklistHtml(form.querySelector('#proc-service')?.value)+
+      '<div class="v71-doc-reference-footer">Checklist automático indisponível neste ambiente. Você pode salvar o processo normalmente. '+
+      retryHtml('')+'</div>';
     } else {
      const rows=await bounded(templatesFor(
       form.querySelector('#proc-service')?.value,
@@ -98,11 +172,12 @@
        '<li><strong>'+escapeHtml(r.title)+'</strong> <small>'+
        escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+
        '</small></li>').join('')+'</ul>':
-      '<span>Nenhum modelo configurado para este serviço e localidade. O administrador poderá cadastrar modelos específicos.</span>';
+      '<div class="v71-doc-reference-footer">Nenhum modelo configurado para este serviço e localidade. O administrador poderá cadastrar modelos específicos.</div>'+referenceChecklistHtml(form.querySelector('#proc-service')?.value);
     }
    } catch(error) {
     if(!host.isConnected||number!==requestNumber)return;
-    host.innerHTML=retryHtml('Não foi possível consultar os modelos documentais. Confira sua conexão ou tente novamente.');
+    host.innerHTML='<div class="v71-doc-reference-footer">Não foi possível consultar os modelos documentais. '+retryHtml('Confira sua conexão ou tente novamente.')+'</div>'+
+     referenceChecklistHtml(form.querySelector('#proc-service')?.value);
     console.warn('ATLAS 7.1: modelos documentais indisponíveis',error);
    }
   };
@@ -197,14 +272,21 @@
   const id=detail?.process?.id;
   const container=root.matches?.('[data-v71-doc-process]')?root:root.querySelector('[data-v71-doc-process]');
   if(!container||!id)return;
-  if(!await available()){container.innerHTML='<div class="v71-capability-note">Gestão Documental 7.1 preparada para homologação. O Dossiê Digital atual permanece disponível sem alterações.</div>';return;}
+  if(!await available()){
+   container.innerHTML=container.dataset.v71DocKind==='exigencies'?
+    '<div class="v71-capability-note"><strong>Exigências formais indisponíveis</strong><p>A estrutura de registro e acompanhamento de exigências ainda não foi ativada neste banco. Nenhuma exigência pode ser confirmada nesta prévia.</p></div>':
+    referenceChecklistHtml(detail.process?.service_type)+
+     '<div class="v71-capability-note">Checklist persistente ainda indisponível. O Dossiê Digital atual permanece acessível pela navegação existente.</div>';
+   return;
+  }
   try {
-   const data=await load(id);
+   const data=await bounded(load(id));
    if(!container.isConnected)return;
    if(container.dataset.v71DocKind==='exigencies')renderExigencies(container,data);
    else renderChecklist(container,data,id);
    wire(container,data,detail);
-  }catch(error){container.innerHTML='<div class="error-box">Não foi possível carregar documentação: '+escapeHtml(message(error))+'</div>';}
+  }catch(error){container.innerHTML='<div class="error-box">Não foi possível carregar os dados documentais: '+escapeHtml(message(error))+'</div>'+
+   (container.dataset.v71DocKind==='exigencies'?'':referenceChecklistHtml(detail.process?.service_type));}
  }
  async function openDocument(docId){
   const {db}=context();
@@ -348,5 +430,5 @@
  function bindProcessActions(root,detail){
   root.querySelectorAll('[data-v71-doc-process]').forEach(element=>renderOn(element,detail).catch(alertError));
  }
- window.AtlasOpsV71Documents=Object.freeze({available,templatesFor,decorateNewProcessForm,afterProcessCreated,documentPanel,exigenciesPanel,bindProcessActions,load});
+ window.AtlasOpsV71Documents=Object.freeze({available,templatesFor,referenceTemplatesFor,decorateNewProcessForm,afterProcessCreated,documentPanel,exigenciesPanel,bindProcessActions,load});
 })();

@@ -58,8 +58,22 @@
 #process-real-form .v71-doc-preview-list li{display:flex;justify-content:space-between;gap:8px;align-items:baseline;border-bottom:1px solid #e3e9f2;padding:5px 0;overflow-wrap:anywhere}
 #process-real-form .v71-doc-preview-list small{white-space:nowrap;color:#64748b}
 #process-real-form .v71-doc-retry{display:inline-flex;min-height:32px;align-items:center;justify-content:center;background:#f4f8ff;border:1px solid #bfcfe4;color:#1359aa;border-radius:8px;padding:5px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.v71-doc-reference-note{border:1px solid #e4d5ac;border-left:3px solid #b9974c;background:#fffdf7;border-radius:8px;padding:10px 12px;color:#293a55;font-size:12px;line-height:1.45}
+.v71-doc-reference-note strong{display:block;font-size:12px;color:#172a47;margin-bottom:4px}
+.v71-doc-reference-note p{font-size:11px;line-height:1.5;margin:0;color:#52617b}
+.v71-doc-reference-footer{font-size:11px;line-height:1.5;color:#536681;padding:3px 0}
+.v71-doc-reference-list{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.v71-doc-reference-list li{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:9px 2px;border-bottom:1px solid #e3e9f2;min-width:0}
+.v71-doc-reference-list li>span{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+.v71-doc-reference-list li strong{font-size:12px;color:#1b3151;font-weight:700;line-height:1.4}
+.v71-doc-reference-list li span small{font-size:11px;line-height:1.45;color:#64748b;white-space:normal}
+.v71-doc-reference-list .v71-doc-kind{display:inline-block;flex-shrink:0;max-width:120px;white-space:normal;text-align:right;font-size:10px;line-height:1.35;color:#8b7036}
+#process-real-form .v71-doc-reference-list li span small{white-space:normal}
 @media(max-width:760px){
  #process-real-form .v71-doc-new{padding:12px;margin:5px 0}
+ .v71-doc-reference-list li{flex-direction:column;gap:4px}
+ .v71-doc-reference-list .v71-doc-kind{max-width:none;text-align:left}
+ #process-real-form .v71-doc-preview-list li{align-items:flex-start}
  #process-real-form .modal-actions{position:sticky;bottom:0;z-index:5;margin:8px -2px 0;padding:12px 2px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;background:#fff;border-top:1px solid #edf0f5}
  #process-real-form .modal-actions .btn{width:100%;min-width:0;min-height:44px;white-space:normal}
  #process-real-form input,#process-real-form select{max-width:100%;min-width:0}
