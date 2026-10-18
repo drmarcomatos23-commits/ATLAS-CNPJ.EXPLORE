@@ -92,7 +92,7 @@ create policy b_profiles on public.profiles to authenticated using (organization
 grant usage on schema public,auth to authenticated;
 grant execute on all functions in schema public,auth to authenticated;
 grant select,insert,update on public.processes,public.clients,public.documents,public.profiles to authenticated;
-grant select on public.organizations,public.workflow_stages,public.workflow_templates to authenticated;
+grant select on public.organizations,public.workflow_stages,public.workflow_templates,public.role_permissions to authenticated;
 
 -- Org, actor e clientes artificiais; nenhuma informação real de cliente.
 insert into public.organizations (id,name) values
