@@ -2,7 +2,7 @@
 
 Data: 18/10/2026
 
-Status: **especificação para revisão do Dr. Marco Matos; implementação não autorizada nesta etapa**
+Status: **especificação aprovada pelo Dr. Marco Matos em 18/10/2026; implementação condicionada à aprovação do plano e do modo de execução**
 
 Branch de desenho: `design/atlas-checklist-operacional-20261018`
 Base: `preview/atlas-legalizacao-checklist-20261018`
