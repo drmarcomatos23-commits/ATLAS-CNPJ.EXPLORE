@@ -22,52 +22,108 @@
   if(!db||!profile?.organization_id||!target)return false;
   return true;
  }
- async function available() {
+ // A preview can share a production Supabase where the 7.1 migration is not installed.
+ // Neither a PostgREST error nor an unresponsive network may trap the user in "Verificando...".
+ const PROBE_TIMEOUT_MS=4000;
+ const READ_TIMEOUT_MS=5000;
+ const RPC_TIMEOUT_MS=6000;
+ function bounded(promise,ms=READ_TIMEOUT_MS){
+  let timer;
+  return Promise.race([
+   Promise.resolve(promise),
+   new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Prazo da consulta documental excedido')),ms);})
+  ]).finally(()=>clearTimeout(timer));
+ }
+ async function available(){
   const {db,profile}=context();
   if(!db||!profile?.organization_id)return false;
-  const {error}=await db.from('document_requirement_templates').select('id').eq('organization_id',profile.organization_id).limit(1);
-  return !error;
+  try {
+   const result=await bounded(
+    db.from('document_requirement_templates').select('id')
+      .eq('organization_id',profile.organization_id).limit(1),PROBE_TIMEOUT_MS);
+   return !result?.error;
+  }catch(error){
+   console.warn('ATLAS 7.1: consulta de disponibilidade documental indisponível',error);
+   return false;
+  }
  }
- async function templatesFor(service,stageId,clientId) {
+ async function templatesFor(service,stageId,clientId){
   const {db,profile}=context();
   if(!db||!profile?.organization_id)return [];
-  const {data,error}=await db.from('document_requirement_templates').select('*')
-   .eq('organization_id',profile.organization_id).eq('service_type',service||'').eq('active',true).order('sort_order');
-  if(error)throw error;
-  const company=clientId?await db.from('clients').select('state,city').eq('id',clientId).maybeSingle():{data:null};
-  const state=String(company.data?.state||'').toUpperCase(),city=String(company.data?.city||'').toLowerCase();
-  return (data||[]).filter(x=>(!x.stage_id||x.stage_id===stageId)&&
-   (!x.scope_state||x.scope_state.toUpperCase()===state)&&(!x.scope_city||x.scope_city.toLowerCase()===city));
+  const result=await bounded(db.from('document_requirement_templates').select('*')
+    .eq('organization_id',profile.organization_id).eq('service_type',service||'')
+    .eq('active',true).order('sort_order'));
+  if(result?.error)throw result.error;
+  const company=clientId?
+    await bounded(db.from('clients').select('state,city').eq('id',clientId).maybeSingle()):
+    {data:null};
+  if(company?.error)throw company.error;
+  const state=String(company.data?.state||'').toUpperCase();
+  const city=String(company.data?.city||'').toLocaleLowerCase('pt-BR');
+  return (result?.data||[]).filter(x=>(!x.stage_id||x.stage_id===stageId)&&
+   (!x.scope_state||x.scope_state.toUpperCase()===state)&&
+   (!x.scope_city||x.scope_city.toLocaleLowerCase('pt-BR')===city));
  }
  async function decorateNewProcessForm(form){
-  if(!processForm(form)||form.querySelector('[data-v71-doc-new]'))return;
+  if(!form||!processForm(form)||form.querySelector('[data-v71-doc-new]'))return;
   const footer=form.querySelector('.modal-actions');
   if(!footer)return;
   const box=document.createElement('section');
-  box.className='v71-doc-new span-2';box.dataset.v71DocNew='1';
-  box.innerHTML='<h3>Checklist de documentos na abertura</h3><p>O Atlas propõe documentos conforme o serviço e a localidade. Itens condicionais não constituem exigência legal universal.</p><div data-v71-doc-preview>Verificando modelos...</div>';
+  box.className='v71-doc-new span-2';
+  box.dataset.v71DocNew='1';
+  box.innerHTML='<h3>Checklist de documentos na abertura</h3>'+
+    '<p>Itens conforme serviço e localidade; confira as exigências específicas do órgão.</p>'+
+    '<div class="v71-doc-new-status" data-v71-doc-preview role="status" aria-live="polite">Verificando modelos...</div>';
   footer.before(box);
+  let requestNumber=0;
   const reload=async()=>{
+   const number=++requestNumber;
    const host=box.querySelector('[data-v71-doc-preview]');
    if(!host?.isConnected)return;
-   if(!await available()){host.innerHTML='<small>A gestão documental será ativada depois da homologação do banco 7.1. O processo atual ainda pode ser cadastrado.</small>';return;}
-   try{
-    const rows=await templatesFor(form.querySelector('#proc-service')?.value,form.querySelector('#proc-stage')?.value,form.querySelector('#proc-client')?.value);
-    host.innerHTML=rows.length?'<ul>'+rows.map(r=>'<li><strong>'+escapeHtml(r.title)+'</strong> · '+escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+'</li>').join('')+'</ul>':
-      '<small>Nenhum modelo para este serviço/localidade. O administrador poderá cadastrar critérios específicos.</small>';
-   }catch(e){host.textContent='Modelos indisponíveis: '+message(e);}
+   host.textContent='Verificando modelos...';
+   const retryHtml=(msg)=>escapeHtml(msg)+
+    ' <button type="button" class="v71-doc-retry" data-v71-doc-retry>Tentar novamente</button>';
+   try {
+    if(!await available()){
+     if(!host.isConnected||number!==requestNumber)return;
+     host.innerHTML=retryHtml('Checklist automático indisponível neste ambiente. A estrutura documental 7.1 ainda não está ativada ou a conexão falhou. Você pode salvar o processo normalmente.');
+    } else {
+     const rows=await bounded(templatesFor(
+      form.querySelector('#proc-service')?.value,
+      form.querySelector('#proc-stage')?.value,
+      form.querySelector('#proc-client')?.value),READ_TIMEOUT_MS);
+     if(!host.isConnected||number!==requestNumber)return;
+     host.innerHTML=rows.length?
+      '<ul class="v71-doc-preview-list">'+rows.map(r=>
+       '<li><strong>'+escapeHtml(r.title)+'</strong> <small>'+
+       escapeHtml(r.required_rule==='required'?'Obrigatório':r.required_rule==='optional'?'Opcional':'Condicional')+
+       '</small></li>').join('')+'</ul>':
+      '<span>Nenhum modelo configurado para este serviço e localidade. O administrador poderá cadastrar modelos específicos.</span>';
+    }
+   } catch(error) {
+    if(!host.isConnected||number!==requestNumber)return;
+    host.innerHTML=retryHtml('Não foi possível consultar os modelos documentais. Confira sua conexão ou tente novamente.');
+    console.warn('ATLAS 7.1: modelos documentais indisponíveis',error);
+   }
   };
-  ['proc-service','proc-client','proc-stage'].forEach(id=>form.querySelector('#'+id)?.addEventListener('change',reload));
-  reload();
+  box.addEventListener('click',event=>{
+   if(event.target?.closest?.('[data-v71-doc-retry]'))void reload();
+  });
+  ['proc-service','proc-client','proc-stage'].forEach(id=>
+   form.querySelector('#'+id)?.addEventListener('change',()=>{void reload();}));
+  return reload();
  }
  async function afterProcessCreated(processId){
-  if(!processId||!await available())return {available:false};
-  try{
-   const created=await call('atlas_v71_init_document_checklist',{p_process_id:processId});
+  if(!processId)return {available:false};
+  if(!await available())return {available:false};
+  try {
+   const created=await bounded(call('atlas_v71_init_document_checklist',{p_process_id:processId}),RPC_TIMEOUT_MS);
    document.dispatchEvent(new CustomEvent('atlas:v71:documents-changed',{detail:{processId}}));
    return {available:true,created:Number(created||0)};
-  }catch(error){console.error('ATLAS 7.1: falha ao gerar checklist do novo processo',error);
-    return {available:true,error:message(error)};}
+  }catch(error){
+   console.warn('ATLAS 7.1: não foi possível confirmar geração do checklist',error);
+   return {available:true,error:'Não foi possível confirmar a geração do checklist. Consulte o processo antes de tentar novamente.'};
+  }
  }
  function documentPanel(detail){
   return '<div class="v71-doc-panel" data-v71-doc-process="'+escapeHtml(detail.process?.id||'')+'" data-v71-doc-kind="documents"><div class="v71-doc-loading">Carregando checklist documental...</div></div>';
