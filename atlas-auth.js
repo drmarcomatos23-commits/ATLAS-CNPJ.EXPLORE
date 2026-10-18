@@ -75,6 +75,19 @@
         message(qs("login-message"), "Este acesso está desativado. Procure o Administrador.", "error");
         return;
       }
+      // Atlas Hub: autorização por SISTEMA (independente da autenticação).
+      // Falha de rede, RPC ausente e ausência de concessão sempre NEGAM acesso.
+      const { data: hubGranted, error: hubGrantError } = await sb.rpc("atlas_hub_can_access", {
+        p_system: "legalizacao"
+      });
+      if (hubGrantError || hubGranted !== true) {
+        currentProfile = null;
+        window.hideAtlasApp?.();
+        qs("app-shell")?.classList.add("hidden");
+        qs("login-screen")?.classList.remove("hidden");
+        message(qs("login-message"), "O Atlas Hub não autorizou seu acesso ao Legalização. Solicite a liberação ao administrador.", "error");
+        return;
+      }
       currentProfile = profile;
       qs("login-screen")?.classList.add("hidden");
       window.showApp?.(profile);
