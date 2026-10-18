@@ -8,7 +8,7 @@ const css=readFileSync(new URL('../atlas-ops-v7.css',import.meta.url),'utf8');
 const company=readFileSync(new URL('../company-flow.js',import.meta.url),'utf8');
 function isolated(client){
  const ctx={
-  console:{error(){}},
+  console:{error(){},warn(){}},
   window:{atlasAuth:{client,getProfile:()=>({id:'user',organization_id:'org'})}},
   document:{createElement(){throw Error('not needed')}},
   setTimeout:(fn)=>{queueMicrotask(fn);return 1},
