@@ -1,0 +1,31 @@
+feature,area,priority,original,clone,notes
+Conectar conta via Facebook Login,conta,must,yes,yes,Necessario para Business Discovery; OAuth + token no Vault; falta testar com o app real da Meta
+KPIs da conta (seguidores views alcance taps no link),analytics,must,yes,yes,Coleta diaria; Meta guarda so 90 dias; Visão geral 7/30/90 dias
+Historico ilimitado de metricas da conta,analytics,must,yes,yes,Pago no Metricool; gratis aqui; Coleta diária em social.account_daily_metric
+Tabela de posts com views alcance salvos compartilhamentos,analytics,must,yes,yes,"Tabela no desktop, cartões no celular"
+Seguidores ganhos por post (follows),analytics,must,yes,yes,Metrica que mais importa para o objetivo; Ordenação padrão + seguidores por mil views
+Curva de views nas primeiras 72h,analytics,should,no,partial,Snapshots horarios; diferencial; Coleta pronta; precisa do agendamento horário no Supabase
+Metricas de Reels (skip rate tempo medio),analytics,should,yes,no,
+Captura de Stories antes de expirar,analytics,must,yes,partial,Job horario; janela 24h; Coleta pronta; tela e agendamento horário pendentes
+Publico (cidade idade genero),analytics,should,yes,no,Top 45 por dimensao
+Heatmap de melhor horario,planner,must,yes,yes,online_followers + desempenho proprio; Algoritmo testado
+Calendario semana/mes,planner,must,yes,no,
+Agendar imagem carrossel Reel,planner,must,yes,no,
+Agendar Story,planner,should,yes,no,So conta Business
+Sugestao automatica de horario no editor,planner,should,yes,no,
+Biblioteca de ideias e rascunhos,planner,could,yes,no,
+Classificar post por pilar (holding sucessao empresas socios),analytics,should,no,yes,Diferencial para o nicho; No detalhe do post; filtro na lista
+Checagem OAB da legenda antes de agendar,planner,could,no,no,Integra skill auditoria-post-juridico
+Adicionar concorrente por @,competitors,must,yes,yes,Business Discovery; Business Discovery; perfil pessoal sinalizado
+Evolucao de seguidores do concorrente,competitors,must,yes,yes,Snapshot diario
+Top posts do concorrente (curtidas comentarios views),competitors,must,yes,yes,
+Frequencia e horarios de postagem do concorrente,competitors,should,yes,partial,Frequência sim; horários não
+Comparativo lado a lado,competitors,must,yes,yes,Inclui sua conta
+Relatorio mensal em PDF,reports,should,yes,no,
+Notificacao de falha na publicacao,planner,must,no,no,E-mail
+Hashtags sugeridas,planner,could,yes,no,Hashtag search API tem limite semanal
+Musica e audio em alta no Reel,planner,skip,yes,no,API nao suporta
+Stickers e links em Story,planner,skip,yes,no,API nao suporta
+Alcance e salvos do concorrente,competitors,skip,yes,no,Dado privado; Metricool tambem nao tem
+Concorrente com perfil pessoal,competitors,skip,yes,no,Business Discovery so Business/Creator
+Outras redes e anuncios,outros,skip,yes,no,Fora do escopo

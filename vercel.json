@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    { "path": "/api/cron/sync?scope=daily", "schedule": "20 6 * * *" },
+    { "path": "/api/cron/sync?scope=competitors", "schedule": "0 7 * * *" }
+  ]
+}
