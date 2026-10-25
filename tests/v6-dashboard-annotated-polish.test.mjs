@@ -29,7 +29,7 @@ test('company types fallback is used when real distribution is only Outros', () 
 
 test('sidebar is reordered to the approved dashboard sequence', () => {
   assert.match(runtime, /SIDEBAR_ORDER/);
-  assert.ok(runtime.includes("'dashboard','clientes','processos','tarefas','protocolos','exigencias','licencas','certidoes','agenda','documentos','custos','relatorios','config'"));
+  assert.ok(runtime.includes("'dashboard','clientes','monitor','processos','tarefas','protocolos','exigencias','licencas','certidoes','agenda','documentos','custos','relatorios','config'"));
 });
 
 test('desktop-like 900-1180 viewport with hover keeps sidebar visible and workspace offset', () => {

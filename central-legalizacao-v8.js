@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.1';
+  const VERSION = '8.2';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -1461,9 +1461,121 @@
   }
 
   /* ================================================================
+     9. MONITOR DE CNPJ DA CARTEIRA (base pública, custo zero)
+     ================================================================ */
+  const MONITOR_FN = 'https://oorpvbxxpbxoaaykrtcf.supabase.co/functions/v1/atlas-legalizacao-cnpj-monitor';
+  const monFilters = { view: 'all', text: '' };
+
+  async function monitorPage() {
+    setHeadSafe('Monitor de CNPJ', 'CARTEIRA', 'Verificação semanal automática da situação na Receita, sócios, endereço, atividades e Simples de todas as empresas.');
+    loading('Carregando monitoramento...');
+    const base = await loadCentral();
+    const snaps = await q('client_registry_snapshots', t => t.select('id,client_id,source,payload,fetched_at').in('source', ['monitor', 'monitor_erro', 'monitor_falha']).order('fetched_at', { ascending: false }).limit(5000));
+    renderMonitor(base, snaps.data || []);
+  }
+
+  function renderMonitor(data, snaps) {
+    const valid = (data.clients || []).filter(c => digits(c.tax_id).length === 14);
+    const latest = new Map(), latestErr = new Map(), changes = [];
+    const since = addDays(todayISO(), -30);
+    snaps.forEach(s => {
+      if (s.source === 'monitor') {
+        if (!latest.has(s.client_id)) latest.set(s.client_id, s);
+        if ((s.payload?.alteracoes || []).length && String(s.fetched_at).slice(0, 10) >= since) changes.push(s);
+      } else if (!latestErr.has(s.client_id)) latestErr.set(s.client_id, s);
+    });
+    const rows = valid.map(c => {
+      const snap = latest.get(c.id), err = latestErr.get(c.id);
+      const errNewer = err && (!snap || err.fetched_at > snap.fetched_at);
+      const p = snap?.payload || {};
+      const sit = p.situacao || '';
+      return { c, snap, err: errNewer ? err : null, sit, irregular: !!sit && sit !== 'ATIVA', changed: changes.some(x => x.client_id === c.id) };
+    });
+    const monitored = rows.filter(r => r.snap).length;
+    const irregular = rows.filter(r => r.irregular);
+    const waiting = rows.filter(r => !r.snap && !r.err).length;
+    const errors = rows.filter(r => r.err && /NAO_ENCONTRADO|CNPJ_INVALIDO/.test(r.err.payload?.erro || ''));
+    const list = rows.filter(r => {
+      if (monFilters.view === 'irregular' && !r.irregular) return false;
+      if (monFilters.view === 'changed' && !r.changed) return false;
+      if (monFilters.view === 'error' && !r.err) return false;
+      if (monFilters.view === 'waiting' && (r.snap || r.err)) return false;
+      if (monFilters.text && !norm([r.c.legal_name, r.c.trade_name, r.c.tax_id].join(' ')).includes(norm(monFilters.text))) return false;
+      return true;
+    }).sort((a, b) => (b.irregular - a.irregular) || (b.changed - a.changed) || a.c.legal_name.localeCompare(b.c.legal_name, 'pt-BR'));
+    const sitBadge = r => r.err && !r.snap ? badge(r.err.payload?.erro === 'NAO_ENCONTRADO' ? 'Não encontrado' : r.err.payload?.erro === 'CNPJ_INVALIDO' ? 'CNPJ inválido' : 'Falha na consulta', r.err.payload?.erro === 'FALHA_CONSULTA' ? 'neutral' : 'bad') : !r.snap ? badge('Aguardando', 'neutral') : badge(r.sit || '—', r.irregular ? 'bad' : 'ok');
+
+    pageSafe(`
+      <div class="lx-kpis">
+        ${kpi('Monitoradas', `${monitored}/${valid.length}`, waiting ? `${waiting} aguardando 1ª verificação` : 'Carteira completa')}
+        ${kpi('Situação irregular', irregular.length, 'Inapta, suspensa ou baixada', irregular.length ? 'bad' : 'ok')}
+        ${kpi('Alterações em 30 dias', new Set(changes.map(c => c.client_id)).size, 'Sócios, endereço, CNAE, Simples', changes.length ? 'warn' : '')}
+        ${kpi('Cadastro a conferir', errors.length, 'CNPJ não localizado ou inválido', errors.length ? 'warn' : '')}
+      </div>
+      ${changes.length ? `<section class="lx-card"><div class="lx-section-head"><h2>Alterações detectadas</h2><span>Últimos 30 dias</span></div>
+        <div class="lx-mon-changes">${changes.slice(0, 30).map(s => { const c = data.clientMap.get(s.client_id); return `<article><header><strong>${h(c?.legal_name || 'Empresa')}</strong><time>${brDateTime(s.fetched_at).split(',')[0]}</time></header>${(s.payload.alteracoes || []).map(a => `<div class="lx-mon-diff ${a.grave ? 'grave' : ''}"><span>${h(a.campo)}</span><del>${h(String(a.antes).slice(0, 220))}</del><ins>${h(String(a.depois).slice(0, 220))}</ins></div>`).join('')}</article>`; }).join('')}</div></section>` : ''}
+      <section class="lx-card">
+        <div class="lx-toolbar">
+          <input id="lx-mon-search" type="search" placeholder="Buscar empresa ou CNPJ" value="${h(monFilters.text)}">
+          <select id="lx-mon-view">${[['all', 'Todas as empresas'], ['irregular', 'Situação irregular'], ['changed', 'Com alterações (30 dias)'], ['error', 'Cadastro a conferir'], ['waiting', 'Aguardando verificação']].map(([k, v]) => `<option value="${k}" ${monFilters.view === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <div class="lx-toolbar-actions">${canEdit() ? '<button class="btn btn-primary" type="button" id="lx-mon-run">Verificar agora</button>' : ''}</div>
+        </div>
+        <div class="lx-notice" style="margin-top:12px">A verificação roda sozinha de hora em hora, em pequenos lotes, e cada empresa é conferida a cada 7 dias na base pública da Receita (BrasilAPI / CNPJws). Mudanças viram aviso no sino.</div>
+        ${list.length ? `<div class="lx-table-wrap"><table class="lx-table"><thead><tr><th>Empresa</th><th>CNPJ</th><th>Situação</th><th>Simples / MEI</th><th>Sócios</th><th>Última verificação</th><th></th></tr></thead><tbody>${list.map(r => { const p = r.snap?.payload || {}; return `<tr>
+          <td data-label="Empresa"><strong>${h(r.c.legal_name)}</strong>${r.changed ? ' ' + badge('Alterada', 'warn') : ''}${p.motivo_situacao && r.irregular ? `<div class="muted">${h(p.motivo_situacao)}</div>` : ''}</td>
+          <td data-label="CNPJ" class="lx-mono">${h(r.c.tax_id || '')}</td>
+          <td data-label="Situação">${sitBadge(r)}</td>
+          <td data-label="Simples / MEI">${h([p.simples ? 'Simples: ' + p.simples : '', p.mei === 'SIM' ? 'MEI' : ''].filter(Boolean).join(' · ') || '—')}</td>
+          <td data-label="Sócios">${(p.socios || []).length || '—'}</td>
+          <td data-label="Última verificação">${r.snap ? brDateTime(r.snap.fetched_at).split(',')[0] : r.err ? brDateTime(r.err.fetched_at).split(',')[0] : '—'}</td>
+          <td><div class="lx-row-actions">${r.snap ? `<button class="mini-btn" type="button" data-lx-mon-view="${h(r.c.id)}">Ver cadastro</button>` : ''}${canEdit() && (r.irregular || r.changed) ? `<button class="mini-btn" type="button" data-lx-mon-req="${h(r.c.id)}">Registrar exigência</button>` : ''}</div></td>
+        </tr>`; }).join('')}</tbody></table></div>` : empty('Nenhuma empresa nesse filtro', valid.length ? 'Ajuste o filtro acima.' : 'Cadastre o CNPJ das empresas para iniciar o monitoramento.')}
+      </section>`);
+
+    $('#lx-mon-search')?.addEventListener('input', e => { monFilters.text = e.target.value; clearTimeout(renderMonitor._t); renderMonitor._t = setTimeout(() => { renderMonitor(data, snaps); const i = $('#lx-mon-search'); i?.focus(); i?.setSelectionRange(i.value.length, i.value.length); }, 250); });
+    $('#lx-mon-view')?.addEventListener('change', e => { monFilters.view = e.target.value; renderMonitor(data, snaps); });
+    $('#lx-mon-run')?.addEventListener('click', () => runMonitorNow());
+    $$('[data-lx-mon-view]').forEach(b => b.addEventListener('click', () => { const r = rows.find(x => x.c.id === b.dataset.lxMonView); if (r) showRegistry(r.c, r.snap); }));
+    $$('[data-lx-mon-req]').forEach(b => b.addEventListener('click', () => {
+      const r = rows.find(x => x.c.id === b.dataset.lxMonReq); if (!r) return;
+      const alts = (changes.find(x => x.client_id === r.c.id)?.payload?.alteracoes || []).map(a => a.campo).join(', ');
+      openRequirementModal(data, null, monitorPage, { client_id: r.c.id, agency: 'Receita Federal', description: r.irregular ? `Regularizar situação cadastral ${r.sit} na Receita Federal${r.snap?.payload?.motivo_situacao ? ' (' + r.snap.payload.motivo_situacao + ')' : ''}` : `Conferir e atualizar cadastro: alteração detectada em ${alts}` });
+    }));
+  }
+
+  function showRegistry(c, snap) {
+    const p = snap?.payload || {};
+    const row = (k, v) => `<div><span>${h(k)}</span><strong>${h(v || '—')}</strong></div>`;
+    shell(c.legal_name, `<div class="lx-panel-head lx-registry">
+      ${row('Situação', p.situacao)}${row('Desde', p.data_situacao ? br(p.data_situacao) : '')}${row('Motivo', p.motivo_situacao)}${row('Natureza jurídica', p.natureza)}
+      ${row('Capital social', p.capital_social ? Number(p.capital_social).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '')}${row('Simples / MEI', [p.simples && 'Simples: ' + p.simples, p.mei && 'MEI: ' + p.mei].filter(Boolean).join(' · '))}
+      ${row('CNAE principal', p.cnae_principal)}${row('Fonte', p.fonte)}
+    </div>
+    <div class="lx-section-head"><h2>Endereço</h2></div><p style="font-size:13px">${h(String(p.endereco || '—').split(' | ').join(', '))}</p>
+    <div class="lx-section-head"><h2>Quadro de sócios</h2><span>${(p.socios || []).length}</span></div>
+    <ul class="lx-plain-list">${(p.socios || []).map(s => `<li>${h(s)}</li>`).join('') || '<li class="muted">Não informado pela fonte.</li>'}</ul>
+    <div class="lx-section-head"><h2>CNAEs secundários</h2><span>${(p.cnaes_secundarios || []).length}</span></div>
+    <p class="lx-mono" style="font-size:12px">${h((p.cnaes_secundarios || []).join(', ') || '—')}</p>
+    <p class="muted" style="font-size:11.5px;margin-top:12px">Verificado em ${brDateTime(snap?.fetched_at)}. Dados públicos do CNPJ; para atos formais, confirme no portal da Receita Federal.</p>`, true);
+  }
+
+  async function runMonitorNow() {
+    const btn = $('#lx-mon-run'); if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+    try {
+      const { data: { session } } = await db().auth.getSession();
+      if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
+      const res = await fetch(MONITOR_FN, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + session.access_token }, body: JSON.stringify({ limit: 10 }) });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out?.error === 'unauthorized' ? 'Apenas Administrador ou Operação podem verificar.' : 'A verificação falhou. Tente de novo em instantes.');
+      toast(out.checked ? `${out.checked} empresa(s) verificada(s)${out.changes ? `, ${out.changes} alteração(ões)` : ''}. ${out.remaining ? `Faltam ${out.remaining} — clique de novo ou aguarde a rotina automática.` : 'Carteira em dia.'}` : 'Todas as empresas já foram verificadas nos últimos 7 dias.');
+      await monitorPage();
+    } catch (err) { toast(err.message || String(err), 'bad'); if (btn) { btn.disabled = false; btn.textContent = 'Verificar agora'; } }
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
-  const PAGES = { tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
+  const PAGES = { monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
 
   function installRouter() {
     const prev = window.render;
