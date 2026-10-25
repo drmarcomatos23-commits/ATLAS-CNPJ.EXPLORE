@@ -197,3 +197,32 @@ button.lx-check:hover{border-color:var(--lx-blue)}
 .lx-mon-diff.grave span{color:var(--lx-bad)}
 .lx-plain-list{margin:0 0 8px;padding-left:18px;font-size:13px}.lx-plain-list li{padding:2px 0}
 @media (max-width:720px){.lx-mon-diff{grid-template-columns:1fr}}
+
+/* V8.3 — editor de modelos */
+.lx-tpl-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.lx-tpl-card{border:1px solid var(--lx-border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;border-top:3px solid var(--lx-blue)}
+.lx-tpl-card.off{opacity:.6;border-top-color:#9fb3cb}
+.lx-tpl-card header{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.lx-tpl-card header strong{font-size:14px;color:var(--lx-text)}
+.lx-tpl-card small{font-size:11.5px}
+.lx-te-row{display:grid;grid-template-columns:22px minmax(0,2.4fr) minmax(0,1fr) minmax(0,1fr) 92px auto;gap:6px;align-items:center;padding:5px 0;border-top:1px solid var(--lx-border)}
+.lx-te-row.doc{grid-template-columns:minmax(0,2.4fr) minmax(0,1fr) auto auto}
+.lx-te-row:first-child{border-top:0}
+.lx-te-row input,.lx-te-row select{height:34px;border:1px solid var(--lx-border);border-radius:8px;padding:0 8px;font:inherit;font-size:12.5px;min-width:0;width:100%;box-sizing:border-box}
+.lx-te-n{font-size:11px;font-weight:800;color:var(--lx-muted);text-align:center}
+.lx-te-days{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--lx-muted)}.lx-te-days input{width:56px}
+.lx-te-opt{display:flex;align-items:center;gap:5px;font-size:12px;white-space:nowrap}.lx-te-opt input{width:auto;height:auto}
+.lx-te-btns{display:flex;gap:4px}
+@media (max-width:720px){
+  .lx-te-row,.lx-te-row.doc{grid-template-columns:22px minmax(0,1fr) minmax(0,1fr);padding:8px 0}
+  .lx-te-row>.lx-te-n{grid-column:1;grid-row:1}
+  .lx-te-row>.lx-te-title{grid-column:2/4;grid-row:1}
+  .lx-te-row>[data-k="phase"]{grid-column:2;grid-row:2}
+  .lx-te-row>[data-k="party"]{grid-column:3;grid-row:2}
+  .lx-te-row>.lx-te-days{grid-column:2;grid-row:3}
+  .lx-te-row>.lx-te-btns{grid-column:3;grid-row:3;justify-content:flex-end}
+  .lx-te-row.doc>.lx-te-title{grid-column:1/4;grid-row:1}
+  .lx-te-row.doc>[data-k="category"]{grid-column:1/3;grid-row:2}
+  .lx-te-row.doc>.lx-te-opt{grid-column:1/3;grid-row:3}
+  .lx-te-row.doc>.lx-te-btns{grid-column:3;grid-row:2/4;align-self:center}
+}

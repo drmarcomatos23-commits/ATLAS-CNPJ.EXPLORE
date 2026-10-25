@@ -20,8 +20,8 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.2');
-  assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'monitor', 'protocolos', 'tarefas']);
+  assert.equal(w.AtlasCentralV8.version, '8.3');
+  assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
 });
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.2/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.3/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
@@ -105,4 +105,12 @@ test('V8.1: arquivos do WhatsApp são ligados ao documento certo pelo nome', () 
   assert.equal(matchDocItem('certidao casamento.pdf', items)?.id, 'cas');
   assert.equal(matchDocItem('carne IPTU 2026.pdf', items)?.id, 'iptu');
   assert.equal(matchDocItem('WhatsApp Image 2026-10-24 at 10.22.33.jpeg', items), null);
+});
+
+test('V8.3: modelos do escritório são escolhidos por palavra-chave antes dos padrões', () => {
+  const { guessTemplate } = load().AtlasCentralV8.__test;
+  const tpls = [{ service_type: 'holding', name: 'Holding' }, { service_type: 'inventário, partilha, espólio', name: 'Inventário extrajudicial' }, { service_type: 'abertura', name: 'Abertura' }];
+  assert.equal(guessTemplate(tpls, { title: 'Inventário do espólio de João' }).name, 'Inventário extrajudicial');
+  assert.equal(guessTemplate(tpls, { title: 'Holding da família Silva' }).name, 'Holding');
+  assert.equal(guessTemplate(tpls, { title: 'Constituição de empresa' }).name, 'Abertura');
 });

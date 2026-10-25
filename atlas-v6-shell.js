@@ -3,7 +3,7 @@
 
   const NAV_GROUPS = [
     { label: 'Visão Geral', pages: ['dashboard'] },
-    { label: 'Operação', pages: ['processos', 'tarefas', 'protocolos', 'exigencias', 'clientes', 'monitor', 'licencas', 'certidoes', 'agenda', 'documentos', 'integracoes'] },
+    { label: 'Operação', pages: ['processos', 'tarefas', 'protocolos', 'exigencias', 'clientes', 'monitor', 'licencas', 'certidoes', 'agenda', 'modelos', 'documentos', 'integracoes'] },
     { label: 'Gestão', pages: ['custos', 'relatorios'] },
     { label: 'ATLAS', pages: ['conhecimento', 'treinamento'] },
     { label: 'Administração', pages: ['usuarios', 'config'] }
@@ -14,7 +14,7 @@
     documentos: 'Documentos', custos: 'Financeiro', relatorios: 'Relatórios', config: 'Configurações',
     exigencias: 'Exigências', integracoes: 'Integrações', conhecimento: 'Base de Conhecimento',
     treinamento: 'Treinamento', usuarios: 'Usuários',
-    tarefas: 'Tarefas', protocolos: 'Protocolos', certidoes: 'Certidões e vencimentos', agenda: 'Agenda de prazos', monitor: 'Monitor de CNPJ'
+    tarefas: 'Tarefas', protocolos: 'Protocolos', certidoes: 'Certidões e vencimentos', agenda: 'Agenda de prazos', monitor: 'Monitor de CNPJ', modelos: 'Modelos de serviço'
   };
 
   const svg = paths => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
@@ -31,6 +31,7 @@
     relatorios: svg('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
     conhecimento: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/>'),
     treinamento: svg('<path d="m3 8 9-5 9 5-9 5z"/><path d="M7 10.5v5c3 2 7 2 10 0v-5M21 9v6"/>'),
+    modelos: svg('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
     monitor: svg('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5M8 11l2 2 4-4"/>'),
     tarefas: svg('<rect x="4" y="4" width="16" height="16" rx="2"/><path d="m8 12 3 3 5-6"/>'),
     protocolos: svg('<path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/>'),

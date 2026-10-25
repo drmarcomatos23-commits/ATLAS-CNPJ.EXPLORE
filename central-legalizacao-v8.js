@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.2';
+  const VERSION = '8.3';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -434,14 +434,21 @@
     });
   }
 
+  const BUILTIN_TYPES = ['abertura', 'alteracao', 'baixa', 'renovacao', 'holding'];
   function guessTemplate(templates, p) {
     const text = norm([p?.service_type, p?.title].join(' '));
+    // Modelos criados pelo escritório: palavras-chave (separadas por vírgula) no campo "tipo".
+    const custom = templates.filter(t => t.service_type && !BUILTIN_TYPES.includes(t.service_type));
+    for (const t of custom) {
+      const keys = String(t.service_type).split(',').map(norm).filter(k => k.length >= 3);
+      if (keys.some(k => text.includes(k))) return t;
+    }
     const pick = key => templates.find(t => t.service_type === key);
-    if (/holding|patrimon/.test(text)) return pick('holding');
-    if (/baixa|encerr|extin|distrato/.test(text)) return pick('baixa');
-    if (/renov|licen|alvar|avcb|sanit/.test(text)) return pick('renovacao');
-    if (/altera|transform|endereco|cnae|socio|capital/.test(text)) return pick('alteracao');
-    if (/abert|constitu|nova empresa/.test(text)) return pick('abertura');
+    if (/holding|patrimon/.test(text)) return pick('holding') || templates[0];
+    if (/baixa|encerr|extin|distrato/.test(text)) return pick('baixa') || templates[0];
+    if (/renov|licen|alvar|avcb|sanit/.test(text)) return pick('renovacao') || templates[0];
+    if (/altera|transform|endereco|cnae|socio|capital/.test(text)) return pick('alteracao') || templates[0];
+    if (/abert|constitu|nova empresa/.test(text)) return pick('abertura') || templates[0];
     return templates[0];
   }
 
@@ -1573,9 +1580,97 @@
   }
 
   /* ================================================================
+     10. EDITOR DE MODELOS (checklist + documentos por serviço)
+     ================================================================ */
+  async function templatesPage() {
+    setHeadSafe('Modelos de serviço', 'CONFIGURAÇÃO', 'Crie e ajuste os modelos de checklist e a lista de documentos de cada tipo de serviço do escritório.');
+    loading('Carregando modelos...');
+    const res = await q('task_templates', t => t.select('*').order('name'));
+    if (res.error) { pageSafe(`<div class="error-box">Não foi possível carregar os modelos: ${h(res.error.message)}</div>`); return; }
+    const list = res.data;
+    pageSafe(`<section class="lx-card">
+      <div class="lx-section-head"><h2>Modelos cadastrados</h2><div class="lx-row-actions">${canEdit() ? '<button class="btn btn-primary" type="button" id="lx-tpl-new">＋ Novo modelo</button>' : ''}</div></div>
+      <div class="lx-notice">Ao aplicar um modelo a um processo, o ATLAS cria as tarefas (com data meta contada a partir do início) e a lista de documentos a receber. Alterar um modelo não muda processos que já têm checklist.</div>
+      ${list.length ? `<div class="lx-tpl-cards">${list.map(t => `<article class="lx-tpl-card ${t.active ? '' : 'off'}">
+        <header><strong>${h(t.name)}</strong>${t.active ? '' : badge('Inativo', 'neutral')}</header>
+        <div class="lx-task-meta"><span>${(t.items || []).length} tarefas</span><span>${(t.documents || []).length} documentos</span><span>${(t.items || []).length ? 'até ' + Math.max(...(t.items || []).map(i => Number(i.offset) || 0)) + ' dias' : 'sem prazos'}</span></div>
+        <small class="muted">${BUILTIN_TYPES.includes(t.service_type) ? 'Modelo padrão do ATLAS' : t.service_type ? 'Escolhido quando o processo menciona: ' + h(t.service_type) : 'Sem palavras-chave'}</small>
+        ${canEdit() ? `<div class="lx-row-actions" style="justify-content:flex-start;margin-top:8px"><button class="mini-btn" type="button" data-lx-tpl-edit="${h(t.id)}">Editar</button><button class="mini-btn" type="button" data-lx-tpl-dup="${h(t.id)}">Duplicar</button><button class="mini-btn" type="button" data-lx-tpl-toggle="${h(t.id)}">${t.active ? 'Desativar' : 'Ativar'}</button></div>` : ''}
+      </article>`).join('')}</div>` : empty('Nenhum modelo', 'Crie o primeiro modelo de serviço do escritório.')}
+    </section>`);
+    $('#lx-tpl-new')?.addEventListener('click', () => openTemplateEditor(null, list));
+    $$('[data-lx-tpl-edit]').forEach(b => b.addEventListener('click', () => openTemplateEditor(list.find(t => t.id === b.dataset.lxTplEdit), list)));
+    $$('[data-lx-tpl-dup]').forEach(b => b.addEventListener('click', () => { const t = list.find(x => x.id === b.dataset.lxTplDup); openTemplateEditor({ ...t, id: null, name: t.name + ' (cópia)', service_type: BUILTIN_TYPES.includes(t.service_type) ? '' : t.service_type }, list); }));
+    $$('[data-lx-tpl-toggle]').forEach(b => b.addEventListener('click', async () => {
+      const t = list.find(x => x.id === b.dataset.lxTplToggle);
+      const { error } = await db().from('task_templates').update({ active: !t.active }).eq('id', t.id);
+      if (error) return toast(error.message, 'bad');
+      toast(t.active ? 'Modelo desativado.' : 'Modelo ativado.'); templatesPage();
+    }));
+  }
+
+  function openTemplateEditor(t, list) {
+    const state = {
+      items: JSON.parse(JSON.stringify(t?.items || [{ title: '', phase: 'Briefing', party: 'escritorio', offset: 1 }])),
+      documents: JSON.parse(JSON.stringify(t?.documents || []))
+    };
+    const builtin = t && BUILTIN_TYPES.includes(t.service_type);
+    shell(t?.id ? 'Editar modelo' : 'Novo modelo', `<form id="lx-te-form" class="modal-form-grid">
+      <div class="field span-2"><label>Nome do modelo *</label><input id="lx-te-name" required maxlength="120" value="${h(t?.name || '')}" placeholder="Ex.: Inventário extrajudicial"></div>
+      <div class="field span-2"><label>Palavras-chave para escolha automática</label><input id="lx-te-keys" ${builtin ? 'disabled' : ''} value="${h(builtin ? 'Modelo padrão (' + t.service_type + ')' : (t?.service_type || ''))}" placeholder="Ex.: inventário, partilha, espólio"><small class="muted">${builtin ? 'Modelos padrão já são escolhidos pelo tipo do processo.' : 'Quando o título ou tipo do processo tiver uma dessas palavras, este modelo é sugerido.'}</small></div>
+      <div class="span-2"><div class="lx-section-head"><h2>Tarefas</h2><button class="mini-btn" type="button" id="lx-te-add-item">＋ Tarefa</button></div><div id="lx-te-items"></div></div>
+      <div class="span-2"><div class="lx-section-head"><h2>Documentos a receber</h2><button class="mini-btn" type="button" id="lx-te-add-doc">＋ Documento</button></div><div id="lx-te-docs"></div></div>
+      <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button class="btn btn-primary" type="submit" id="lx-te-save">Salvar modelo</button></div>
+      <div id="lx-te-msg" class="auth-message hidden span-2"></div>
+    </form>`, true);
+    const phases = ['Briefing', 'Viabilidade', 'DBE / Receita', 'Registro', 'Inscrições', 'Licenciamento', 'Cartório', 'Tributos', 'Conclusão'];
+    const drawItems = () => {
+      $('#lx-te-items').innerHTML = state.items.map((i, idx) => `<div class="lx-te-row">
+        <span class="lx-te-n">${idx + 1}</span>
+        <input data-i="${idx}" data-k="title" value="${h(i.title)}" placeholder="Descrição da tarefa" class="lx-te-title">
+        <input data-i="${idx}" data-k="phase" list="lx-te-phases" value="${h(i.phase || '')}" placeholder="Fase">
+        <select data-i="${idx}" data-k="party">${Object.entries(PARTY).map(([k, v]) => `<option value="${k}" ${(i.party || 'escritorio') === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <label class="lx-te-days"><input data-i="${idx}" data-k="offset" type="number" min="0" max="365" value="${h(i.offset ?? 0)}"><span>dias</span></label>
+        <div class="lx-te-btns"><button type="button" class="mini-btn" data-mv="${idx}" data-d="-1" aria-label="Subir" ${idx === 0 ? 'disabled' : ''}>↑</button><button type="button" class="mini-btn" data-mv="${idx}" data-d="1" aria-label="Descer" ${idx === state.items.length - 1 ? 'disabled' : ''}>↓</button><button type="button" class="mini-btn" data-rm="${idx}" aria-label="Remover">×</button></div>
+      </div>`).join('') + `<datalist id="lx-te-phases">${phases.map(p => `<option value="${p}">`).join('')}</datalist>` || '<p class="muted">Nenhuma tarefa.</p>';
+      $$('#lx-te-items [data-k]').forEach(el => el.addEventListener('input', e => { const it = state.items[+e.target.dataset.i]; it[e.target.dataset.k] = e.target.dataset.k === 'offset' ? Number(e.target.value || 0) : e.target.value; }));
+      $$('#lx-te-items [data-mv]').forEach(b => b.addEventListener('click', () => { const i = +b.dataset.mv, j = i + Number(b.dataset.d); [state.items[i], state.items[j]] = [state.items[j], state.items[i]]; drawItems(); }));
+      $$('#lx-te-items [data-rm]').forEach(b => b.addEventListener('click', () => { state.items.splice(+b.dataset.rm, 1); drawItems(); }));
+    };
+    const drawDocs = () => {
+      $('#lx-te-docs').innerHTML = state.documents.length ? state.documents.map((d, idx) => `<div class="lx-te-row doc">
+        <input data-d="${idx}" data-k="name" value="${h(d.name)}" placeholder="Nome do documento" class="lx-te-title">
+        <select data-d="${idx}" data-k="category">${DOC_CATEGORIES.map(c => `<option ${(d.category || 'Documento pessoal') === c ? 'selected' : ''}>${c}</option>`).join('')}</select>
+        <label class="lx-te-opt"><input type="checkbox" data-d="${idx}" data-k="required" ${d.required !== false ? 'checked' : ''}> Obrigatório</label>
+        <div class="lx-te-btns"><button type="button" class="mini-btn" data-rmd="${idx}" aria-label="Remover">×</button></div>
+      </div>`).join('') : '<p class="muted" style="font-size:12.5px">Nenhum documento. Adicione o que o cliente precisa enviar para este serviço.</p>';
+      $$('#lx-te-docs [data-k]').forEach(el => el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', e => { const d = state.documents[+e.target.dataset.d]; d[e.target.dataset.k] = e.target.type === 'checkbox' ? e.target.checked : e.target.value; }));
+      $$('#lx-te-docs [data-rmd]').forEach(b => b.addEventListener('click', () => { state.documents.splice(+b.dataset.rmd, 1); drawDocs(); }));
+    };
+    drawItems(); drawDocs();
+    $('#lx-te-add-item').addEventListener('click', () => { const last = state.items[state.items.length - 1]; state.items.push({ title: '', phase: last?.phase || 'Briefing', party: 'escritorio', offset: (Number(last?.offset) || 0) + 2 }); drawItems(); $$('#lx-te-items .lx-te-title').pop()?.focus(); });
+    $('#lx-te-add-doc').addEventListener('click', () => { state.documents.push({ name: '', category: 'Documento pessoal', required: true }); drawDocs(); $$('#lx-te-docs .lx-te-title').pop()?.focus(); });
+    $('#lx-te-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = $('#lx-te-name').value.trim();
+      const items = state.items.map(i => ({ title: String(i.title || '').trim(), phase: String(i.phase || '').trim() || null, party: PARTY[i.party] ? i.party : 'escritorio', offset: Math.max(0, Math.min(365, Number(i.offset) || 0)) })).filter(i => i.title.length >= 2);
+      const documents = state.documents.map(d => ({ name: String(d.name || '').trim(), category: d.category || 'Documento pessoal', required: d.required !== false })).filter(d => d.name.length >= 2);
+      if (name.length < 3) return msgBox('#lx-te-msg', 'Dê um nome ao modelo.');
+      if (!items.length) return msgBox('#lx-te-msg', 'Inclua ao menos uma tarefa.');
+      if ((list || []).some(x => x.id !== t?.id && norm(x.name) === norm(name))) return msgBox('#lx-te-msg', 'Já existe um modelo com esse nome.');
+      const payload = { name, items, documents };
+      if (!builtin) payload.service_type = $('#lx-te-keys').value.trim() || null;
+      const btn = $('#lx-te-save'); btn.disabled = true; btn.textContent = 'Salvando...';
+      const { error } = t?.id ? await db().from('task_templates').update(payload).eq('id', t.id) : await db().from('task_templates').insert({ ...payload, organization_id: profile().organization_id, active: true });
+      if (error) { btn.disabled = false; btn.textContent = 'Salvar modelo'; return msgBox('#lx-te-msg', error.message); }
+      closeModal(); toast('Modelo salvo.'); templatesPage();
+    });
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
-  const PAGES = { monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
+  const PAGES = { modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
 
   function installRouter() {
     const prev = window.render;
