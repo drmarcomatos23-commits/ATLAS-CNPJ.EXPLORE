@@ -1,7 +1,7 @@
 (() => {
   const LEGACY_LAYER_IDS = ['atlas-v6-fidelity-guard','atlas-v6-mockup-fidelity','atlas-v6-functional-sidebar'];
   const chartInstances = [];
-  const SIDEBAR_ORDER = ['dashboard','clientes','processos','licencas','documentos','custos','relatorios','config'];
+  const SIDEBAR_ORDER = ['dashboard','clientes','processos','tarefas','protocolos','exigencias','licencas','certidoes','agenda','documentos','custos','relatorios','config'];
   const TYPE_FALLBACK = [
     { label:'LTDA', value:68 },
     { label:'S/A', value:24 },
