@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.4';
+  const VERSION = '8.5';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -542,6 +542,7 @@
         <div><span>Prazo</span><strong>${br(p.due_date)}</strong></div>
         <div class="lx-panel-progress"><span>Checklist</span><div class="lx-progress"><i style="width:${pct}%"></i></div><strong>${pct}%</strong></div>
       </div>
+      ${canEdit() ? '<div class="lx-panel-top"><button class="btn btn-primary" type="button" id="lx-p-report">Relatório para o cliente (PDF)</button></div>' : ''}
       <div class="lx-tabs" role="tablist">${tabs.map(([k, l]) => `<button type="button" role="tab" data-lx-tab="${k}" class="${k === currentTab ? 'active' : ''}">${h(l)}</button>`).join('')}</div>
       <div id="lx-panel-body"></div>`, true);
 
@@ -585,6 +586,7 @@
       }
     };
     $$('[data-lx-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.lxTab)));
+    $('#lx-p-report')?.addEventListener('click', () => openClientReport(data, p));
     show(currentTab);
   }
 
@@ -1668,6 +1670,185 @@
   }
 
   /* ================================================================
+     11. RELATÓRIO DE ANDAMENTO PARA O CLIENTE (PDF no navegador)
+     ================================================================ */
+  const JSPDF_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  const REPORT_LOGO = '/assets/oea-cartilha-logo.png?v=3.57';
+  const REPORT_BRAND = 'OEA · Organização Excelência Assessoria';
+
+  function imageDataUrl(src) {
+    return new Promise(resolve => {
+      const img = new Image();
+      img.onload = () => { try { const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight; c.getContext('2d').drawImage(img, 0, 0); resolve({ url: c.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight }); } catch { resolve(null); } };
+      img.onerror = () => resolve(null);
+      img.src = src;
+    });
+  }
+
+  function reportContent(data, p, opts) {
+    const c = data.clientMap.get(p.client_id) || {};
+    const tasks = (data.tasks || []).filter(t => t.process_id === p.id && t.status !== 'desconsiderada' && (opts.internal || t.client_visible));
+    const done = tasks.filter(t => t.status === 'concluida').sort((a, b) => String(a.completed_at).localeCompare(String(b.completed_at)));
+    const next = tasks.filter(t => t.status !== 'concluida');
+    const docs = (data.docItems || []).filter(d => d.process_id === p.id);
+    const missing = docs.filter(d => d.status === 'pendente' && d.required);
+    const received = docs.filter(d => d.status === 'recebido');
+    const protos = (data.protocols || []).filter(x => x.process_id === p.id).sort((a, b) => String(a.protocol_date || '').localeCompare(String(b.protocol_date || '')));
+    const reqs = (data.requirements || []).filter(r => r.process_id === p.id && ['aberta', 'em_atendimento'].includes(r.status));
+    const all = tasks.length;
+    const pct = all ? Math.round(done.length / all * 100) : (p.status === 'completed' ? 100 : 0);
+    const lastTarget = next.map(t => t.target_date).filter(Boolean).sort().pop();
+    return { c, done, next, missing, received, protos, reqs, pct, forecast: p.due_date || lastTarget || null, stage: data.stageMap.get(p.current_stage_id)?.name || '', owner: personName(data, p.owner_id) };
+  }
+
+  async function buildClientPdf(data, p, opts) {
+    await loadScript(JSPDF_CDN);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const R = reportContent(data, p, opts);
+    const W = 210, M = 16, CW = W - M * 2, BOTTOM = 280;
+    const NAVY = [8, 40, 81], BLUE = [13, 94, 168], MUTED = [99, 119, 148], LINE = [216, 228, 240], OK = [15, 138, 95], WARN = [168, 93, 0];
+    let y = M;
+    const logo = await imageDataUrl(REPORT_LOGO);
+    const ensure = need => { if (y + need > BOTTOM) { doc.addPage(); y = M + 4; } };
+    const text = (t, x, yy, size = 10, color = NAVY, style = 'normal') => { doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color); doc.text(String(t), x, yy); };
+    const para = (t, x, width, size = 10, color = NAVY, style = 'normal', lh = 4.6) => {
+      doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color);
+      const lines = doc.splitTextToSize(String(t), width);
+      lines.forEach(l => { ensure(lh); doc.text(l, x, y); y += lh; });
+    };
+    const section = (title, count) => {
+      ensure(14); y += 4;
+      doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6;
+      text(title.toUpperCase(), M, y, 9.5, BLUE, 'bold');
+      if (count != null) { doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...MUTED); doc.text(String(count), W - M, y, { align: 'right' }); }
+      y += 6;
+    };
+    const item = (title, sub, mark = '-', color = NAVY) => {
+      ensure(10);
+      text(mark, M + 1, y, 10, color, 'bold');
+      const lines = doc.splitTextToSize(String(title), CW - 8);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...NAVY);
+      lines.forEach((l, i) => { if (i) ensure(4.8); doc.text(l, M + 7, y); y += 4.8; });
+      if (sub) { doc.setFontSize(8.5); doc.setTextColor(...MUTED); doc.splitTextToSize(String(sub), CW - 8).forEach(l => { ensure(4); doc.text(l, M + 7, y); y += 4; }); }
+      y += 1.5;
+    };
+
+    // Cabeçalho
+    if (logo) { const h_ = 16, w_ = logo.w / logo.h * h_; doc.addImage(logo.url, 'PNG', M, y - 2, w_, h_); }
+    text(REPORT_BRAND, M + 30, y + 4, 10.5, NAVY, 'bold');
+    text('Relatório de andamento do processo', M + 30, y + 10, 9, MUTED);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...MUTED); doc.text(new Date().toLocaleDateString('pt-BR', { timeZone: TZ }), W - M, y + 4, { align: 'right' });
+    y += 20;
+
+    // Bloco do processo
+    doc.setFillColor(244, 248, 252); doc.setDrawColor(...LINE); doc.roundedRect(M, y, CW, 34, 2.5, 2.5, 'FD');
+    const col = (label, value, x, yy, w) => { text(label.toUpperCase(), x, yy, 7.5, MUTED, 'bold'); doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...NAVY); doc.text(doc.splitTextToSize(String(value || '—'), w)[0], x, yy + 5); };
+    col('Empresa', R.c.legal_name, M + 5, y + 7, CW / 2 - 8);
+    col('CNPJ', R.c.tax_id || '—', M + CW / 2 + 2, y + 7, CW / 4 - 4);
+    col('Processo', p.public_code || '—', M + CW * 0.78, y + 7, CW * 0.2);
+    col('Serviço', p.title, M + 5, y + 20, CW / 2 - 8);
+    col('Etapa atual', R.stage || '—', M + CW / 2 + 2, y + 20, CW / 4 - 4);
+    col('Previsão', R.forecast ? br(R.forecast) : 'A definir', M + CW * 0.78, y + 20, CW * 0.2);
+    y += 42;
+
+    // Progresso
+    text('Andamento', M, y, 9, MUTED, 'bold'); doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...NAVY); doc.text(`${R.pct}% concluído`, W - M, y, { align: 'right' });
+    y += 3;
+    doc.setFillColor(227, 235, 244); doc.roundedRect(M, y, CW, 4, 2, 2, 'F');
+    if (R.pct) { doc.setFillColor(...BLUE); doc.roundedRect(M, y, Math.max(4, CW * R.pct / 100), 4, 2, 2, 'F'); }
+    y += 9;
+
+    if (R.missing.length && opts.docs) {
+      ensure(18);
+      const boxStart = y;
+      const lines = R.missing.map(d => '- ' + d.name);
+      const hBox = 10 + lines.length * 5;
+      ensure(hBox);
+      doc.setFillColor(255, 243, 224); doc.setDrawColor(255, 217, 168); doc.roundedRect(M, y, CW, hBox, 2.5, 2.5, 'FD');
+      text('Precisamos de você: documentos pendentes', M + 5, y + 6.5, 10, WARN, 'bold');
+      let yy = y + 12; doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...NAVY);
+      lines.forEach(l => { doc.text(doc.splitTextToSize(l, CW - 10)[0], M + 5, yy); yy += 5; });
+      y = boxStart + hBox + 2;
+    }
+
+    if (opts.done) { section('O que já foi feito', R.done.length); if (R.done.length) R.done.forEach(t => item(t.title, [t.phase, t.completed_at ? 'concluído em ' + brDateTime(t.completed_at).split(',')[0] : ''].filter(Boolean).join(' · '), 'OK', OK)); else para('As primeiras etapas estão em andamento.', M, CW, 9.5, MUTED); }
+    if (opts.next) { section('Próximas etapas', R.next.length); if (R.next.length) R.next.forEach(t => item(t.title, [t.phase, t.status === 'impedida' ? 'aguardando terceiros' : t.target_date ? 'previsão ' + br(t.target_date) : '', t.responsible_party === 'cliente' ? 'depende do cliente' : t.responsible_party === 'orgao' ? 'depende do órgão público' : ''].filter(Boolean).join(' · '))); else para('Todas as etapas foram concluídas.', M, CW, 9.5, MUTED); }
+    if (opts.protocols && R.protos.length) { section('Protocolos nos órgãos', R.protos.length); R.protos.forEach(x => item(`${x.agency || 'Órgão'} — nº ${x.protocol_number || '—'}`, [x.protocol_type, x.protocol_date ? 'protocolado em ' + br(String(x.protocol_date).slice(0, 10)) : '', 'situação: ' + (x.status || 'em análise')].filter(Boolean).join(' · '))); }
+    if (opts.reqs && R.reqs.length) { section('Exigências em tratamento pelo escritório', R.reqs.length); R.reqs.forEach(r => item(r.description, [r.agency, r.due_date ? 'prazo ' + br(r.due_date) : ''].filter(Boolean).join(' · '), '!', WARN)); }
+    if (opts.docs && R.received.length) { section('Documentos recebidos', R.received.length); R.received.forEach(d => item(d.name, d.received_at ? 'recebido em ' + brDateTime(d.received_at).split(',')[0] : '', 'OK', OK)); }
+    if (opts.note && opts.note.trim()) { section('Observações'); para(opts.note.trim(), M, CW, 10); }
+
+    // Rodapé em todas as páginas
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(...LINE); doc.line(M, 286, W - M, 286);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+      doc.text(`Documento informativo gerado em ${brDateTime(new Date().toISOString())}. Em caso de dúvida, fale com o escritório.`, M, 290);
+      doc.text(`${i}/${pages}`, W - M, 290, { align: 'right' });
+    }
+    const safe = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+    const name = `Andamento-${safe(p.public_code)}-${safe(R.c.legal_name)}-${todayISO()}.pdf`;
+    return { blob: doc.output('blob'), name, R };
+  }
+
+  function openClientReport(data, p) {
+    const c = data.clientMap.get(p.client_id) || {};
+    shell('Relatório para o cliente', `<form id="lx-rp-form" class="modal-form-grid">
+      <div class="span-2 lx-notice">PDF com a marca do escritório para enviar ao cliente pelo WhatsApp. Só entram as tarefas marcadas como visíveis ao cliente.</div>
+      <div class="span-2 lx-check-grid">
+        <label><input type="checkbox" id="lx-rp-done" checked><span><strong>O que já foi feito</strong><small>Etapas concluídas com data</small></span></label>
+        <label><input type="checkbox" id="lx-rp-next" checked><span><strong>Próximas etapas</strong><small>Com previsão de cada uma</small></span></label>
+        <label><input type="checkbox" id="lx-rp-docs" checked><span><strong>Documentos</strong><small>Pendentes em destaque e recebidos</small></span></label>
+        <label><input type="checkbox" id="lx-rp-protocols" checked><span><strong>Protocolos</strong><small>Órgão, número e situação</small></span></label>
+        <label><input type="checkbox" id="lx-rp-reqs"><span><strong>Exigências</strong><small>Em tratamento pelo escritório</small></span></label>
+      </div>
+      <div class="field span-2"><label>Observação para o cliente (opcional)</label><textarea id="lx-rp-note" rows="2" placeholder="Ex.: A Junta Comercial está com prazo de análise de 5 dias úteis."></textarea></div>
+      <label class="span-2 lx-te-opt"><input type="checkbox" id="lx-rp-save" checked> Guardar uma cópia no dossiê do processo</label>
+      <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button class="btn btn-muted" type="button" id="lx-rp-download">Baixar PDF</button><button class="btn btn-primary" type="submit" id="lx-rp-send">Enviar pelo WhatsApp</button></div>
+      <div id="lx-rp-msg" class="auth-message hidden span-2"></div>
+    </form>`, true);
+    const opts = () => ({ done: $('#lx-rp-done').checked, next: $('#lx-rp-next').checked, docs: $('#lx-rp-docs').checked, protocols: $('#lx-rp-protocols').checked, reqs: $('#lx-rp-reqs').checked, note: $('#lx-rp-note').value, internal: false });
+    const busy = (on, label) => { ['#lx-rp-download', '#lx-rp-send'].forEach(s => { const b = $(s); if (b) b.disabled = on; }); if (label) $('#lx-rp-send').textContent = label; };
+    const saveCopy = async (blob, name) => {
+      if (!$('#lx-rp-save').checked) return;
+      const key = `${profile().organization_id}/${p.client_id || 'sem-empresa'}/${p.id}/${rid()}-${safeName(name)}`;
+      const up = await db().storage.from('legalizacao-documents').upload(key, blob, { upsert: false, contentType: 'application/pdf' });
+      if (up.error) return toast('PDF gerado, mas a cópia não foi guardada: ' + up.error.message, 'bad');
+      const ins = await db().from('documents').insert({ organization_id: profile().organization_id, client_id: p.client_id || null, process_id: p.id, name: 'Relatório de andamento ' + br(todayISO()), category: 'Outros', storage_key: key, mime_type: 'application/pdf', size_bytes: blob.size, uploaded_by: profile().id });
+      if (ins.error) await db().storage.from('legalizacao-documents').remove([key]);
+    };
+    const logComm = async channel => { await db().from('communications').insert({ process_id: p.id, client_id: p.client_id || null, channel, recipient: c.phone || c.contact_name || '', template_key: 'relatorio_andamento', subject: 'Relatório de andamento', body: 'PDF de andamento enviado ao cliente.', status: 'aberto_no_app', sent_at: new Date().toISOString() }); };
+    $('#lx-rp-download').addEventListener('click', async () => {
+      busy(true);
+      try { const { blob, name } = await buildClientPdf(data, p, opts()); downloadFile(name, blob, 'application/pdf'); await saveCopy(blob, name); toast('PDF baixado.'); }
+      catch (err) { msgBox('#lx-rp-msg', err.message || String(err)); }
+      busy(false);
+    });
+    $('#lx-rp-form').addEventListener('submit', async e => {
+      e.preventDefault(); busy(true, 'Gerando...');
+      try {
+        const { blob, name, R } = await buildClientPdf(data, p, opts());
+        await saveCopy(blob, name);
+        const file = new File([blob], name, { type: 'application/pdf' });
+        const text = `Olá${c.contact_name ? ', ' + c.contact_name.split(' ')[0] : ''}! Segue o relatório de andamento do processo ${p.public_code || ''} (${p.title || ''}): ${R.pct}% concluído.${R.missing.length ? ' Ficamos no aguardo dos documentos pendentes listados no relatório.' : ''}`;
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Relatório de andamento', text });
+          await logComm('whatsapp'); closeModal(); toast('Relatório compartilhado.');
+        } else {
+          downloadFile(name, blob, 'application/pdf');
+          let phone = digits(c.phone); if (phone && phone.length <= 11) phone = '55' + phone;
+          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
+          await logComm('whatsapp');
+          msgBox('#lx-rp-msg', 'O PDF foi baixado e o WhatsApp foi aberto com a mensagem. No computador, anexe o arquivo baixado na conversa (clipe ou arrastar).', 'success');
+        }
+      } catch (err) { if (err?.name !== 'AbortError') msgBox('#lx-rp-msg', err.message || String(err)); }
+      busy(false, 'Enviar pelo WhatsApp');
+    });
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
   const PAGES = { modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
@@ -1729,7 +1910,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

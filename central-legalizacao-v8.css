@@ -226,3 +226,7 @@ button.lx-check:hover{border-color:var(--lx-blue)}
   .lx-te-row.doc>.lx-te-opt{grid-column:1/3;grid-row:3}
   .lx-te-row.doc>.lx-te-btns{grid-column:3;grid-row:2/4;align-self:center}
 }
+
+/* V8.5 — relatório para o cliente */
+.lx-panel-top{display:flex;justify-content:flex-end;margin:-2px 0 10px}
+@media (max-width:720px){.lx-panel-top .btn{width:100%}}
