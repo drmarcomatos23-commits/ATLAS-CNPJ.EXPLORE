@@ -385,7 +385,7 @@ revoke all on function atlas_private.generate_legalizacao_alerts() from public, 
 create index if not exists idx_atlas_notifications_dedupe
   on public.atlas_notifications ((metadata ->> 'dedupe_key'), recipient_profile_id);
 
--- Todo dia às 07:40 (Brasília) = 10:40 UTC.
+-- Todo dia às 07:40 (Brasília) = 10:40 UTC. (Alterado para 08:40 na migração 20261025_resumo_diario_v8_4.)
 do $$
 begin
   perform cron.unschedule(jobid) from cron.job where jobname = 'atlas-legalizacao-alertas-diario';

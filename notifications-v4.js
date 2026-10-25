@@ -75,11 +75,19 @@
       const body = esc(item.body || '').replace(/\n/g, '<br>');
       const actions = [];
       if (item.process_id) actions.push(`<button type="button" class="notification-action" data-notification-process="${esc(item.process_id)}" data-notification-id="${esc(item.id)}">Abrir processo</button>`);
+      const goto = ({ daily_summary: ['agenda', 'Ver agenda'], license_expiry: ['certidoes', 'Ver vencimentos'], cnpj_change: ['monitor', 'Ver monitor'], requirement_due: ['exigencias', 'Ver exigências'] })[item.event_type];
+      if (goto && !item.process_id) actions.push(`<button type="button" class="notification-action" data-notification-page="${goto[0]}" data-notification-id="${esc(item.id)}">${goto[1]}</button>`);
       if (!item.read_at) actions.push(`<button type="button" class="notification-action secondary" data-notification-read="${esc(item.id)}">Marcar como lida</button>`);
       return `<article class="notification-item ${item.read_at ? '' : 'unread'}" data-notification-row="${esc(item.id)}"><div class="notification-dot" aria-hidden="true"></div><div class="notification-content"><strong>${esc(item.title || 'Notificação')}</strong><p>${body}</p><small>${esc(when)}</small>${actions.length ? `<div class="notification-actions">${actions.join('')}</div>` : ''}</div></article>`;
     }).join('');
     host.querySelectorAll('[data-notification-read]').forEach((btn) => btn.addEventListener('click', () => markRead(btn.dataset.notificationRead)));
     host.querySelectorAll('[data-notification-process]').forEach((btn) => btn.addEventListener('click', () => openProcess(btn.dataset.notificationProcess, btn.dataset.notificationId)));
+    host.querySelectorAll('[data-notification-page]').forEach((btn) => btn.addEventListener('click', () => {
+      if (btn.dataset.notificationId) markRead(btn.dataset.notificationId);
+      closePanel();
+      const nav = document.querySelector(`#nav [data-page="${btn.dataset.notificationPage}"]`);
+      if (nav) nav.click(); else if (typeof window.render === 'function') window.render(btn.dataset.notificationPage);
+    }));
   }
 
   async function refresh() {

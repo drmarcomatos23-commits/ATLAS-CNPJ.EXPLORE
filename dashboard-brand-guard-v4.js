@@ -40,7 +40,7 @@
     }
     if (!document.querySelector('script[data-atlas-notifications]')) {
       const script = document.createElement('script');
-      script.src = '/notifications-v4.js?v=4.0';
+      script.src = '/notifications-v4.js?v=4.1';
       script.defer = true;
       script.dataset.atlasNotifications = 'js';
       document.head.appendChild(script);

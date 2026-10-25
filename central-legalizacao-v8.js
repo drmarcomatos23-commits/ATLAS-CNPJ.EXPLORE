@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.3';
+  const VERSION = '8.4';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 

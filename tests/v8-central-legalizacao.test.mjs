@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.3');
+  assert.equal(w.AtlasCentralV8.version, '8.4');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.3/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.4/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
