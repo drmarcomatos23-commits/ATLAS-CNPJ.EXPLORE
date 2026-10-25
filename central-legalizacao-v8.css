@@ -166,3 +166,21 @@ button.lx-check:hover{border-color:var(--lx-blue)}
 /* Itens da Central no menu principal (o layout de referência oculta "Exigências" por padrão) */
 #app-shell .atlas-polished-primary .nav-item[data-page="exigencias"]:not(.hidden){display:flex!important}
 #app-shell .nav-item.hidden{display:none!important}
+/* V8.1 — documentos por serviço e entrada rápida */
+.lx-doc-list{display:flex;flex-direction:column;border:1px solid var(--lx-border);border-radius:10px;overflow:hidden}
+.lx-doc{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border-top:1px solid var(--lx-border)}
+.lx-doc:first-child{border-top:0}
+.lx-doc.recebido .lx-task-main strong{color:var(--lx-muted)}
+.lx-doc.dispensado{opacity:.6}.lx-doc.dispensado .lx-check{background:#9fb3cb;border-color:#9fb3cb}
+.lx-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:2px dashed #b9d3ef;border-radius:12px;padding:22px 12px;text-align:center;cursor:pointer;background:var(--lx-info-bg);color:var(--lx-blue)}
+.lx-drop.over{border-color:var(--lx-blue);background:#dcebfb}
+.lx-drop input{position:absolute;width:1px;height:1px;opacity:0}
+.lx-drop small{color:var(--lx-muted)}
+.lx-q-files{display:flex;flex-direction:column;gap:8px}
+.lx-q-file{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;border:1px solid var(--lx-border);border-radius:10px;padding:8px}
+.lx-q-file img,.lx-q-ico{width:56px;height:56px;border-radius:8px;object-fit:cover;background:var(--lx-bg)}
+.lx-q-ico{display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--lx-blue)}
+.lx-q-meta{display:flex;flex-direction:column;gap:5px;min-width:0}
+.lx-q-meta strong{font-size:12.5px;word-break:break-all;color:var(--lx-text)}
+.lx-q-meta small{font-size:11px;color:var(--lx-muted)}
+.lx-q-meta select{height:34px;border:1px solid var(--lx-border);border-radius:8px;padding:0 8px;font:inherit;font-size:12.5px;max-width:100%}

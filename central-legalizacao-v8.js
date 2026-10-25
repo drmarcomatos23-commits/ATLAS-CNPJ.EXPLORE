@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.0';
+  const VERSION = '8.1';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -148,7 +148,9 @@
       tasks: q('process_tasks', t => t.select('*').order('position', { ascending: true })),
       requirements: q('process_requirements', t => t.select('*').order('due_date', { ascending: true, nullsFirst: false })),
       templates: extra.templates ? q('task_templates', t => t.select('*').eq('active', true).order('name')) : Promise.resolve({ data: [] }),
-      protocols: q('protocols', t => t.select('*'))
+      protocols: q('protocols', t => t.select('*')),
+      docItems: q('process_doc_items', t => t.select('*').order('position', { ascending: true })),
+      documents: extra.documents ? q('documents', t => t.select('id,name,category,process_id,client_id,mime_type,size_bytes,created_at').order('created_at', { ascending: false })) : Promise.resolve({ data: [] })
     };
     const keys = Object.keys(jobs);
     const res = await Promise.all(Object.values(jobs));
@@ -252,6 +254,7 @@
         <header class="lx-task-group-head">
           <div><strong>${h(p.public_code || 'Processo')}</strong><span>${h(p.title || '')} · ${h(clientName(data, p.client_id))}</span></div>
           <div class="lx-progress-wrap"><div class="lx-progress"><i style="width:${pct}%"></i></div><small>${done}/${valid.length} · ${pct}%</small></div>
+          ${(() => { const di = (data.docItems || []).filter(d => d.process_id === pid); if (!di.length) return ''; const ok = di.filter(d => d.status !== 'pendente').length; return badge(`Docs ${ok}/${di.length}`, ok === di.length ? 'ok' : 'warn'); })()}
           <button class="mini-btn" type="button" data-lx-panel="${h(pid)}">Abrir painel</button>
         </header>
         <div class="lx-task-list">${tasks.map(t => taskRow(data, t)).join('')}</div>
@@ -463,7 +466,7 @@
       const start = $('#lx-tpl-start').value || todayISO();
       const pid = $('#lx-tpl-process').value;
       const existing = (data.tasks || []).filter(t => t.process_id === pid).length;
-      $('#lx-tpl-preview').innerHTML = `${existing ? `<div class="lx-notice warn">Este processo já tem ${existing} tarefa(s). Os itens do modelo serão adicionados ao final.</div>` : ''}<ol class="lx-tpl-list">${(tpl?.items || []).map(i => `<li><strong>${h(i.title)}</strong><span>${h(i.phase || '')} · ${h(PARTY[i.party] || 'Escritório')} · meta ${br(addDays(start, i.offset || 0))}</span></li>`).join('')}</ol>`;
+      $('#lx-tpl-preview').innerHTML = `${existing ? `<div class="lx-notice warn">Este processo já tem ${existing} tarefa(s). Os itens do modelo serão adicionados ao final.</div>` : ''}<ol class="lx-tpl-list">${(tpl?.items || []).map(i => `<li><strong>${h(i.title)}</strong><span>${h(i.phase || '')} · ${h(PARTY[i.party] || 'Escritório')} · meta ${br(addDays(start, i.offset || 0))}</span></li>`).join('')}</ol>${(tpl?.documents || []).length ? `<div class="lx-notice" style="margin-top:10px"><strong>Documentos a receber (${tpl.documents.length}):</strong> ${tpl.documents.map(d => h(d.name)).join(' · ')}</div>` : ''}`;
     };
     ['#lx-tpl-template', '#lx-tpl-start', '#lx-tpl-process'].forEach(s => $(s)?.addEventListener('change', () => {
       if (s === '#lx-tpl-process') { const g = guessTemplate(templates, data.processMap.get($('#lx-tpl-process').value)); if (g) $('#lx-tpl-template').value = g.id; }
@@ -489,7 +492,8 @@
       const btn = $('#lx-tpl-save'); btn.disabled = true; btn.textContent = 'Gerando...';
       const { error } = await db().from('process_tasks').insert(rows);
       if (error) { btn.disabled = false; btn.textContent = 'Gerar checklist'; return msgBox('#lx-tpl-msg', error.message); }
-      closeModal(); toast(`${rows.length} tarefas criadas.`); await refresh();
+      const docCount = await createDocItems(data, pid, tpl.documents || []);
+      closeModal(); toast(`${rows.length} tarefas${docCount ? ` e ${docCount} documentos a receber` : ''} criados.`); await refresh();
     });
   }
 
@@ -504,7 +508,7 @@
      ================================================================ */
   async function openPanel(processId, tab = 'checklist') {
     shell('Painel do processo', '<div class="loading-box"><span class="spinner"></span><div>Carregando painel...</div></div>', true);
-    const data = await loadCentral({ templates: true });
+    const data = await loadCentral({ templates: true, documents: true });
     const p = data.processMap.get(processId);
     if (!p) { shell('Painel do processo', '<div class="error-box">Processo não encontrado ou sem permissão.</div>'); return; }
     const refresh = () => openPanel(processId, currentTab);
@@ -516,7 +520,9 @@
     const valid = tasks.filter(t => t.status !== 'desconsiderada');
     const pct = valid.length ? Math.round(valid.filter(t => t.status === 'concluida').length / valid.length * 100) : 0;
 
-    const tabs = [['checklist', `Checklist (${tasks.length})`], ['protocolos', `Protocolos (${protos.length})`], ['exigencias', `Exigências (${reqs.filter(r => ['aberta', 'em_atendimento'].includes(r.status)).length})`]];
+    const docItems = (data.docItems || []).filter(d => d.process_id === processId);
+    const docsDone = docItems.filter(d => d.status !== 'pendente').length;
+    const tabs = [['checklist', `Checklist (${tasks.length})`], ['documentos', `Documentos (${docsDone}/${docItems.length})`], ['protocolos', `Protocolos (${protos.length})`], ['exigencias', `Exigências (${reqs.filter(r => ['aberta', 'em_atendimento'].includes(r.status)).length})`]];
     if (canEdit()) tabs.push(['comunicar', 'Comunicar cliente']);
     if (['admin', 'auditoria', 'operacao'].includes(role())) tabs.push(['historico', 'Histórico']);
 
@@ -542,6 +548,9 @@
         $('#lx-p-new')?.addEventListener('click', () => openTaskModal(data, null, refresh, processId));
         $('#lx-p-tpl')?.addEventListener('click', () => openTemplateModal(data, processId, refresh));
         bindTaskRowActions(data, body(), refresh);
+      } else if (k === 'documentos') {
+        body().innerHTML = docItemsPanel(data, p, docItems);
+        bindDocItems(data, p, docItems, refresh);
       } else if (k === 'protocolos') {
         body().innerHTML = `<div class="lx-panel-actions">${canEdit() && schemaReady ? '<button class="btn btn-primary" type="button" id="lx-p-proto">＋ Protocolo</button>' : ''}</div>${protocolTable(data, protos, false)}`;
         $('#lx-p-proto')?.addEventListener('click', () => openProtocolModal(data, null, refresh, processId));
@@ -570,6 +579,167 @@
     };
     $$('[data-lx-tab]').forEach(b => b.addEventListener('click', () => show(b.dataset.lxTab)));
     show(currentTab);
+  }
+
+  /* ================================================================
+     2b. DOCUMENTOS POR SERVIÇO + ENTRADA RÁPIDA (arquivos vindos do WhatsApp)
+     ================================================================ */
+  const DOC_CATEGORIES = ['Documento pessoal', 'Comprovante', 'Societário', 'Contrato', 'Fiscal', 'Licença', 'Protocolo', 'Outros'];
+  const STOP = new Set(['dos', 'das', 'de', 'do', 'da', 'e', 'ou', 'que', 'para', 'com', 'socios', 'socio', 'empresa', 'novo', 'nova', 'atual', 'atualizadas', 'entram', 'saem', 'herdeiros', 'imovel', 'imoveis']);
+  const SYN = [
+    ['rg', 'identidade', 'cnh', 'habilitacao', 'carteira'], ['cpf'], ['residencia', 'endereco', 'luz', 'agua', 'energia', 'conta', 'sabesp', 'cpfl', 'enel'],
+    ['casamento', 'pacto', 'antenupcial', 'nascimento'], ['iptu', 'carne', 'venal', 'habite'], ['locacao', 'aluguel', 'escritura', 'contrato'],
+    ['matricula', 'matriculas', 'cartorio'], ['declaracao', 'irpf', 'imposto', 'recibo'], ['social', 'alteracao', 'consolidad', 'ato', 'distrato'],
+    ['avcb', 'bombeiro', 'bombeiros'], ['alvara', 'licenca', 'sanitaria'], ['certidao', 'certidoes', 'cnd', 'negativa'], ['balanco', 'encerramento'],
+    ['veiculo', 'veiculos', 'crlv', 'renavam'], ['taxa', 'guia', 'boleto', 'pagamento', 'dare', 'darf'], ['atividade', 'atividades', 'cnae']
+  ];
+  const tokensOf = v => norm(v).replace(/[^a-z0-9]+/g, ' ').split(' ').filter(t => t.length >= 2);
+  function groupsFor(name) {
+    const toks = tokensOf(name).filter(t => !STOP.has(t));
+    const groups = [];
+    toks.forEach(t => { const g = SYN.find(gr => gr.some(w => t.startsWith(w) || w.startsWith(t) && t.length >= 4)); groups.push(g || [t]); });
+    return groups;
+  }
+  function matchDocItem(fileName, items) {
+    const f = ' ' + tokensOf(fileName.replace(/\.[a-z0-9]+$/i, '')).join(' ') + ' ';
+    let best = null, bestScore = 0;
+    items.forEach(it => {
+      const score = groupsFor(it.name).reduce((s, g) => s + (g.some(w => f.includes(' ' + w) ) ? 1 : 0), 0);
+      if (score > bestScore) { bestScore = score; best = it; }
+    });
+    return bestScore > 0 ? best : null;
+  }
+
+  async function createDocItems(data, processId, docs) {
+    if (!docs?.length) return 0;
+    const existing = new Set((data.docItems || []).filter(d => d.process_id === processId).map(d => norm(d.name)));
+    const base = (data.docItems || []).filter(d => d.process_id === processId).length;
+    const rows = docs.filter(d => !existing.has(norm(d.name))).map((d, i) => ({ organization_id: profile().organization_id, process_id: processId, name: d.name, category: d.category || 'Documento pessoal', required: d.required !== false, position: base + i, created_by: profile().id }));
+    if (!rows.length) return 0;
+    const { error } = await db().from('process_doc_items').insert(rows);
+    if (error) { toast('Documentos não criados: ' + error.message, 'bad'); return 0; }
+    return rows.length;
+  }
+
+  function docItemsPanel(data, p, items) {
+    const pending = items.filter(d => d.status === 'pendente');
+    const docMap = new Map((data.documents || []).map(d => [d.id, d]));
+    const loose = (data.documents || []).filter(d => d.process_id === p.id && !items.some(i => i.document_id === d.id));
+    const tpl = guessTemplate(data.templates || [], p);
+    return `<div class="lx-panel-actions">
+        ${canEdit() ? `<button class="btn btn-primary" type="button" id="lx-d-upload">⇪ Receber arquivos</button>` : ''}
+        ${canEdit() && pending.some(d => d.required) ? `<button class="btn btn-muted" type="button" id="lx-d-charge">Cobrar pendentes no WhatsApp</button>` : ''}
+        ${canEdit() ? `<button class="btn btn-muted" type="button" id="lx-d-add">＋ Item</button>` : ''}
+      </div>
+      ${items.length ? `<div class="lx-progress-wrap" style="margin-bottom:10px"><div class="lx-progress"><i style="width:${Math.round((items.length - pending.length) / items.length * 100)}%"></i></div><small>${items.length - pending.length} de ${items.length} recebidos</small></div>
+      <div class="lx-doc-list">${items.map(d => { const doc = docMap.get(d.document_id); return `<article class="lx-doc ${d.status}">
+        ${canEdit() ? `<button class="lx-check ${d.status !== 'pendente' ? 'on' : ''}" type="button" data-lx-doc-act="${d.status === 'pendente' ? 'receive' : 'pending'}" data-id="${h(d.id)}" title="${d.status === 'pendente' ? 'Marcar recebido' : 'Voltar para pendente'}">${d.status === 'recebido' ? '✓' : d.status === 'dispensado' ? '–' : ''}</button>` : `<span class="lx-check ${d.status !== 'pendente' ? 'on' : ''}">${d.status === 'recebido' ? '✓' : ''}</span>`}
+        <div class="lx-task-main"><strong>${h(d.name)}</strong><div class="lx-task-meta"><span>${h(d.category)}</span>${d.status === 'recebido' ? `<span>Recebido${d.received_at ? ' ' + brDateTime(d.received_at).split(',')[0] : ''}</span>` : ''}${d.status === 'dispensado' ? '<span>Dispensado</span>' : ''}${!d.required ? '<span>Opcional</span>' : ''}${doc ? `<span>Arquivo: ${h(doc.name)}</span>` : ''}</div></div>
+        <div class="lx-row-actions">${doc ? `<button class="mini-btn" type="button" data-lx-doc-open="${h(doc.id)}">Abrir</button>` : ''}${canEdit() && d.status === 'pendente' ? `<button class="mini-btn" type="button" data-lx-doc-act="waive" data-id="${h(d.id)}">Dispensar</button>` : ''}${canEdit() ? `<button class="mini-btn" type="button" data-lx-doc-act="delete" data-id="${h(d.id)}" aria-label="Remover item">×</button>` : ''}</div>
+      </article>`; }).join('')}</div>` :
+      empty('Sem lista de documentos', 'Gere a lista de documentos do serviço para saber o que pedir ao cliente.', canEdit() && tpl?.documents?.length ? `<button class="btn btn-primary" type="button" id="lx-d-gen">Gerar lista: ${h(tpl.name)}</button>` : '')}
+      ${loose.length ? `<div class="lx-section-head" style="margin-top:16px"><h2>Outros arquivos do processo</h2><span>${loose.length}</span></div><div class="lx-mini-list">${loose.map(d => `<div><strong>${h(d.name)}</strong><span>${h(d.category || '')} · ${brDateTime(d.created_at).split(',')[0]}</span><button class="mini-btn" type="button" data-lx-doc-open="${h(d.id)}">Abrir</button></div>`).join('')}</div>` : ''}`;
+  }
+
+  function bindDocItems(data, p, items, refresh) {
+    const root = $('#lx-panel-body');
+    $('#lx-d-gen')?.addEventListener('click', async () => { const tpl = guessTemplate(data.templates || [], p); const n = await createDocItems(data, p.id, tpl?.documents || []); if (n) toast(`${n} documentos adicionados.`); refresh(); });
+    $('#lx-d-upload')?.addEventListener('click', () => openQuickUpload(data, p, items, refresh));
+    $('#lx-d-charge')?.addEventListener('click', () => { const miss = items.filter(d => d.status === 'pendente' && d.required).map(d => d.name); openCommunicationModal(p.id, 'documentos', { pendencias: miss.join('; ') }); });
+    $('#lx-d-add')?.addEventListener('click', async () => {
+      const name = prompt('Nome do documento a receber:'); if (!name || name.trim().length < 2) return;
+      await createDocItems(data, p.id, [{ name: name.trim(), category: 'Outros' }]); refresh();
+    });
+    root?.querySelectorAll('[data-lx-doc-open]').forEach(b => b.addEventListener('click', () => (window.openStoredDocument ? window.openStoredDocument(b.dataset.lxDocOpen) : null)));
+    root?.querySelectorAll('[data-lx-doc-act]').forEach(b => b.addEventListener('click', async () => {
+      const act = b.dataset.lxDocAct, id = b.dataset.id;
+      let error;
+      if (act === 'delete') { if (!confirm('Remover este item da lista? O arquivo, se houver, continua no dossiê.')) return; ({ error } = await db().from('process_doc_items').delete().eq('id', id)); }
+      else ({ error } = await db().from('process_doc_items').update({ status: act === 'receive' ? 'recebido' : act === 'waive' ? 'dispensado' : 'pendente' }).eq('id', id));
+      if (error) return toast(error.message, 'bad');
+      if (act !== 'pending' && act !== 'delete') await maybeCompleteClientTasks(data, p, items.map(i => i.id === id ? { ...i, status: act === 'waive' ? 'dispensado' : 'recebido' } : i));
+      refresh();
+    }));
+  }
+
+  async function maybeCompleteClientTasks(data, p, items) {
+    if (!items.length || items.some(d => d.required && d.status === 'pendente')) return;
+    const open = (data.tasks || []).filter(t => t.process_id === p.id && t.status === 'aberta' && t.responsible_party === 'cliente' && /receb|document|matric|envi/.test(norm(t.title)));
+    if (!open.length) return;
+    const { error } = await db().from('process_tasks').update({ status: 'concluida' }).in('id', open.map(t => t.id));
+    if (!error) toast(`Todos os documentos recebidos. ${open.length} tarefa(s) do cliente concluída(s).`);
+  }
+
+  const rid = () => (window.crypto?.randomUUID ? window.crypto.randomUUID() : Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10));
+  function safeName(name) { return String(name || 'arquivo').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/-+/g, '-').slice(-120); }
+
+  function openQuickUpload(data, p, items, refresh) {
+    const pendingFirst = [...items].sort((a, b) => (a.status === 'pendente' ? 0 : 1) - (b.status === 'pendente' ? 0 : 1));
+    shell('Receber arquivos do cliente', `<div class="modal-form-grid">
+      <div class="span-2 lx-notice">Salve os arquivos que o cliente mandou no WhatsApp e selecione todos de uma vez. O ATLAS guarda no dossiê do processo <strong>${h(p.public_code || '')}</strong>, sugere a qual documento cada um corresponde e marca como recebido.</div>
+      <label class="span-2 lx-drop" id="lx-drop"><input id="lx-q-files" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx,.txt"><strong>Toque para escolher ou arraste os arquivos aqui</strong><small>PDF, fotos e documentos · até 50 MB cada</small></label>
+      <div class="span-2" id="lx-q-list"></div>
+      <div class="modal-actions span-2"><button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button class="btn btn-primary" type="button" id="lx-q-save" disabled>Salvar arquivos</button></div>
+      <div id="lx-q-msg" class="auth-message hidden span-2"></div>
+    </div>`, true);
+    let files = [];
+    const urls = [];
+    const render = () => {
+      const used = new Set();
+      $('#lx-q-list').innerHTML = files.length ? `<div class="lx-q-files">${files.map((f, i) => {
+        if (f.item === undefined) { const m = matchDocItem(f.file.name, pendingFirst.filter(x => !used.has(x.id))); f.item = m?.id || ''; }
+        if (f.item) used.add(f.item);
+        const it = items.find(x => x.id === f.item);
+        if (!f.url && /^image\//.test(f.file.type)) { f.url = URL.createObjectURL(f.file); urls.push(f.url); }
+        return `<div class="lx-q-file">
+          ${f.url ? `<img src="${f.url}" alt="">` : `<span class="lx-q-ico">${h((f.file.name.split('.').pop() || 'doc').slice(0, 4).toUpperCase())}</span>`}
+          <div class="lx-q-meta"><strong>${h(f.file.name)}</strong><small>${f.file.size < 1048576 ? Math.max(1, Math.round(f.file.size / 1024)) + ' KB' : (f.file.size / 1048576).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' MB'}${f.file.size > 52428800 ? ' · <b class="lx-danger-text">acima de 50 MB</b>' : ''}</small>
+            <select data-q="${i}"><option value="">Sem vínculo (só guardar no dossiê)</option>${pendingFirst.map(x => `<option value="${x.id}" ${f.item === x.id ? 'selected' : ''}>${x.status === 'pendente' ? '' : '✓ '}${h(x.name)}</option>`).join('')}</select>
+            ${!it ? `<select data-q-cat="${i}">${DOC_CATEGORIES.map(c => `<option ${f.cat === c ? 'selected' : ''}>${c}</option>`).join('')}</select>` : ''}
+          </div>
+          <button type="button" class="mini-btn" data-q-rm="${i}" aria-label="Remover">×</button>
+        </div>`; }).join('')}</div>` : '';
+      $$('[data-q]').forEach(s => s.addEventListener('change', e => { files[+e.target.dataset.q].item = e.target.value; render(); }));
+      $$('[data-q-cat]').forEach(s => s.addEventListener('change', e => { files[+e.target.dataset.qCat].cat = e.target.value; }));
+      $$('[data-q-rm]').forEach(b => b.addEventListener('click', () => { files.splice(+b.dataset.qRm, 1); render(); }));
+      $('#lx-q-save').disabled = !files.length;
+    };
+    const add = list => { [...list].forEach(file => files.push({ file, cat: 'Documento pessoal' })); render(); };
+    $('#lx-q-files').addEventListener('change', e => add(e.target.files));
+    const drop = $('#lx-drop');
+    ['dragover', 'dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', e => add(e.dataTransfer.files));
+    $('#lx-q-save').addEventListener('click', async () => {
+      const big = files.filter(f => f.file.size > 52428800);
+      if (big.length) return msgBox('#lx-q-msg', 'Remova os arquivos acima de 50 MB.');
+      const btn = $('#lx-q-save'); btn.disabled = true;
+      const org = profile().organization_id;
+      let ok = 0; const fail = []; const received = new Set();
+      for (const [idx, f] of files.entries()) {
+        btn.textContent = `Enviando ${idx + 1}/${files.length}...`;
+        const it = items.find(x => x.id === f.item);
+        const key = `${org}/${p.client_id || 'sem-empresa'}/${p.id}/${rid()}-${safeName(f.file.name)}`;
+        const up = await db().storage.from('legalizacao-documents').upload(key, f.file, { upsert: false, contentType: f.file.type || undefined });
+        if (up.error) { fail.push(f.file.name + ': ' + up.error.message); continue; }
+        const label = it ? `${it.name} — ${f.file.name}` : f.file.name;
+        const ins = await db().from('documents').insert({ organization_id: org, client_id: p.client_id || null, process_id: p.id, name: label.slice(0, 200), category: it?.category || f.cat || 'Outros', storage_key: key, mime_type: f.file.type || null, size_bytes: f.file.size, uploaded_by: profile().id }).select('id').single();
+        if (ins.error) { await db().storage.from('legalizacao-documents').remove([key]); fail.push(f.file.name + ': ' + ins.error.message); continue; }
+        ok++;
+        if (it) {
+          const patch = { status: 'recebido' }; if (!it.document_id) patch.document_id = ins.data?.id || null;
+          const upd = await db().from('process_doc_items').update(patch).eq('id', it.id);
+          if (!upd.error) received.add(it.id);
+        }
+      }
+      urls.forEach(u => URL.revokeObjectURL(u));
+      if (fail.length) { btn.disabled = false; btn.textContent = 'Salvar arquivos'; files = files.filter(f => fail.some(x => x.startsWith(f.file.name))); render(); return msgBox('#lx-q-msg', `${ok} salvo(s). Falharam: ${fail.join(' | ')}`); }
+      await maybeCompleteClientTasks(data, p, items.map(i => received.has(i.id) ? { ...i, status: 'recebido' } : i));
+      closeModal();
+      const left = items.filter(i => i.required && i.status === 'pendente' && !received.has(i.id)).length;
+      toast(`${ok} arquivo(s) salvo(s) no dossiê.${left ? ` Ainda faltam ${left} documento(s).` : ' Lista completa!'}`);
+      openPanel(p.id, 'documentos');
+    });
   }
 
   /* ================================================================
@@ -1206,7 +1376,8 @@
 
   function commVars(data, p, extra = {}, clientOverride = null) {
     const c = clientOverride || data.clientMap.get(p?.client_id) || {};
-    const pend = (data.tasks || []).filter(t => t.process_id === p?.id && t.responsible_party === 'cliente' && t.status === 'aberta').map(t => t.title);
+    const missingDocs = (data.docItems || []).filter(d => d.process_id === p?.id && d.status === 'pendente' && d.required).map(d => d.name);
+    const pend = missingDocs.length ? missingDocs : (data.tasks || []).filter(t => t.process_id === p?.id && t.responsible_party === 'cliente' && t.status === 'aberta').map(t => t.title);
     return {
       contato: (c.contact_name || '').split(' ')[0] || 'tudo bem', empresa: c.legal_name || 'sua empresa', codigo: p?.public_code || '', titulo: p?.title || '',
       etapa: data.stageMap?.get(p?.current_stage_id)?.name || '', pendencias: pend.length ? pend.join('; ') : '(descrever)', exigencia: '', protocolo: '', documento: '', vencimento: '', ...extra
@@ -1351,7 +1522,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

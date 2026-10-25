@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.0');
+  assert.equal(w.AtlasCentralV8.version, '8.1');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.0/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.1/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
@@ -89,4 +89,20 @@ test('V8: migração protege as novas tabelas por organização e perfil, sem cu
   assert.match(migration, /current_client_external_id\(\)/);
   assert.match(migration, /cron\.schedule\('atlas-legalizacao-alertas-diario'/);
   assert.doesNotMatch(migration + src, /resend|twilio|zapi|api\.whatsapp/i);
+});
+
+test('V8.1: arquivos do WhatsApp são ligados ao documento certo pelo nome', () => {
+  const { matchDocItem } = load().AtlasCentralV8.__test;
+  const items = [
+    { id: 'rg', name: 'RG ou CNH dos sócios' }, { id: 'res', name: 'Comprovante de residência dos sócios' },
+    { id: 'mat', name: 'Matrículas atualizadas dos imóveis' }, { id: 'ir', name: 'Última declaração de IR dos sócios' },
+    { id: 'cas', name: 'Certidão de casamento e pacto antenupcial' }, { id: 'iptu', name: 'IPTU ou valor venal dos imóveis' }
+  ];
+  assert.equal(matchDocItem('CNH Carlos.pdf', items)?.id, 'rg');
+  assert.equal(matchDocItem('conta de luz agosto.jpg', items)?.id, 'res');
+  assert.equal(matchDocItem('Matricula 45.321 - 1o RI Santos.pdf', items)?.id, 'mat');
+  assert.equal(matchDocItem('IRPF 2026 recibo.pdf', items)?.id, 'ir');
+  assert.equal(matchDocItem('certidao casamento.pdf', items)?.id, 'cas');
+  assert.equal(matchDocItem('carne IPTU 2026.pdf', items)?.id, 'iptu');
+  assert.equal(matchDocItem('WhatsApp Image 2026-10-24 at 10.22.33.jpeg', items), null);
 });
