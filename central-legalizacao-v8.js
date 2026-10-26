@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '9.0';
+  const VERSION = '9.1';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -2302,6 +2302,39 @@
       more.querySelector('.lx-more-menu').appendChild(rowActions);
     });
   }
+  // Setas para rolar o pipeline quando as colunas não cabem na tela
+  function pipelineNav(root = document) {
+    const pipe = root.querySelector?.('.v4-process-pipeline') || document.querySelector('.v4-process-pipeline');
+    if (!pipe) return;
+    let nav = pipe.previousElementSibling?.classList?.contains('lx-pipe-nav') ? pipe.previousElementSibling : null;
+    if (!nav) {
+      nav = document.createElement('div');
+      nav.className = 'lx-pipe-nav';
+      nav.innerHTML = '<small>Mais etapas ao lado</small><button type="button" data-dir="-1" aria-label="Etapas anteriores">‹</button><button type="button" data-dir="1" aria-label="Próximas etapas">›</button>';
+      pipe.before(nav);
+      nav.addEventListener('click', ev => { const b = ev.target.closest('button[data-dir]'); if (b) pipe.scrollBy({ left: Number(b.dataset.dir) * Math.max(260, pipe.clientWidth * 0.8), behavior: 'smooth' }); });
+    }
+    const sync = () => {
+      const over = pipe.scrollWidth - pipe.clientWidth > 4;
+      nav.hidden = !over;
+      const [prev, next] = nav.querySelectorAll('button');
+      prev.disabled = pipe.scrollLeft <= 2;
+      next.disabled = pipe.scrollLeft >= pipe.scrollWidth - pipe.clientWidth - 2;
+    };
+    if (!pipe.dataset.lxNav) { pipe.dataset.lxNav = '1'; pipe.addEventListener('scroll', sync, { passive: true }); window.addEventListener('resize', sync); }
+    sync();
+  }
+  // Logo da barra lateral em texto nítido (mantém a imagem original oculta)
+  function sidebarBrand() {
+    const box = document.querySelector('#app-shell .sidebar .brand-box');
+    if (!box || box.querySelector('.lx-brand')) return;
+    const el = document.createElement('div');
+    el.className = 'lx-brand';
+    el.setAttribute('aria-label', 'ATLAS Legalização e Gerenciamento');
+    el.innerHTML = '<svg viewBox="0 0 106 112" aria-hidden="true"><defs><linearGradient id="lxbo" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffad24"/><stop offset="1" stop-color="#ff7b16"/></linearGradient><linearGradient id="lxbc" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#28d8ee"/><stop offset="1" stop-color="#08afd1"/></linearGradient></defs><path d="M52 0 100 102H81L52 41 23 102H4Z" fill="url(#lxbo)"/><path d="M52 59 105 103 83 110 52 83 21 110 0 103Z" fill="url(#lxbc)"/><path d="M52 76 92 105 77 111 52 93 27 111 12 105Z" fill="#0877b8"/></svg><span class="lx-brand-text"><strong>ATLAS</strong><small>Legalização e<br>Gerenciamento</small></span>';
+    box.appendChild(el);
+    box.classList.add('lx-brand-on');
+  }
   document.addEventListener('click', ev => {
     document.querySelectorAll('details.lx-more[open]').forEach(d => { if (!d.contains(ev.target)) d.removeAttribute('open'); });
     const inMenu = ev.target.closest?.('.lx-more-menu button, .lx-more-menu a');
@@ -2382,7 +2415,7 @@
     const content = document.getElementById('page-content');
     if (!content || !window.MutationObserver) return;
     let pending = false;
-    new MutationObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; decorateProcessButtons(content); compactPipeline(content); syncPrimaryAction(); }); }).observe(content, { childList: true, subtree: true });
+    new MutationObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; decorateProcessButtons(content); compactPipeline(content); pipelineNav(content); sidebarBrand(); syncPrimaryAction(); }); }).observe(content, { childList: true, subtree: true });
     const modal = document.getElementById('atlas-modal-root');
     if (modal) new MutationObserver(() => decorateProcessButtons(modal)).observe(modal, { childList: true, subtree: true });
   }

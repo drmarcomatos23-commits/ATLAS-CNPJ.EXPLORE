@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '9.0');
+  assert.equal(w.AtlasCentralV8.version, '9.1');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'equipe', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -79,7 +79,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
   // V9: Certidões foi unificada em "Licenças e certidões" (rota antiga continua funcionando).
   assert.doesNotMatch(html, /data-page="certidoes"/);
   assert.match(src, /pageName === 'certidoes'\) return licensesUnified\('lista'/);
-  assert.match(html, /central-legalizacao-v8\.js\?v=9\.0/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=9\.1/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
