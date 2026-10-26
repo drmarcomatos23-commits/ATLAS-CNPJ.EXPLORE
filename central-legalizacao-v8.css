@@ -241,3 +241,26 @@ button.lx-check:hover{border-color:var(--lx-blue)}
 .lx-load span{font-size:11.5px;color:var(--lx-muted);white-space:nowrap}
 .lx-select{height:32px;border:1px solid var(--lx-border);border-radius:8px;padding:0 8px;font:inherit;font-size:12.5px;background:#fff;color:var(--lx-text)}
 .lx-mini-list>div .lx-badge{flex:0 0 auto}
+
+/* V8.9 — barra lateral em grupos recolhíveis */
+#app-shell .atlas-sb-root{display:block!important}
+#app-shell .atlas-sb-group{display:block;margin:0 0 4px}
+#app-shell .atlas-sb-group.atlas-sb-empty{display:none!important}
+#app-shell .atlas-sb-head{all:unset;box-sizing:border-box;display:flex!important;align-items:center;gap:8px;width:100%;height:32px;margin:6px 0 2px;padding:0 10px 0 14px;border-radius:8px;cursor:pointer;color:rgba(232,243,255,.62);font:700 10.5px/1.35 Inter,system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;transition:background .15s,color .15s}
+#app-shell .atlas-sb-head:hover{background:rgba(255,255,255,.06);color:#fff}
+#app-shell .atlas-sb-head:focus-visible{outline:2px solid #5bb3f5;outline-offset:1px}
+#app-shell .atlas-sb-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#app-shell .atlas-sb-count{min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:rgba(255,255,255,.1);color:rgba(232,243,255,.75);font-size:10px;letter-spacing:0;display:inline-grid;place-items:center;opacity:0;transition:opacity .15s}
+#app-shell .atlas-sb-group:not(.is-open) .atlas-sb-count{opacity:1}
+#app-shell .atlas-sb-chev{width:14px;height:14px;flex:0 0 14px;transition:transform .2s ease;opacity:.8}
+#app-shell .atlas-sb-group.is-open .atlas-sb-chev{transform:rotate(180deg)}
+#app-shell .atlas-sb-group.has-active:not(.is-open) .atlas-sb-head{color:#fff;background:rgba(17,87,162,.35);box-shadow:inset 3px 0 0 var(--atlas-orange,#ff9a16)}
+#app-shell .atlas-sb-items{display:block}
+#app-shell .atlas-sb-items[hidden]{display:none!important}
+#app-shell .atlas-sb-group:not(.atlas-sb-flat) .atlas-sb-items .nav-item{padding-left:20px!important}
+#app-shell .atlas-sb-group + .atlas-sb-group:not(.atlas-sb-flat){border-top:1px solid rgba(255,255,255,.06);padding-top:2px}
+@media (max-width:1180px){
+  #app-shell .atlas-sb-head{height:40px;font-size:11px}
+}
+#lx-mgmt-month{min-width:240px}
+@media (max-width:720px){#lx-mgmt-month{min-width:0}}

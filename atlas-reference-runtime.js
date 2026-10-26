@@ -1,7 +1,18 @@
 (() => {
   const LEGACY_LAYER_IDS = ['atlas-v6-fidelity-guard','atlas-v6-mockup-fidelity','atlas-v6-functional-sidebar'];
   const chartInstances = [];
-  const SIDEBAR_ORDER = ['dashboard','clientes','monitor','processos','tarefas','protocolos','exigencias','licencas','certidoes','agenda','modelos','documentos','custos','relatorios','equipe','config'];
+  // Barra lateral em grupos recolhíveis (V8.9). A ordem plana abaixo é derivada dos grupos.
+  const SIDEBAR_GROUPS = [
+    { key:'inicio', label:'', pages:['dashboard'] },
+    { key:'operacao', label:'Operação', pages:['processos','tarefas','protocolos','exigencias','agenda'] },
+    { key:'empresas', label:'Empresas', pages:['clientes','monitor','licencas','certidoes','documentos'] },
+    { key:'gestao', label:'Gestão', pages:['custos','relatorios','equipe'] },
+    { key:'ajustes', label:'Sistema', pages:['modelos','config','usuarios','integracoes'] },
+    { key:'ajuda', label:'Ajuda', pages:['conhecimento','treinamento'] }
+  ];
+  const SIDEBAR_ORDER = ['dashboard','processos','tarefas','protocolos','exigencias','agenda','clientes','monitor','licencas','certidoes','documentos','custos','relatorios','equipe','modelos','config','usuarios','integracoes','conhecimento','treinamento'];
+  const SIDEBAR_STATE_KEY = 'atlas.sidebarGroups.v1';
+  const DEFAULT_OPEN = { operacao:true, empresas:false, gestao:false, ajustes:false, ajuda:false };
   const TYPE_FALLBACK = [
     { label:'LTDA', value:68 },
     { label:'S/A', value:24 },
@@ -90,6 +101,71 @@
     document.head.appendChild(link);
   }
 
+  function readSidebarState() {
+    try { return { ...DEFAULT_OPEN, ...(JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY) || '{}') || {}) }; }
+    catch { return { ...DEFAULT_OPEN }; }
+  }
+  function saveSidebarState(state) { try { localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(state)); } catch {} }
+
+  function setGroupOpen(group, open, persist) {
+    if (!group || !group.dataset.sbGroup) return;
+    const head = group.querySelector(':scope > .atlas-sb-head');
+    const items = group.querySelector(':scope > .atlas-sb-items');
+    group.classList.toggle('is-open', open);
+    if (head) head.setAttribute('aria-expanded', String(open));
+    if (items) items.hidden = !open;
+    if (persist) { const st = readSidebarState(); st[group.dataset.sbGroup] = open; saveSidebarState(st); }
+  }
+
+  function syncSidebarGroups(nav) {
+    nav.querySelectorAll('.atlas-sb-group').forEach(group => {
+      const items = [...group.querySelectorAll('.nav-item[data-page]')];
+      // Conta só o que o perfil e o layout realmente exibem (alguns itens ficam ocultos no computador).
+      const visible = items.filter(i => !i.classList.contains('hidden') && getComputedStyle(i).display !== 'none');
+      group.classList.toggle('atlas-sb-empty', !visible.length);
+      const active = items.some(i => i.classList.contains('active'));
+      group.classList.toggle('has-active', active);
+      const count = group.querySelector('.atlas-sb-count');
+      if (count) count.textContent = String(visible.length);
+    });
+  }
+
+  function buildSidebarGroups(primary) {
+    if (primary.dataset.sbReady === '1') return;
+    primary.dataset.sbReady = '1';
+    primary.classList.add('atlas-sb-root');
+    const state = readSidebarState();
+    SIDEBAR_GROUPS.forEach(g => {
+      const group = document.createElement('div');
+      group.className = 'atlas-sb-group' + (g.label ? '' : ' atlas-sb-flat');
+      group.dataset.sbGroup = g.key;
+      if (g.label) {
+        const head = document.createElement('button');
+        head.type = 'button';
+        head.className = 'atlas-sb-head';
+        head.innerHTML = `<span class="atlas-sb-label">${g.label}</span><span class="atlas-sb-count" aria-hidden="true"></span><svg class="atlas-sb-chev" viewBox="0 0 24 24" aria-hidden="true"><path d="m7 9.5 5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        head.addEventListener('click', () => setGroupOpen(group, !group.classList.contains('is-open'), true));
+        group.appendChild(head);
+      }
+      const items = document.createElement('div');
+      items.className = 'atlas-sb-items';
+      group.appendChild(items);
+      primary.appendChild(group);
+      if (g.label) setGroupOpen(group, !!state[g.key], false);
+      else group.classList.add('is-open');
+    });
+    // Ao navegar para um item de grupo fechado (busca, sino, atalhos), abre o grupo dele.
+    const nav = primary.closest('#nav');
+    if (nav && window.MutationObserver) {
+      new MutationObserver(() => {
+        syncSidebarGroups(nav);
+        const act = nav.querySelector('.atlas-sb-group .nav-item.active');
+        const grp = act?.closest('.atlas-sb-group');
+        if (grp && !grp.classList.contains('is-open') && grp.dataset.lastActive !== act.dataset.page) { grp.dataset.lastActive = act.dataset.page; setGroupOpen(grp, true, false); }
+      }).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    }
+  }
+
   function polishSidebarOrder() {
     const nav=document.getElementById('nav');
     if(!nav) return;
@@ -100,13 +176,19 @@
       primary.setAttribute('aria-label','Navegação principal');
       nav.prepend(primary);
     }
-    SIDEBAR_ORDER.forEach((page,index) => {
-      const item=nav.querySelector(`.nav-item[data-page="${page}"]`);
-      if(item){
-        item.style.setProperty('--atlas-nav-order', String(index));
-        primary.appendChild(item);
-      }
+    buildSidebarGroups(primary);
+    let index = 0;
+    SIDEBAR_GROUPS.forEach(g => {
+      const host = primary.querySelector(`.atlas-sb-group[data-sb-group="${g.key}"] > .atlas-sb-items`);
+      g.pages.forEach(page => {
+        const item=nav.querySelector(`.nav-item[data-page="${page}"]`);
+        if(item){
+          item.style.setProperty('--atlas-nav-order', String(index++));
+          if (item.parentElement !== host) host.appendChild(item);
+        }
+      });
     });
+    syncSidebarGroups(nav);
   }
 
   function syncMobileDashboardChrome() {
