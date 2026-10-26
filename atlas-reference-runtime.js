@@ -5,12 +5,12 @@
   const SIDEBAR_GROUPS = [
     { key:'inicio', label:'', pages:['dashboard'] },
     { key:'operacao', label:'Operação', pages:['processos','tarefas','protocolos','exigencias','agenda'] },
-    { key:'empresas', label:'Empresas', pages:['clientes','monitor','licencas','certidoes','documentos'] },
+    { key:'empresas', label:'Empresas', pages:['clientes','monitor','licencas','documentos'] },
     { key:'gestao', label:'Gestão', pages:['custos','relatorios','equipe'] },
     { key:'ajustes', label:'Sistema', pages:['modelos','config','usuarios','integracoes'] },
     { key:'ajuda', label:'Ajuda', pages:['conhecimento','treinamento'] }
   ];
-  const SIDEBAR_ORDER = ['dashboard','processos','tarefas','protocolos','exigencias','agenda','clientes','monitor','licencas','certidoes','documentos','custos','relatorios','equipe','modelos','config','usuarios','integracoes','conhecimento','treinamento'];
+  const SIDEBAR_ORDER = ['dashboard','processos','tarefas','protocolos','exigencias','agenda','clientes','monitor','licencas','documentos','custos','relatorios','equipe','modelos','config','usuarios','integracoes','conhecimento','treinamento'];
   const SIDEBAR_STATE_KEY = 'atlas.sidebarGroups.v1';
   const DEFAULT_OPEN = { operacao:true, empresas:false, gestao:false, ajustes:false, ajuda:false };
   const TYPE_FALLBACK = [

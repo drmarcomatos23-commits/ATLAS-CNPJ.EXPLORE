@@ -6,9 +6,11 @@
  const e=v=>typeof esc==='function'?esc(v):String(v??'');
  const d=v=>typeof fmtDateBR==='function'?fmtDateBR(v):(v||'—');
  const entityText=(v,keys=[])=>{if(v==null)return '';if(typeof v==='string'||typeof v==='number')return String(v);for(const k of keys){if(v?.[k]!=null&&typeof v[k]!=='object')return String(v[k]);}return '';};
- const labelize=v=>String(v??'').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+ // Capitaliza só a primeira letra de cada palavra (com suporte a acentos) e mantém preposições em minúsculo.
+ const LABEL_SMALL=new Set(['de','da','do','das','dos','e','em','para','com','a','o','ao','na','no']);
+ const labelize=v=>String(v??'').replace(/_/g,' ').split(/\s+/).filter(Boolean).map((w,i)=>i>0&&LABEL_SMALL.has(w)?w:w.charAt(0).toLocaleUpperCase('pt-BR')+w.slice(1)).join(' ');
  const company=(data,p)=>{const linked=typeof clientNameById==='function'?clientNameById(data.clients,p.client_id):(data.clients||[]).find(c=>c.id===p.client_id)?.legal_name;return linked||entityText(p.client,['legal_name','trade_name','name'])||'—';};
- const stage=p=>entityText(p.stage_name||p.current_stage_name||p.current_stage||p.stage,['name','label','title'])||'—';
+ const stage=p=>entityText(p.stage_name||p.current_stage_name||p.current_stage||p.stage,['name','label','title'])||(String(p.status||'').toLowerCase()==='completed'?'Concluído':'Sem etapa definida');
  const owner=p=>entityText(p.owner_name||p.responsible_name||p.owner,['full_name','name','label'])||'—';
  const next=p=>entityText(p.next_action||p.next_step||p.pending_action,['name','label','title'])||'Definir próxima ação';
  const BRAND='/atlas-sidebar-brand.svg?v=4.4';

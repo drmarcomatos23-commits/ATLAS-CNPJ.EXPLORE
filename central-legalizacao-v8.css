@@ -264,3 +264,71 @@ button.lx-check:hover{border-color:var(--lx-blue)}
 }
 #lx-mgmt-month{min-width:240px}
 @media (max-width:720px){#lx-mgmt-month{min-width:0}}
+
+/* ================= V9 — correções e melhorias de layout ================= */
+/* A1. Dashboard: o cabeçalho antigo aparecia duplicado entre 761px e 1180px */
+body.atlas-final-dashboard-active #app-shell[data-v6-page="dashboard"] .main > .page-head,
+#app-shell[data-v6-page="dashboard"]:has(#page-content .atlas-final-dashboard) .main > .page-head{display:none!important}
+
+/* A3. Celular: tabela de permissões rola dentro do cartão, sem empurrar a tela */
+#app-shell .permission-table-wrap{overflow-x:auto!important;max-width:100%!important;position:relative!important;-webkit-overflow-scrolling:touch}
+#app-shell .permission-switch{position:relative!important}
+#app-shell .permission-table th:first-child,#app-shell .permission-table td:first-child{position:sticky;left:0;background:#fff;z-index:1}
+/* Espaço no fim da página para o botão flutuante não cobrir o último item */
+@media (max-width:760px){#app-shell #page-content{padding-bottom:112px!important}}
+
+/* A4. Barra lateral: último grupo não fica atrás do cartão "Minha Conta" */
+@media (min-width:761px){#app-shell .nav-list{padding-bottom:150px!important;scroll-padding-bottom:150px}}
+
+/* C. Botão principal contextual */
+#app-shell #new-process-btn.lx-pa-hidden{display:none!important}
+
+/* B. Pipeline compacto */
+#app-shell .v4-process-pipeline article.lx-pipe-card{display:flex!important;flex-direction:column;gap:3px;padding:12px 12px 10px!important}
+#app-shell .lx-pipe-card > b{font-size:11px!important;letter-spacing:.03em}
+#app-shell .lx-pipe-card > strong{font-size:13.5px!important;line-height:1.3}
+#app-shell .lx-pipe-card > small{font-size:12px!important;color:var(--lx-muted)!important}
+#app-shell .lx-pipe-card > div:not(.v4-pipe-actions){font-size:11.5px!important;color:var(--lx-muted)!important}
+#app-shell .lx-pipe-card .v4-pipe-actions{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:space-between!important;gap:8px!important;margin-top:8px!important;padding-top:8px!important;border-top:1px solid var(--lx-border)!important;flex-wrap:nowrap!important}
+#app-shell .lx-pipe-card .v4-action-link{flex:1;min-width:0;text-align:left;font-size:12px!important;font-weight:700!important;color:var(--lx-blue)!important;background:var(--lx-info-bg)!important;border:0!important;border-radius:8px!important;padding:7px 10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
+#app-shell .lx-pipe-card .v4-action-link::before{content:'→ ';opacity:.7}
+#app-shell .lx-pipe-card .v4-completion-date{font-size:11px!important;margin-top:4px!important}
+.lx-more{position:relative;flex:0 0 auto}
+.lx-more>summary{list-style:none;cursor:pointer;width:34px;height:32px;border:1px solid var(--lx-border);border-radius:8px;display:grid;place-items:center;font-size:18px;line-height:1;color:var(--lx-text);background:#fff;user-select:none}
+.lx-more>summary::-webkit-details-marker{display:none}
+.lx-more>summary:hover,.lx-more[open]>summary{border-color:var(--lx-blue);color:var(--lx-blue)}
+.lx-more-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:30;min-width:176px;background:#fff;border:1px solid var(--lx-border);border-radius:10px;box-shadow:0 12px 32px rgba(4,39,75,.16);padding:6px}
+#app-shell .lx-more-menu .v4-row-actions{display:flex!important;flex-direction:column!important;gap:2px!important;align-items:stretch!important}
+#app-shell .lx-more-menu .mini-btn,#app-shell .lx-more-menu button{width:100%!important;justify-content:flex-start!important;text-align:left!important;border:0!important;background:transparent!important;box-shadow:none!important;padding:8px 10px!important;border-radius:7px!important;font-size:12.5px!important;height:auto!important;min-height:34px!important;color:var(--lx-text)!important}
+#app-shell .lx-more-menu button:hover{background:var(--lx-bg)!important}
+#app-shell .lx-more-menu .danger,#app-shell .lx-more-menu .v4-delete-process-btn{color:var(--lx-bad)!important}
+#app-shell .v4-process-pipeline{align-items:flex-start!important}
+
+/* D. Abas de Licenças e certidões no cabeçalho */
+.lx-lic-tabs{margin:12px 0 -6px;border-bottom:0}
+.lx-lic-tabs[hidden]{display:none!important}
+
+/* E. Leitura confortável — tamanhos mínimos e mais contraste nos textos secundários */
+#app-shell .main .mini-btn{font-size:11.5px!important}
+#app-shell .main .btn{font-size:12px!important}
+#app-shell .main table th{font-size:10.5px!important}
+#app-shell .main table td{font-size:max(12px,1em)!important}
+#app-shell .main .field label{font-size:11.5px!important}
+#app-shell .main small,#app-shell .main .muted,#app-shell .main .v51-establishment-sub,#app-shell .main .company-filter-note,#app-shell .main .section-head span{font-size:11px!important;color:#55677f!important}
+#app-shell .main .pill,#app-shell .main .atlas-badge,#app-shell .main .company-establishment-badge{font-size:10.5px!important}
+#app-shell .main .license-expiry-row span,#app-shell .main .license-expiry-row p,#app-shell .main .license-card-top span{font-size:11px!important}
+/* Dashboard: textos auxiliares de 8–9px sobem para 10,5–11px */
+#app-shell .atlas-final-dashboard small,#app-shell .atlas-final-dashboard time,#app-shell .atlas-final-dashboard em,#app-shell .atlas-final-dashboard p{font-size:10.5px!important}
+#app-shell .atlas-final-dashboard .atlas-kpi-copy span,#app-shell .atlas-final-dashboard header button{font-size:10.5px!important}
+#app-shell .atlas-final-dashboard .atlas-row-main strong,#app-shell .atlas-final-dashboard .atlas-list-row strong{font-size:11.5px!important}
+#app-shell .atlas-final-dashboard .atlas-stage strong{font-size:10.5px!important}
+/* Rodapé da barra lateral e contador do sino */
+#app-shell .v6-account-label{font-size:10.5px!important;color:rgba(255,255,255,.78)!important}
+#app-shell .v6-sidebar-logout{font-size:11.5px!important}
+#app-shell .atlas-sb-head{font-size:11px!important;color:rgba(232,243,255,.72)!important}
+#app-shell .atlas-sb-count{font-size:10.5px!important}
+/* Textos do Pipeline e cabeçalhos de coluna */
+#app-shell .v4-process-pipeline header span{font-size:11px!important}
+#app-shell .user-block small{font-size:11px!important}
+#app-shell .v6-sidebar-logout span,#app-shell .v6-account-card span{font-size:11.5px!important}
+#app-shell .v6-account-card .v6-account-label{font-size:10.5px!important}

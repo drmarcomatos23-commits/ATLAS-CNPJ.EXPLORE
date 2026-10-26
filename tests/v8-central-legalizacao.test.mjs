@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.9');
+  assert.equal(w.AtlasCentralV8.version, '9.0');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'equipe', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -72,11 +72,14 @@ test('V8: mensagens ao cliente preenchem variáveis e CSV usa ponto e vírgula c
 });
 
 test('V8: menu, shell e script registrados; mobile-v6 continua a última folha de estilo', () => {
-  for (const p of ['tarefas', 'protocolos', 'certidoes', 'agenda']) {
+  for (const p of ['tarefas', 'protocolos', 'agenda']) {
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.9/);
+  // V9: Certidões foi unificada em "Licenças e certidões" (rota antiga continua funcionando).
+  assert.doesNotMatch(html, /data-page="certidoes"/);
+  assert.match(src, /pageName === 'certidoes'\) return licensesUnified\('lista'/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=9\.0/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });

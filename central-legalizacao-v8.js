@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.9';
+  const VERSION = '9.0';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -1031,7 +1031,8 @@
   const certFilters = { category: '', state: '', client: '', agency: '', responsible: '', text: '' };
 
   async function certificatesPage() {
-    setHeadSafe('Certidões e vencimentos', 'CONFORMIDADE', 'Certidões negativas, alvarás, licenças e certificados digitais com status, alertas escalonados e renovação.');
+    setHeadSafe('Licenças e certidões', 'CONFORMIDADE', 'Todas as licenças, alvarás, certidões e certificados em lista, com vencimentos, filtros, importação e renovação.');
+    if (currentPage === 'licencas') ensureLicTabs('lista');
     loading('Carregando vencimentos...');
     const data = await loadCentral();
     renderCertificates(data);
@@ -2233,6 +2234,115 @@
   }
 
   /* ================================================================
+     15. LAYOUT V9 — botão principal contextual, pipeline compacto e
+         Licenças + Certidões unificadas
+     ================================================================ */
+  let currentPage = 'dashboard';
+  const LIC_VIEW_KEY = 'atlas.licView';
+  const getLicView = () => { try { return localStorage.getItem(LIC_VIEW_KEY) || 'empresa'; } catch { return 'empresa'; } };
+  const setLicView = v => { try { localStorage.setItem(LIC_VIEW_KEY, v); } catch {} };
+
+  async function openCertificateModalFresh() { const data = await loadCentral(); openCertificateModal(data); }
+  const clickSel = sel => () => { const el = document.querySelector(sel); if (el) el.click(); else toast('Ação indisponível nesta tela.', 'bad'); };
+
+  // null = esconder o botão; undefined = manter "Novo processo".
+  const PRIMARY_ACTIONS = {
+    dashboard: undefined, processos: null, // Processos já tem "Abrir novo processo" na própria tela.
+    clientes: { label: 'Nova empresa', run: () => window.openClientModal ? window.openClientModal() : clickSel('#page-content .btn-primary')() },
+    tarefas: { label: 'Nova tarefa', run: () => document.querySelector('#lx-new-task') ? clickSel('#lx-new-task')() : clickSel('#lx-apply-template-empty')() },
+    protocolos: { label: 'Novo protocolo', run: clickSel('#lx-new-proto') },
+    exigencias: { label: 'Nova exigência', run: clickSel('#lx-new-req') },
+    licencas: { label: 'Novo documento', run: () => openCertificateModalFresh() },
+    certidoes: { label: 'Novo documento', run: () => openCertificateModalFresh() },
+    documentos: { label: 'Enviar documento', run: () => window.openDocumentModal ? window.openDocumentModal() : null },
+    monitor: { label: 'Verificar agora', run: clickSel('#lx-mon-run') },
+    modelos: { label: 'Novo modelo', run: clickSel('#lx-tpl-new') },
+    agenda: null, custos: null, relatorios: null, equipe: null, config: null, usuarios: null, integracoes: null, conhecimento: null, treinamento: null
+  };
+
+  function syncPrimaryAction() {
+    const btn = document.getElementById('new-process-btn'); if (!btn) return;
+    const cfg = PRIMARY_ACTIONS[currentPage];
+    const label = btn.querySelector('.atlas-action-label');
+    const writeOk = canEdit() || (currentPage === 'documentos' && role() === 'financeiro');
+    btn.classList.toggle('lx-pa-hidden', cfg === null || (cfg && !writeOk));
+    btn.dataset.lxAction = cfg ? currentPage : '';
+    const text = cfg ? cfg.label : 'Novo processo';
+    if (label) { if (label.textContent !== text) label.textContent = text; }
+    else if (!btn.querySelector('svg')) btn.textContent = '＋ ' + text;
+    btn.setAttribute('aria-label', text);
+  }
+
+  function installPrimaryAction() {
+    const btn = document.getElementById('new-process-btn');
+    if (!btn || btn.dataset.lxPaReady) return;
+    btn.dataset.lxPaReady = '1';
+    // Captura antes dos ouvintes antigos ("Novo processo") quando a tela tem outra ação principal.
+    btn.addEventListener('click', ev => {
+      const cfg = PRIMARY_ACTIONS[btn.dataset.lxAction];
+      if (!cfg) return;
+      ev.preventDefault(); ev.stopImmediatePropagation();
+      cfg.run();
+    }, true);
+    if (window.MutationObserver) new MutationObserver(() => { const l = btn.querySelector('.atlas-action-label'); const want = PRIMARY_ACTIONS[currentPage]?.label || 'Novo processo'; if (l && l.textContent !== want) l.textContent = want; }).observe(btn, { childList: true, subtree: true, characterData: true });
+  }
+
+  // ---------- Pipeline compacto ----------
+  function compactPipeline(root = document) {
+    root.querySelectorAll?.('.v4-process-pipeline article').forEach(card => {
+      if (card.dataset.lxCompact === '1' && card.querySelector('.lx-more')) return;
+      const actions = card.querySelector('.v4-pipe-actions'); if (!actions) return;
+      const rowActions = actions.querySelector('.v4-row-actions'); if (!rowActions) return;
+      card.dataset.lxCompact = '1';
+      card.classList.add('lx-pipe-card');
+      const more = document.createElement('details');
+      more.className = 'lx-more';
+      more.innerHTML = '<summary aria-label="Mais ações" title="Mais ações">⋯</summary><div class="lx-more-menu"></div>';
+      actions.appendChild(more);
+      more.querySelector('.lx-more-menu').appendChild(rowActions);
+    });
+  }
+  document.addEventListener('click', ev => {
+    document.querySelectorAll('details.lx-more[open]').forEach(d => { if (!d.contains(ev.target)) d.removeAttribute('open'); });
+    const inMenu = ev.target.closest?.('.lx-more-menu button, .lx-more-menu a');
+    if (inMenu) setTimeout(() => inMenu.closest('details')?.removeAttribute('open'), 0);
+  });
+
+  // ---------- Licenças e certidões ----------
+  function ensureLicTabs(view) {
+    const head = document.querySelector('#app-shell .main > .page-head > div');
+    if (!head) return;
+    let tabs = document.getElementById('lx-lic-tabs');
+    if (!tabs) {
+      tabs = document.createElement('div');
+      tabs.id = 'lx-lic-tabs'; tabs.className = 'lx-tabs lx-lic-tabs'; tabs.setAttribute('role', 'tablist');
+      tabs.innerHTML = '<button type="button" role="tab" data-lic-view="empresa">Por empresa</button><button type="button" role="tab" data-lic-view="lista">Lista e vencimentos</button>';
+      tabs.addEventListener('click', ev => { const b = ev.target.closest('[data-lic-view]'); if (b) licensesUnified(b.dataset.licView); });
+      head.appendChild(tabs);
+    }
+    tabs.hidden = false;
+    tabs.querySelectorAll('[data-lic-view]').forEach(b => { const on = b.dataset.licView === view; b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); });
+  }
+  function hideLicTabs() { const t = document.getElementById('lx-lic-tabs'); if (t) t.hidden = true; }
+
+  async function licensesUnified(view, prevRender) {
+    view = view === 'lista' ? 'lista' : 'empresa';
+    setLicView(view);
+    currentPage = 'licencas';
+    document.querySelectorAll('#nav [data-page]').forEach(x => x.classList.toggle('active', x.dataset.page === 'licencas'));
+    document.getElementById('app-shell')?.setAttribute('data-v6-page', 'licencas');
+    const legacy = prevRender || window.render.__lxPrev;
+    if (view === 'lista') await certificatesPage();
+    else if (typeof window.licensePage === 'function') await window.licensePage();
+    else if (legacy) await legacy('licencas');
+    setHeadSafe('Licenças e certidões', 'CONFORMIDADE', view === 'lista'
+      ? 'Todas as licenças, alvarás, certidões e certificados em lista, com vencimentos, filtros, importação e renovação.'
+      : 'AVCB, Alvará de Funcionamento, Licença Sanitária e ANVISA organizados por empresa.');
+    ensureLicTabs(view);
+    syncPrimaryAction();
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
   const PAGES = { equipe: teamPage, modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
@@ -2241,12 +2351,18 @@
     const prev = window.render;
     if (typeof prev !== 'function' || prev.__lxV8) return;
     const wrapped = function (pageName) {
+      currentPage = pageName;
+      if (pageName !== 'licencas' && pageName !== 'certidoes') hideLicTabs();
+      Promise.resolve().then(syncPrimaryAction);
+      if (pageName === 'licencas') return licensesUnified(getLicView(), prev);
+      if (pageName === 'certidoes') return licensesUnified('lista', prev);
       if (PAGES[pageName]) { document.getElementById('app-shell')?.setAttribute('data-v6-page', pageName); return PAGES[pageName](); }
       const out = prev.apply(this, arguments);
       if (pageName === 'relatorios') Promise.resolve(out).then(() => setTimeout(injectManagementCard, 0)).catch(() => {});
       return out;
     };
     wrapped.__lxV8 = true;
+    wrapped.__lxPrev = prev;
     window.render = wrapped;
   }
 
@@ -2266,7 +2382,7 @@
     const content = document.getElementById('page-content');
     if (!content || !window.MutationObserver) return;
     let pending = false;
-    new MutationObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; decorateProcessButtons(content); }); }).observe(content, { childList: true, subtree: true });
+    new MutationObserver(() => { if (pending) return; pending = true; requestAnimationFrame(() => { pending = false; decorateProcessButtons(content); compactPipeline(content); syncPrimaryAction(); }); }).observe(content, { childList: true, subtree: true });
     const modal = document.getElementById('atlas-modal-root');
     if (modal) new MutationObserver(() => decorateProcessButtons(modal)).observe(modal, { childList: true, subtree: true });
   }
@@ -2288,6 +2404,16 @@
   function init() {
     injectStyles();
     installRouter();
+    installPrimaryAction();
+    setTimeout(() => { installPrimaryAction(); syncPrimaryAction(); }, 800);
+    // A tela antiga de licenças (por empresa) se redesenha sozinha após salvar: mantém título e abas da tela unificada.
+    const wrapLicensePage = () => {
+      const orig = window.licensePage;
+      if (typeof orig !== 'function' || orig.__lxWrapped) return;
+      const w = async function () { const out = await orig.apply(this, arguments); if (currentPage === 'licencas') { setHeadSafe('Licenças e certidões', 'CONFORMIDADE', 'AVCB, Alvará de Funcionamento, Licença Sanitária e ANVISA organizados por empresa.'); ensureLicTabs('empresa'); } return out; };
+      w.__lxWrapped = true; window.licensePage = w;
+    };
+    wrapLicensePage(); setTimeout(wrapLicensePage, 700);
     observeContent();
     syncClientNav();
     const userName = document.getElementById('user-name');

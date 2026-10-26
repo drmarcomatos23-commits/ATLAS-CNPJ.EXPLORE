@@ -3,14 +3,14 @@
 
   const NAV_GROUPS = [
     { label: 'Visão Geral', pages: ['dashboard'] },
-    { label: 'Operação', pages: ['processos', 'tarefas', 'protocolos', 'exigencias', 'clientes', 'monitor', 'licencas', 'certidoes', 'agenda', 'modelos', 'documentos', 'integracoes'] },
+    { label: 'Operação', pages: ['processos', 'tarefas', 'protocolos', 'exigencias', 'clientes', 'monitor', 'licencas', 'agenda', 'modelos', 'documentos', 'integracoes'] },
     { label: 'Gestão', pages: ['custos', 'relatorios', 'equipe'] },
     { label: 'ATLAS', pages: ['conhecimento', 'treinamento'] },
     { label: 'Administração', pages: ['usuarios', 'config'] }
   ];
 
   const labelByPage = {
-    dashboard: 'Dashboard', clientes: 'Empresas', processos: 'Processos', licencas: 'Licenças',
+    dashboard: 'Dashboard', clientes: 'Empresas', processos: 'Processos', licencas: 'Licenças e certidões',
     documentos: 'Documentos', custos: 'Financeiro', relatorios: 'Relatórios', config: 'Configurações',
     exigencias: 'Exigências', integracoes: 'Integrações', conhecimento: 'Base de Conhecimento',
     treinamento: 'Treinamento', usuarios: 'Usuários',
