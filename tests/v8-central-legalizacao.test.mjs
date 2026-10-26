@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.6');
+  assert.equal(w.AtlasCentralV8.version, '8.7');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.6/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.7/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
@@ -126,4 +126,19 @@ test('V8.6: resumo financeiro separa honorários a receber e taxas a reembolsar'
   ]);
   assert.equal(F.feeTotal, 4000); assert.equal(F.feeOpen, 3000); assert.equal(F.feeLate, 3000);
   assert.equal(F.reimb, 300); assert.equal(F.toPay, 150); assert.equal(F.open, 3300);
+});
+
+test('V8.7: relatório gerencial conta processos e recebimentos do mês escolhido', () => {
+  const { managementData } = load().AtlasCentralV8.__test;
+  const procs = [
+    { id: 'a', client_id: 'c', title: 'Abertura de empresa', status: 'completed', created_at: '2026-09-02T12:00:00Z', completed_at: '2026-10-12T12:00:00Z' },
+    { id: 'b', client_id: 'c', title: 'Alteração de endereço', status: 'in_progress', created_at: '2026-10-05T12:00:00Z', due_date: '2026-10-08' }
+  ];
+  const data = { processes: procs, processMap: new Map(procs.map(p => [p.id, p])), clients: [{ id: 'c', legal_name: 'X', created_at: '2026-01-01' }], clientMap: new Map([['c', { legal_name: 'X' }]]), profileMap: new Map(), templates: [],
+    costs: [{ process_id: 'a', fee_kind: 'honorarios', amount: 1000, payment_status: 'paid', paid_at: '2026-10-15', created_at: '2026-09-02' }, { process_id: 'b', fee_kind: 'honorarios', amount: 500, payment_status: 'pending', created_at: '2026-10-05' }],
+    tasks: [], requirements: [], protocols: [], licenses: [] };
+  const G = managementData(data, [], '2026-10');
+  assert.equal(G.opened.length, 1); assert.equal(G.completed.length, 1); assert.equal(G.late.length, 1);
+  assert.equal(G.feeReceived, 1000); assert.equal(G.feeOpen, 500); assert.equal(G.feeLaunched, 500);
+  assert.deepEqual([...G.byService.keys()], ['Abertura de empresa']); assert.equal(G.durations[0].d, 40);
 });

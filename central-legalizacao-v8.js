@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.6';
+  const VERSION = '8.7';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -1941,6 +1941,201 @@
   }
 
   /* ================================================================
+     13. RELATÓRIO GERENCIAL MENSAL (PDF)
+     ================================================================ */
+  const MONTHS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  const inMonth = (v, ym) => !!v && String(v).slice(0, 7) === ym;
+  const localDay = v => { if (!v) return ''; const s = String(v); return s.length <= 10 ? s : new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(s)); };
+
+  function managementData(data, snaps, ym) {
+    const today = todayISO();
+    const monthEnd = (() => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10); })();
+    const ref = monthEnd < today ? monthEnd : today;
+    const procs = data.processes || [];
+    const tplName = p => {
+      const text = norm([p.service_type, p.title].join(' '));
+      const custom = (data.templates || []).find(t => t.service_type && !BUILTIN_TYPES.includes(t.service_type) && String(t.service_type).split(',').map(norm).filter(k => k.length >= 3).some(k => text.includes(k)));
+      if (custom) return custom.name;
+      if (/holding|patrimon/.test(text)) return 'Holding patrimonial';
+      if (/baixa|encerr|extin|distrato/.test(text)) return 'Baixa de empresa';
+      if (/renov|licen|alvar|avcb|sanit/.test(text)) return 'Licenças e renovações';
+      if (/abert|constitu|nova empresa/.test(text)) return 'Abertura de empresa';
+      if (/altera|transform|endereco|cnae|socio|capital/.test(text)) return 'Alteração contratual';
+      return 'Outros serviços';
+    };
+    const opened = procs.filter(p => inMonth(localDay(p.created_at), ym));
+    const completed = procs.filter(p => p.status === 'completed' && inMonth(localDay(p.completed_at), ym));
+    const active = procs.filter(p => !['completed', 'cancelled'].includes(p.status));
+    const late = active.filter(p => p.due_date && p.due_date < ref);
+    const durations = completed.map(p => ({ p, d: Math.max(0, diffDays(localDay(p.completed_at), localDay(p.started_at || p.created_at))) }));
+    const byService = new Map();
+    durations.forEach(({ p, d }) => { const k = tplName(p); const v = byService.get(k) || { n: 0, sum: 0 }; v.n++; v.sum += d; byService.set(k, v); });
+    const costs = data.costs || [];
+    const fees = costs.filter(isFee);
+    const feeLaunched = fees.filter(c => inMonth(localDay(c.created_at), ym)).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const feeReceived = fees.filter(c => isPaid(c) && inMonth(localDay(c.paid_at), ym)).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const feeOpen = fees.filter(c => !isPaid(c)).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const feeLate = fees.filter(c => !isPaid(c) && c.due_date && c.due_date < today).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const reimb = costs.filter(reimbOpen).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const tasks = data.tasks || [];
+    const doneTasks = tasks.filter(t => t.status === 'concluida' && inMonth(localDay(t.completed_at), ym));
+    const byPerson = new Map();
+    doneTasks.forEach(t => { const p = data.processMap.get(t.process_id); const who = personName(data, t.completed_by || t.assignee_id || p?.owner_id); byPerson.set(who, (byPerson.get(who) || 0) + 1); });
+    const lateTasks = tasks.filter(t => t.status === 'aberta' && t.target_date && t.target_date < today && data.processMap.has(t.process_id));
+    const reqs = data.requirements || [];
+    const reqOpen = reqs.filter(r => ['aberta', 'em_atendimento'].includes(r.status)).length;
+    const reqDone = reqs.filter(r => r.status === 'cumprida' && inMonth(localDay(r.resolved_at), ym)).length;
+    const protoMonth = (data.protocols || []).filter(x => inMonth(localDay(x.protocol_date || x.created_at), ym) && data.processMap.has(x.process_id)).length;
+    const clients = data.clients || [];
+    const newClients = clients.filter(c => inMonth(localDay(c.created_at), ym)).length;
+    const latestSit = new Map(); snaps.forEach(s => { if (!latestSit.has(s.client_id)) latestSit.set(s.client_id, s.payload?.situacao); });
+    const irregular = clients.filter(c => { const v = latestSit.get(c.id); return v && !['ATIVA', 'BAIXADA'].includes(v); }).length;
+    const baixadas = clients.filter(c => latestSit.get(c.id) === 'BAIXADA').length;
+    const lic = (data.licenses || []).filter(l => data.clientMap.has(l.client_id) && l.expires_at && l.status !== 'not_applicable');
+    const licExpired = lic.filter(l => l.expires_at < today && l.status !== 'renewing').length;
+    const lic30 = lic.filter(l => l.expires_at >= today && l.expires_at <= addDays(today, 30)).length;
+    const stalled = active.filter(p => { const ts = tasks.filter(t => t.process_id === p.id); const last = [p.created_at, ...ts.map(t => t.completed_at || t.updated_at || t.created_at)].filter(Boolean).map(localDay).sort().pop(); return last && diffDays(today, last) > 15; });
+    return { ym, today, opened, completed, active, late, durations, byService, feeLaunched, feeReceived, feeOpen, feeLate, reimb, doneTasks, byPerson, lateTasks, reqOpen, reqDone, protoMonth, clients: clients.length, newClients, irregular, baixadas, licExpired, lic30, stalled };
+  }
+
+  async function buildManagementPdf(data, snaps, ym) {
+    await loadScript(JSPDF_CDN);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const G = managementData(data, snaps, ym);
+    const [Y, Mo] = ym.split('-').map(Number);
+    const label = `${MONTHS[Mo - 1]} de ${Y}`;
+    const W = 210, M = 16, CW = W - M * 2, BOTTOM = 280;
+    const NAVY = [8, 40, 81], BLUE = [13, 94, 168], MUTED = [99, 119, 148], LINE = [216, 228, 240], RED = [180, 35, 24], WARN = [168, 93, 0], OKC = [15, 138, 95];
+    let y = M;
+    const logo = await imageDataUrl(REPORT_LOGO);
+    const ensure = need => { if (y + need > BOTTOM) { doc.addPage(); y = M + 4; } };
+    const t = (txt, x, yy, size = 10, color = NAVY, style = 'normal', align) => { doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color); doc.text(String(txt), x, yy, align ? { align } : undefined); };
+    const section = title => { ensure(16); y += 3; doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6; t(title.toUpperCase(), M, y, 9.5, BLUE, 'bold'); y += 5; };
+    const kpis = items => {
+      const n = items.length, gap = 3, w = (CW - gap * (n - 1)) / n; ensure(22);
+      items.forEach((k, i) => {
+        const x = M + i * (w + gap);
+        doc.setFillColor(244, 248, 252); doc.setDrawColor(...LINE); doc.roundedRect(x, y, w, 19, 2, 2, 'FD');
+        doc.setFillColor(...(k.color || BLUE)); doc.rect(x, y + 2, 1.2, 15, 'F');
+        t(k.label.toUpperCase(), x + 4, y + 5.5, 6.8, MUTED, 'bold');
+        t(k.value, x + 4, y + 12, 12.5, k.color && k.color !== BLUE ? k.color : NAVY, 'bold');
+        if (k.sub) t(doc.splitTextToSize(k.sub, w - 6)[0], x + 4, y + 16.5, 7, MUTED);
+      });
+      y += 23;
+    };
+    const table = (head, rows, widths, aligns = []) => {
+      if (!rows.length) { t('Sem registros no período.', M, y + 1, 9, MUTED); y += 6; return; }
+      ensure(12);
+      doc.setFillColor(244, 248, 252); doc.rect(M, y - 3.6, CW, 6, 'F');
+      let x = M + 2; head.forEach((hh, i) => { t(hh.toUpperCase(), aligns[i] === 'right' ? x + widths[i] - 4 : x, y, 7, MUTED, 'bold', aligns[i] === 'right' ? 'right' : undefined); x += widths[i]; });
+      y += 6;
+      rows.forEach(r => {
+        ensure(6.5); x = M + 2;
+        r.forEach((cell, i) => { const txt = doc.splitTextToSize(String(cell ?? '—'), widths[i] - 4)[0]; t(txt, aligns[i] === 'right' ? x + widths[i] - 4 : x, y, 8.8, NAVY, 'normal', aligns[i] === 'right' ? 'right' : undefined); x += widths[i]; });
+        doc.setDrawColor(...LINE); doc.line(M, y + 2.2, W - M, y + 2.2); y += 6.2;
+      });
+      y += 2;
+    };
+
+    // Cabeçalho
+    if (logo) { const hh = 16; doc.addImage(logo.url, 'PNG', M, y - 2, logo.w / logo.h * hh, hh); }
+    t(REPORT_BRAND, M + 30, y + 4, 10.5, NAVY, 'bold');
+    t(`Relatório gerencial · ${label}`, M + 30, y + 10, 9.5, MUTED);
+    t('Uso interno', W - M, y + 4, 8.5, MUTED, 'bold', 'right');
+    y += 22;
+
+    section('Processos');
+    kpis([
+      { label: 'Abertos no mês', value: String(G.opened.length) },
+      { label: 'Concluídos no mês', value: String(G.completed.length), color: OKC },
+      { label: 'Em andamento', value: String(G.active.length), sub: `${G.stalled.length} parado(s) +15d` },
+      { label: 'Prazo vencido', value: String(G.late.length), color: G.late.length ? RED : OKC }
+    ]);
+    const avgAll = G.durations.length ? Math.round(G.durations.reduce((n, x) => n + x.d, 0) / G.durations.length) : null;
+    t(`Tempo médio de conclusão no mês: ${avgAll === null ? '—' : avgAll + ' dias'}`, M, y, 9.5, NAVY, 'bold'); y += 6;
+    table(['Tipo de serviço', 'Concluídos', 'Tempo médio'], [...G.byService.entries()].sort((a, b) => b[1].n - a[1].n).map(([k, v]) => [k, v.n, Math.round(v.sum / v.n) + ' dias']), [CW * 0.6, CW * 0.2, CW * 0.2], ['left', 'right', 'right']);
+
+    section('Financeiro');
+    kpis([
+      { label: 'Lançados no mês', value: money(G.feeLaunched) },
+      { label: 'Recebidos no mês', value: money(G.feeReceived), color: OKC },
+      { label: 'A receber (total)', value: money(G.feeOpen), sub: G.feeLate ? `venc. ${money(G.feeLate)}` : 'nada vencido', color: G.feeLate ? RED : NAVY },
+      { label: 'Taxas a reembolsar', value: money(G.reimb), color: G.reimb ? WARN : OKC }
+    ]);
+    if (G.feeOpen && !G.feeReceived) { t('Atenção: nenhum recebimento registrado no mês. Confira se as baixas foram lançadas no sistema.', M, y, 8.5, WARN, 'bold'); y += 6; }
+
+    section('Operação e equipe');
+    kpis([
+      { label: 'Tarefas concluídas', value: String(G.doneTasks.length) },
+      { label: 'Tarefas atrasadas', value: String(G.lateTasks.length), color: G.lateTasks.length ? RED : OKC },
+      { label: 'Exigências abertas', value: String(G.reqOpen), sub: `${G.reqDone} cumpridas`, color: G.reqOpen ? WARN : OKC },
+      { label: 'Protocolos no mês', value: String(G.protoMonth) }
+    ]);
+    table(['Responsável', 'Tarefas concluídas no mês'], [...G.byPerson.entries()].sort((a, b) => b[1] - a[1]), [CW * 0.7, CW * 0.3], ['left', 'right']);
+
+    section('Carteira de empresas');
+    kpis([
+      { label: 'Empresas ativas', value: String(G.clients), sub: `${G.newClients} nova(s)` },
+      { label: 'Irregulares (RFB)', value: String(G.irregular), color: G.irregular ? RED : OKC },
+      { label: 'Baixadas a arquivar', value: String(G.baixadas), color: G.baixadas ? WARN : OKC },
+      { label: 'Docs vencidos', value: String(G.licExpired), sub: `${G.lic30} em 30 dias`, color: G.licExpired ? RED : NAVY }
+    ]);
+
+    section('Processos concluídos no mês');
+    table(['Processo', 'Empresa', 'Serviço', 'Dias'], G.durations.sort((a, b) => String(a.p.completed_at).localeCompare(String(b.p.completed_at))).map(({ p, d }) => [p.public_code || '—', clientName(data, p.client_id), p.title || '', d]), [CW * 0.18, CW * 0.36, CW * 0.36, CW * 0.1], ['left', 'left', 'left', 'right']);
+
+    if (G.late.length) {
+      section('Processos com prazo vencido');
+      table(['Processo', 'Empresa', 'Responsável', 'Prazo'], G.late.sort((a, b) => a.due_date.localeCompare(b.due_date)).map(p => [p.public_code || '—', clientName(data, p.client_id), personName(data, p.owner_id), br(p.due_date)]), [CW * 0.18, CW * 0.42, CW * 0.25, CW * 0.15], ['left', 'left', 'left', 'right']);
+    }
+
+    const pages = doc.getNumberOfPages();
+    for (let i = 1; i <= pages; i++) {
+      doc.setPage(i); doc.setDrawColor(...LINE); doc.line(M, 286, W - M, 286);
+      t(`ATLAS Legalização · relatório gerencial de ${label} · gerado em ${brDateTime(new Date().toISOString())}`, M, 290, 7.5, MUTED);
+      t(`${i}/${pages}`, W - M, 290, 7.5, MUTED, 'normal', 'right');
+    }
+    return { blob: doc.output('blob'), name: `Relatorio-gerencial-${ym}.pdf`, G };
+  }
+
+  async function injectManagementCard() {
+    const root = document.getElementById('page-content');
+    if (!root || root.querySelector('#lx-mgmt-card') || !canEdit() && role() !== 'financeiro' && role() !== 'auditoria') return;
+    const now = todayISO().slice(0, 7);
+    const opts = Array.from({ length: 12 }, (_, i) => { const [y, m] = now.split('-').map(Number); const d = new Date(Date.UTC(y, m - 1 - i, 1)); const ym = d.toISOString().slice(0, 7); return `<option value="${ym}">${MONTHS[d.getUTCMonth()]} de ${d.getUTCFullYear()}${i === 0 ? ' (parcial)' : ''}</option>`; }).join('');
+    const card = document.createElement('section');
+    card.id = 'lx-mgmt-card'; card.className = 'lx-card';
+    card.innerHTML = `<div class="lx-section-head"><h2>Relatório gerencial do mês</h2><span>Processos, financeiro, equipe e carteira em um PDF</span></div>
+      <div class="lx-toolbar"><select id="lx-mgmt-month">${opts}</select><div class="lx-toolbar-actions"><button class="btn btn-primary" type="button" id="lx-mgmt-pdf">Gerar PDF</button></div></div>
+      <div id="lx-mgmt-preview" class="lx-kpis" style="margin:12px 0 0"></div>`;
+    root.prepend(card);
+    let cache = null;
+    const load = async () => {
+      if (!cache) {
+        const [data, snaps] = await Promise.all([loadCentral({ templates: true }), q('client_registry_snapshots', t => t.select('client_id,payload,fetched_at').eq('source', 'monitor').order('fetched_at', { ascending: false }).limit(5000))]);
+        cache = { data, snaps: snaps.data || [] };
+      }
+      return cache;
+    };
+    const preview = async () => {
+      const host = $('#lx-mgmt-preview'); if (!host) return;
+      host.innerHTML = '<div class="muted" style="font-size:12px">Calculando...</div>';
+      const { data, snaps } = await load();
+      const G = managementData(data, snaps, $('#lx-mgmt-month').value);
+      host.innerHTML = kpi('Concluídos', G.completed.length, `${G.opened.length} aberto(s) no mês`, 'ok') + kpi('Prazo vencido', G.late.length, `${G.active.length} em andamento`, G.late.length ? 'bad' : '') + kpi('Recebido no mês', money(G.feeReceived), `${money(G.feeOpen)} a receber`, G.feeLate ? 'warn' : '') + kpi('Tarefas concluídas', G.doneTasks.length, `${G.lateTasks.length} atrasada(s)`, G.lateTasks.length ? 'warn' : '');
+    };
+    $('#lx-mgmt-month').addEventListener('change', preview);
+    $('#lx-mgmt-pdf').addEventListener('click', async () => {
+      const b = $('#lx-mgmt-pdf'); b.disabled = true; b.textContent = 'Gerando...';
+      try { const { data, snaps } = await load(); const { blob, name } = await buildManagementPdf(data, snaps, $('#lx-mgmt-month').value); downloadFile(name, blob, 'application/pdf'); toast('Relatório gerencial gerado.'); }
+      catch (err) { toast('Não foi possível gerar: ' + (err.message || err), 'bad'); }
+      b.disabled = false; b.textContent = 'Gerar PDF';
+    });
+    preview();
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
   const PAGES = { modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
@@ -1950,7 +2145,9 @@
     if (typeof prev !== 'function' || prev.__lxV8) return;
     const wrapped = function (pageName) {
       if (PAGES[pageName]) { document.getElementById('app-shell')?.setAttribute('data-v6-page', pageName); return PAGES[pageName](); }
-      return prev.apply(this, arguments);
+      const out = prev.apply(this, arguments);
+      if (pageName === 'relatorios') Promise.resolve(out).then(() => setTimeout(injectManagementCard, 0)).catch(() => {});
+      return out;
     };
     wrapped.__lxV8 = true;
     window.render = wrapped;
@@ -2002,7 +2199,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { managementData, finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
