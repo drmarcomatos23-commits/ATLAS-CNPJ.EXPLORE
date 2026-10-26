@@ -20,7 +20,7 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.5');
+  assert.equal(w.AtlasCentralV8.version, '8.6');
   assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.5/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.6/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
@@ -113,4 +113,17 @@ test('V8.3: modelos do escritório são escolhidos por palavra-chave antes dos p
   assert.equal(guessTemplate(tpls, { title: 'Inventário do espólio de João' }).name, 'Inventário extrajudicial');
   assert.equal(guessTemplate(tpls, { title: 'Holding da família Silva' }).name, 'Holding');
   assert.equal(guessTemplate(tpls, { title: 'Constituição de empresa' }).name, 'Abertura');
+});
+
+test('V8.6: resumo financeiro separa honorários a receber e taxas a reembolsar', () => {
+  const { finSummary } = load().AtlasCentralV8.__test;
+  const F = finSummary([
+    { fee_kind: 'honorarios', amount: 3000, payment_status: 'pending', due_date: '2020-01-01' },
+    { fee_kind: 'honorarios', amount: 1000, payment_status: 'paid' },
+    { fee_kind: 'junta_cartorio', amount: 300, payment_status: 'paid', reimbursement_status: 'pending' },
+    { fee_kind: 'junta_cartorio', amount: 200, payment_status: 'paid', reimbursement_status: 'reimbursed' },
+    { fee_kind: 'junta_cartorio', amount: 150, payment_status: 'pending' }
+  ]);
+  assert.equal(F.feeTotal, 4000); assert.equal(F.feeOpen, 3000); assert.equal(F.feeLate, 3000);
+  assert.equal(F.reimb, 300); assert.equal(F.toPay, 150); assert.equal(F.open, 3300);
 });

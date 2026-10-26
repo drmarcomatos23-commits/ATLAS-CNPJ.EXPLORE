@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.5';
+  const VERSION = '8.6';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -126,6 +126,7 @@
     exigencia: { label: 'Exigência do órgão', subject: 'Exigência recebida — {codigo}', body: 'Olá, {contato}! O órgão responsável emitiu uma exigência no processo {codigo} da {empresa}: {exigencia}. Já estamos tratando e, se precisarmos de algo, avisaremos.' },
     protocolo: { label: 'Protocolo realizado', subject: 'Protocolo realizado — {codigo}', body: 'Olá, {contato}! O pedido do processo {codigo} da {empresa} foi protocolado ({protocolo}). Agora aguardamos a análise do órgão.' },
     concluido: { label: 'Processo concluído', subject: 'Processo concluído — {codigo}', body: 'Olá, {contato}! O processo {codigo} ({titulo}) da {empresa} foi concluído. Os documentos finais estão disponíveis com o escritório.' },
+    cobranca: { label: 'Cobrança de honorários / taxas', subject: 'Valores em aberto — {codigo}', body: 'Olá, {contato}! Referente ao processo {codigo} ({titulo}) da {empresa}, consta em aberto: {valores}. Por favor, nos envie o comprovante após o pagamento. Qualquer dúvida, estamos à disposição.' },
     vencimento: { label: 'Vencimento próximo', subject: 'Vencimento próximo — {empresa}', body: 'Olá, {contato}! Identificamos que {documento} da {empresa} vence em {vencimento}. Podemos iniciar a renovação?' }
   };
 
@@ -530,6 +531,9 @@
     const docItems = (data.docItems || []).filter(d => d.process_id === processId);
     const docsDone = docItems.filter(d => d.status !== 'pendente').length;
     const tabs = [['checklist', `Checklist (${tasks.length})`], ['documentos', `Documentos (${docsDone}/${docItems.length})`], ['protocolos', `Protocolos (${protos.length})`], ['exigencias', `Exigências (${reqs.filter(r => ['aberta', 'em_atendimento'].includes(r.status)).length})`]];
+    const canFin = window.atlasHasPermission ? window.atlasHasPermission('costs.view') : ['admin', 'financeiro', 'operacao'].includes(role());
+    const fin = finSummary((data.costs || []).filter(x => x.process_id === processId));
+    if (canFin) tabs.splice(1, 0, ['financeiro', `Financeiro${fin.open > 0 ? ' •' : ''}`]);
     if (canEdit()) tabs.push(['comunicar', 'Comunicar cliente']);
     if (['admin', 'auditoria', 'operacao'].includes(role())) tabs.push(['historico', 'Histórico']);
 
@@ -570,6 +574,9 @@
       } else if (k === 'comunicar') {
         body().innerHTML = communicationForm(data, p, 'etapa');
         bindCommunicationForm(data, p);
+      } else if (k === 'financeiro') {
+        body().innerHTML = financePanel(data, p);
+        bindFinance(data, p, refresh);
       } else if (k === 'historico') {
         body().innerHTML = '<div class="loading-box"><span class="spinner"></span><div>Carregando histórico...</div></div>';
         const [logs, comms] = await Promise.all([
@@ -1389,7 +1396,7 @@
     const pend = missingDocs.length ? missingDocs : (data.tasks || []).filter(t => t.process_id === p?.id && t.responsible_party === 'cliente' && t.status === 'aberta').map(t => t.title);
     return {
       contato: (c.contact_name || '').split(' ')[0] || 'tudo bem', empresa: c.legal_name || 'sua empresa', codigo: p?.public_code || '', titulo: p?.title || '',
-      etapa: data.stageMap?.get(p?.current_stage_id)?.name || '', pendencias: pend.length ? pend.join('; ') : '(descrever)', exigencia: '', protocolo: '', documento: '', vencimento: '', ...extra
+      etapa: data.stageMap?.get(p?.current_stage_id)?.name || '', pendencias: pend.length ? pend.join('; ') : '(descrever)', exigencia: '', protocolo: '', documento: '', vencimento: '', valores: '(valores)', ...extra
     };
   }
 
@@ -1498,26 +1505,30 @@
       const errNewer = err && (!snap || err.fetched_at > snap.fetched_at);
       const p = snap?.payload || {};
       const sit = p.situacao || '';
-      return { c, snap, err: errNewer ? err : null, sit, irregular: !!sit && sit !== 'ATIVA', changed: changes.some(x => x.client_id === c.id) };
+      return { c, snap, err: errNewer ? err : null, sit, baixada: sit === 'BAIXADA', irregular: !!sit && sit !== 'ATIVA' && sit !== 'BAIXADA', changed: changes.some(x => x.client_id === c.id) };
     });
     const monitored = rows.filter(r => r.snap).length;
     const irregular = rows.filter(r => r.irregular);
+    const baixadas = rows.filter(r => r.baixada);
+    const canArchive = () => (window.atlasHasPermission ? window.atlasHasPermission('companies.archive') : role() === 'admin');
     const waiting = rows.filter(r => !r.snap && !r.err).length;
     const errors = rows.filter(r => r.err && /NAO_ENCONTRADO|CNPJ_INVALIDO/.test(r.err.payload?.erro || ''));
     const list = rows.filter(r => {
       if (monFilters.view === 'irregular' && !r.irregular) return false;
+      if (monFilters.view === 'baixada' && !r.baixada) return false;
       if (monFilters.view === 'changed' && !r.changed) return false;
       if (monFilters.view === 'error' && !r.err) return false;
       if (monFilters.view === 'waiting' && (r.snap || r.err)) return false;
       if (monFilters.text && !norm([r.c.legal_name, r.c.trade_name, r.c.tax_id].join(' ')).includes(norm(monFilters.text))) return false;
       return true;
-    }).sort((a, b) => (b.irregular - a.irregular) || (b.changed - a.changed) || a.c.legal_name.localeCompare(b.c.legal_name, 'pt-BR'));
-    const sitBadge = r => r.err && !r.snap ? badge(r.err.payload?.erro === 'NAO_ENCONTRADO' ? 'Não encontrado' : r.err.payload?.erro === 'CNPJ_INVALIDO' ? 'CNPJ inválido' : 'Falha na consulta', r.err.payload?.erro === 'FALHA_CONSULTA' ? 'neutral' : 'bad') : !r.snap ? badge('Aguardando', 'neutral') : badge(r.sit || '—', r.irregular ? 'bad' : 'ok');
+    }).sort((a, b) => (b.irregular - a.irregular) || (b.baixada - a.baixada) || (b.changed - a.changed) || a.c.legal_name.localeCompare(b.c.legal_name, 'pt-BR'));
+    const sitBadge = r => r.baixada ? badge('BAIXADA', 'neutral') : r.err && !r.snap ? badge(r.err.payload?.erro === 'NAO_ENCONTRADO' ? 'Não encontrado' : r.err.payload?.erro === 'CNPJ_INVALIDO' ? 'CNPJ inválido' : 'Falha na consulta', r.err.payload?.erro === 'FALHA_CONSULTA' ? 'neutral' : 'bad') : !r.snap ? badge('Aguardando', 'neutral') : badge(r.sit || '—', r.irregular ? 'bad' : 'ok');
 
     pageSafe(`
       <div class="lx-kpis">
         ${kpi('Monitoradas', `${monitored}/${valid.length}`, waiting ? `${waiting} aguardando 1ª verificação` : 'Carteira completa')}
-        ${kpi('Situação irregular', irregular.length, 'Inapta, suspensa ou baixada', irregular.length ? 'bad' : 'ok')}
+        ${kpi('Situação irregular', irregular.length, 'Inapta, suspensa ou nula', irregular.length ? 'bad' : 'ok')}
+        ${kpi('Baixadas', baixadas.length, baixadas.length ? 'Arquive para limpar a carteira' : 'Nenhuma empresa extinta', baixadas.length ? 'warn' : '')}
         ${kpi('Alterações em 30 dias', new Set(changes.map(c => c.client_id)).size, 'Sócios, endereço, CNAE, Simples', changes.length ? 'warn' : '')}
         ${kpi('Cadastro a conferir', errors.length, 'CNPJ não localizado ou inválido', errors.length ? 'warn' : '')}
       </div>
@@ -1526,7 +1537,7 @@
       <section class="lx-card">
         <div class="lx-toolbar">
           <input id="lx-mon-search" type="search" placeholder="Buscar empresa ou CNPJ" value="${h(monFilters.text)}">
-          <select id="lx-mon-view">${[['all', 'Todas as empresas'], ['irregular', 'Situação irregular'], ['changed', 'Com alterações (30 dias)'], ['error', 'Cadastro a conferir'], ['waiting', 'Aguardando verificação']].map(([k, v]) => `<option value="${k}" ${monFilters.view === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
+          <select id="lx-mon-view">${[['all', 'Todas as empresas'], ['irregular', 'Situação irregular'], ['baixada', 'Baixadas (extintas)'], ['changed', 'Com alterações (30 dias)'], ['error', 'Cadastro a conferir'], ['waiting', 'Aguardando verificação']].map(([k, v]) => `<option value="${k}" ${monFilters.view === k ? 'selected' : ''}>${v}</option>`).join('')}</select>
           <div class="lx-toolbar-actions">${canEdit() ? '<button class="btn btn-primary" type="button" id="lx-mon-run">Verificar agora</button>' : ''}</div>
         </div>
         <div class="lx-notice" style="margin-top:12px">A verificação roda sozinha de hora em hora, em pequenos lotes, e cada empresa é conferida a cada 7 dias na base pública da Receita (BrasilAPI / CNPJws). Mudanças viram aviso no sino.</div>
@@ -1537,13 +1548,21 @@
           <td data-label="Simples / MEI">${h([p.simples ? 'Simples: ' + p.simples : '', p.mei === 'SIM' ? 'MEI' : ''].filter(Boolean).join(' · ') || '—')}</td>
           <td data-label="Sócios">${(p.socios || []).length || '—'}</td>
           <td data-label="Última verificação">${r.snap ? brDateTime(r.snap.fetched_at).split(',')[0] : r.err ? brDateTime(r.err.fetched_at).split(',')[0] : '—'}</td>
-          <td><div class="lx-row-actions">${r.snap ? `<button class="mini-btn" type="button" data-lx-mon-view="${h(r.c.id)}">Ver cadastro</button>` : ''}${canEdit() && (r.irregular || r.changed) ? `<button class="mini-btn" type="button" data-lx-mon-req="${h(r.c.id)}">Registrar exigência</button>` : ''}</div></td>
+          <td><div class="lx-row-actions">${r.snap ? `<button class="mini-btn" type="button" data-lx-mon-view="${h(r.c.id)}">Ver cadastro</button>` : ''}${r.baixada && canArchive() ? `<button class="mini-btn" type="button" data-lx-mon-archive="${h(r.c.id)}">Arquivar</button>` : ''}${canEdit() && (r.irregular || r.changed) ? `<button class="mini-btn" type="button" data-lx-mon-req="${h(r.c.id)}">Registrar exigência</button>` : ''}</div></td>
         </tr>`; }).join('')}</tbody></table></div>` : empty('Nenhuma empresa nesse filtro', valid.length ? 'Ajuste o filtro acima.' : 'Cadastre o CNPJ das empresas para iniciar o monitoramento.')}
       </section>`);
 
     $('#lx-mon-search')?.addEventListener('input', e => { monFilters.text = e.target.value; clearTimeout(renderMonitor._t); renderMonitor._t = setTimeout(() => { renderMonitor(data, snaps); const i = $('#lx-mon-search'); i?.focus(); i?.setSelectionRange(i.value.length, i.value.length); }, 250); });
     $('#lx-mon-view')?.addEventListener('change', e => { monFilters.view = e.target.value; renderMonitor(data, snaps); });
     $('#lx-mon-run')?.addEventListener('click', () => runMonitorNow());
+    $$('[data-lx-mon-archive]').forEach(b => b.addEventListener('click', async () => {
+      const r = rows.find(x => x.c.id === b.dataset.lxMonArchive); if (!r) return;
+      if (!confirm(`Arquivar ${r.c.legal_name}? A empresa sai da carteira ativa e do monitoramento. Processos e documentos continuam preservados e ela pode ser restaurada em Empresas > Arquivadas.`)) return;
+      b.disabled = true;
+      const { error } = await db().rpc('atlas_archive_client', { p_client_id: r.c.id });
+      if (error) { b.disabled = false; return toast('Não foi possível arquivar: ' + error.message, 'bad'); }
+      toast('Empresa arquivada.'); monitorPage();
+    }));
     $$('[data-lx-mon-view]').forEach(b => b.addEventListener('click', () => { const r = rows.find(x => x.c.id === b.dataset.lxMonView); if (r) showRegistry(r.c, r.snap); }));
     $$('[data-lx-mon-req]').forEach(b => b.addEventListener('click', () => {
       const r = rows.find(x => x.c.id === b.dataset.lxMonReq); if (!r) return;
@@ -1849,6 +1868,79 @@
   }
 
   /* ================================================================
+     12. FINANCEIRO DO PROCESSO (honorários e reembolso de taxas)
+     ================================================================ */
+  const money = v => Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  const isFee = c => c.fee_kind === 'honorarios' || c.metadata?.kind === 'service_fee' || c.metadata?.kind === 'hourly' || c.cost_type === 'hourly';
+  const isPaid = c => c.payment_status === 'paid';
+  const reimbOpen = c => !isFee(c) && isPaid(c) && !['reimbursed', 'not_applicable'].includes(c.reimbursement_status || 'pending');
+  function finSummary(costs) {
+    const fees = costs.filter(isFee), others = costs.filter(c => !isFee(c));
+    const feeTotal = fees.reduce((n, c) => n + Number(c.amount || 0), 0);
+    const feeOpen = fees.filter(c => !isPaid(c)).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const feeLate = fees.filter(c => !isPaid(c) && c.due_date && diffDays(c.due_date) < 0).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const reimb = others.filter(reimbOpen).reduce((n, c) => n + Number(c.amount || 0), 0);
+    const toPay = others.filter(c => !isPaid(c)).reduce((n, c) => n + Number(c.amount || 0), 0);
+    return { fees, others, feeTotal, feeOpen, feeLate, reimb, toPay, open: feeOpen + reimb };
+  }
+
+  function financePanel(data, p) {
+    const costs = (data.costs || []).filter(x => x.process_id === p.id);
+    const F = finSummary(costs);
+    const canEditCosts = window.atlasHasPermission ? window.atlasHasPermission('costs.edit') : ['admin', 'financeiro', 'operacao'].includes(role());
+    const statusBadge = c => isFee(c)
+      ? (isPaid(c) ? badge('Recebido', 'ok') : c.due_date && diffDays(c.due_date) < 0 ? badge('Vencido', 'bad') : badge('A receber', 'warn'))
+      : (!isPaid(c) ? badge('A pagar', 'warn') : reimbOpen(c) ? badge('Pago · a reembolsar', 'info') : c.reimbursement_status === 'reimbursed' ? badge('Reembolsado', 'ok') : badge('Pago', 'ok'));
+    const row = c => `<article class="lx-doc">
+      <div class="lx-task-main"><strong>${h(c.description || (isFee(c) ? 'Honorários' : 'Taxa'))} · ${money(c.amount)}</strong>
+        <div class="lx-task-meta"><span>${isFee(c) ? 'Honorários' : 'Taxa / custo'}</span>${c.due_date ? `<span>Vencimento ${br(c.due_date)}</span>` : ''}${c.paid_at ? `<span>${isFee(c) ? 'Recebido' : 'Pago'} ${br(String(c.paid_at).slice(0, 10))}</span>` : ''}${c.reimbursed_at ? `<span>Reembolsado ${br(String(c.reimbursed_at).slice(0, 10))}</span>` : ''}${c.payer_name ? `<span>${h(c.payer_name)}</span>` : ''}</div></div>
+      <div class="lx-task-side">${statusBadge(c)}${canEditCosts ? `<div class="lx-row-actions">
+        ${isFee(c) && !isPaid(c) ? `<button class="mini-btn" type="button" data-lx-fin="received" data-id="${h(c.id)}">Marcar recebido</button>` : ''}
+        ${!isFee(c) && !isPaid(c) ? `<button class="mini-btn" type="button" data-lx-fin="paid" data-id="${h(c.id)}">Marcar pago</button>` : ''}
+        ${reimbOpen(c) ? `<button class="mini-btn" type="button" data-lx-fin="reimbursed" data-id="${h(c.id)}">Marcar reembolsado</button><button class="mini-btn" type="button" data-lx-fin="noreimb" data-id="${h(c.id)}" title="O escritório arcou com o custo">Sem reembolso</button>` : ''}
+        ${isPaid(c) ? `<button class="mini-btn" type="button" data-lx-fin="undo" data-id="${h(c.id)}" title="Desfazer baixa">Desfazer</button>` : ''}
+      </div>` : ''}</div>
+    </article>`;
+    return `<div class="lx-kpis lx-kpis-compact">
+        ${kpi('Honorários', money(F.feeTotal), F.fees.length ? `${F.fees.filter(isPaid).length}/${F.fees.length} recebido(s)` : 'Não lançados')}
+        ${kpi('A receber', money(F.feeOpen), F.feeLate ? `${money(F.feeLate)} vencido` : 'Honorários em aberto', F.feeLate ? 'bad' : F.feeOpen ? 'warn' : 'ok')}
+        ${kpi('A reembolsar', money(F.reimb), 'Taxas pagas pelo escritório', F.reimb ? 'warn' : 'ok')}
+      </div>
+      ${p.status === 'completed' && F.open > 0 ? '<div class="lx-notice warn"><strong>Processo concluído com valores em aberto.</strong> Confira o recebimento ou envie a cobrança ao cliente.</div>' : ''}
+      ${costs.length ? `<div class="lx-doc-list">${[...F.fees, ...F.others].map(row).join('')}</div>` : empty('Sem lançamentos', 'Os honorários e as taxas são lançados no cadastro do processo (Editar processo → Financeiro do processo).')}
+      <div class="lx-panel-actions" style="margin-top:12px">
+        ${F.open > 0 && canEdit() ? '<button class="btn btn-primary" type="button" id="lx-fin-charge">Cobrar no WhatsApp</button>' : ''}
+        ${canEditCosts ? `<button class="btn btn-muted" type="button" id="lx-fin-edit">Editar lançamentos</button>` : ''}
+      </div>`;
+  }
+
+  function bindFinance(data, p, refresh) {
+    const root = $('#lx-panel-body');
+    root?.querySelectorAll('[data-lx-fin]').forEach(b => b.addEventListener('click', async () => {
+      const act = b.dataset.lxFin, id = b.dataset.id, today = todayISO();
+      const patch = act === 'received' || act === 'paid' ? { payment_status: 'paid', paid_at: today }
+        : act === 'reimbursed' ? { reimbursement_status: 'reimbursed', reimbursed_at: today }
+        : act === 'noreimb' ? { reimbursement_status: 'not_applicable', reimbursed_at: null }
+        : { payment_status: 'pending', paid_at: null, reimbursement_status: 'pending', reimbursed_at: null };
+      if (act === 'undo' && !confirm('Desfazer a baixa deste lançamento?')) return;
+      b.disabled = true;
+      const { error } = await db().from('costs').update(patch).eq('id', id);
+      if (error) { b.disabled = false; return toast('Não foi possível atualizar: ' + error.message, 'bad'); }
+      toast(act === 'received' ? 'Honorários marcados como recebidos.' : act === 'reimbursed' ? 'Reembolso registrado.' : 'Lançamento atualizado.');
+      refresh();
+    }));
+    $('#lx-fin-charge')?.addEventListener('click', () => {
+      const costs = (data.costs || []).filter(x => x.process_id === p.id);
+      const items = [
+        ...costs.filter(c => isFee(c) && !isPaid(c)).map(c => `honorários ${money(c.amount)}${c.due_date ? ' (vencimento ' + br(c.due_date) + ')' : ''}`),
+        ...costs.filter(reimbOpen).map(c => `reembolso de ${String(c.description || 'taxa').toLowerCase()} ${money(c.amount)}`)
+      ];
+      openCommunicationModal(p.id, 'cobranca', { valores: items.join('; ') });
+    });
+    $('#lx-fin-edit')?.addEventListener('click', () => { closeModal(); if (typeof window.openProcessModal === 'function') window.openProcessModal(p.id); });
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
   const PAGES = { modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
@@ -1910,7 +2002,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

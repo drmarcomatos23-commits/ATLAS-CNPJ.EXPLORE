@@ -230,3 +230,8 @@ button.lx-check:hover{border-color:var(--lx-blue)}
 /* V8.5 — relatório para o cliente */
 .lx-panel-top{display:flex;justify-content:flex-end;margin:-2px 0 10px}
 @media (max-width:720px){.lx-panel-top .btn{width:100%}}
+
+/* V8.6 — financeiro do processo */
+.lx-kpis-compact{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lx-kpis-compact .lx-kpi strong{font-size:19px}
+@media (max-width:720px){.lx-kpis-compact{grid-template-columns:1fr}}

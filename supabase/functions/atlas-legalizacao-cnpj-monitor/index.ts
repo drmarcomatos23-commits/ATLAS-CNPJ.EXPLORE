@@ -3,6 +3,7 @@ import postgres from "npm:postgres@3.4.5";
 // ATLAS Legalização — Monitoramento de CNPJ da carteira (custo zero).
 // Consulta a base pública (BrasilAPI, com CNPJws como reserva), guarda um retrato do cadastro
 // em client_registry_snapshots e avisa no sino quando algo relevante muda.
+// Empresas BAIXADAS são reconferidas só a cada 60 dias.
 // Chamado de hora em hora pelo pg_cron (token no Vault) ou pelo botão "Verificar agora" (JWT de Admin/Operação).
 
 const sql = postgres(Deno.env.get("SUPABASE_DB_URL")!, { prepare: false, max: 1, idle_timeout: 5, max_lifetime: 120 });
@@ -177,6 +178,9 @@ Deno.serve(async (req) => {
       where c.deleted_at is null and length(regexp_replace(coalesce(c.tax_id,''), '\\D', '', 'g')) = 14
         and (${orgFilter}::uuid is null or c.organization_id = ${orgFilter}::uuid)
         and (s.last is null or s.last < now() - make_interval(days => ${STALE_DAYS}::int))
+        and not exists (select 1 from (select s2.payload ->> 'situacao' sit, s2.fetched_at from public.client_registry_snapshots s2
+          where s2.client_id = c.id and s2.source = 'monitor' order by s2.fetched_at desc limit 1) z
+          where z.sit = 'BAIXADA' and z.fetched_at > now() - interval '60 days')
       order by s.last nulls first, c.created_at asc
       limit ${limit}`;
     const results: any[] = [];
@@ -194,7 +198,10 @@ Deno.serve(async (req) => {
       left join lateral (select max(case when s.source = 'monitor_falha' then s.fetched_at - interval '5 days' else s.fetched_at end) last from public.client_registry_snapshots s where s.client_id = c.id and s.source in ('monitor','monitor_erro','monitor_falha')) s on true
       where c.deleted_at is null and length(regexp_replace(coalesce(c.tax_id,''), '\\D', '', 'g')) = 14
         and (${orgFilter}::uuid is null or c.organization_id = ${orgFilter}::uuid)
-        and (s.last is null or s.last < now() - make_interval(days => ${STALE_DAYS}::int))`;
+        and (s.last is null or s.last < now() - make_interval(days => ${STALE_DAYS}::int))
+        and not exists (select 1 from (select s2.payload ->> 'situacao' sit, s2.fetched_at from public.client_registry_snapshots s2
+          where s2.client_id = c.id and s2.source = 'monitor' order by s2.fetched_at desc limit 1) z
+          where z.sit = 'BAIXADA' and z.fetched_at > now() - interval '60 days')`;
     return json({ ok: true, checked: results.length, success: results.filter((r) => r.ok).length, changes: results.reduce((n, r) => n + (r.changes || 0), 0), irregular: results.filter((r) => r.irregular).length, remaining: remaining[0]?.n ?? 0 });
   } catch (e) {
     console.error("atlas-legalizacao-cnpj-monitor", e);
