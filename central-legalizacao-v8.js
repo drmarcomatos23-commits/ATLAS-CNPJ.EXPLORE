@@ -16,7 +16,7 @@
 (() => {
   'use strict';
 
-  const VERSION = '8.7';
+  const VERSION = '8.8';
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -2136,9 +2136,106 @@
   }
 
   /* ================================================================
+     14. PAINEL DA EQUIPE
+     ================================================================ */
+  let teamPeriod = 30;
+
+  function lastMove(p, tasks, docItems) {
+    const ds = [p.created_at, p.started_at, p.completed_at,
+      ...tasks.filter(t => t.process_id === p.id).flatMap(t => [t.completed_at, t.updated_at, t.created_at]),
+      ...docItems.filter(d => d.process_id === p.id).flatMap(d => [d.received_at, d.updated_at])
+    ].filter(Boolean).map(localDay).sort();
+    return ds.pop() || null;
+  }
+
+  function teamData(data, period) {
+    const today = todayISO(), since = addDays(today, -period);
+    const tasks = (data.tasks || []).filter(t => data.processMap.has(t.process_id));
+    const docItems = data.docItems || [];
+    const active = data.processes.filter(p => !['completed', 'cancelled'].includes(p.status));
+    const people = staff(data).filter(p => p.role !== 'cliente');
+    const who = t => t.assignee_id || data.processMap.get(t.process_id)?.owner_id || null;
+    const rows = people.map(pp => {
+      const mine = tasks.filter(t => who(t) === pp.id);
+      const open = mine.filter(t => t.status === 'aberta');
+      const procs = active.filter(p => p.owner_id === pp.id);
+      return {
+        person: pp,
+        processes: procs.length,
+        procLate: procs.filter(p => p.due_date && p.due_date < today).length,
+        open: open.length,
+        late: open.filter(t => t.target_date && t.target_date < today).length,
+        risk: open.filter(t => t.legal_date && t.legal_date <= addDays(today, 3)).length,
+        week: open.filter(t => t.target_date && t.target_date >= today && t.target_date <= addDays(today, 7)).length,
+        blocked: mine.filter(t => t.status === 'impedida').length,
+        done: tasks.filter(t => t.status === 'concluida' && (t.completed_by || who(t)) === pp.id && localDay(t.completed_at) >= since).length,
+        onTime: tasks.filter(t => t.status === 'concluida' && (t.completed_by || who(t)) === pp.id && localDay(t.completed_at) >= since && (!t.target_date || localDay(t.completed_at) <= t.target_date)).length,
+        concluded: data.processes.filter(p => p.owner_id === pp.id && p.status === 'completed' && localDay(p.completed_at) >= since).length
+      };
+    });
+    const unassignedTasks = tasks.filter(t => t.status === 'aberta' && !who(t)).length;
+    const unownedProcs = active.filter(p => !p.owner_id);
+    const stalled = active.map(p => ({ p, last: lastMove(p, tasks, docItems) })).filter(x => x.last && diffDays(today, x.last) > 15).map(x => ({ ...x, days: diffDays(today, x.last) })).sort((a, b) => b.days - a.days);
+    const noChecklist = active.filter(p => !tasks.some(t => t.process_id === p.id));
+    return { rows, unassignedTasks, unownedProcs, stalled, noChecklist, totals: { open: tasks.filter(t => t.status === 'aberta').length, late: rows.reduce((n, r) => n + r.late, 0), done: rows.reduce((n, r) => n + r.done, 0), blocked: tasks.filter(t => t.status === 'impedida').length } };
+  }
+
+  async function teamPage() {
+    setHeadSafe('Painel da equipe', 'GESTÃO', 'Carga de trabalho, atrasos e produtividade por pessoa, e processos parados.');
+    loading('Calculando painel da equipe...');
+    const data = await loadCentral();
+    renderTeam(data);
+  }
+
+  function renderTeam(data) {
+    const T = teamData(data, teamPeriod);
+    const max = Math.max(1, ...T.rows.map(r => r.open));
+    const canReassign = canEdit();
+    pageSafe(`
+      <div class="lx-kpis">
+        ${kpi('Tarefas abertas', T.totals.open, `${T.unassignedTasks} sem responsável`, T.unassignedTasks ? 'warn' : '')}
+        ${kpi('Atrasadas', T.totals.late, 'Data meta vencida', T.totals.late ? 'bad' : 'ok')}
+        ${kpi(`Concluídas (${teamPeriod}d)`, T.totals.done, 'Tarefas finalizadas', 'ok')}
+        ${kpi('Processos parados', T.stalled.length, 'Sem movimento há 15+ dias', T.stalled.length ? 'warn' : 'ok')}
+        ${kpi('Sem checklist', T.noChecklist.length, 'Processos em andamento', T.noChecklist.length ? 'warn' : 'ok')}
+      </div>
+      <section class="lx-card">
+        <div class="lx-section-head"><h2>Por pessoa</h2><div class="lx-row-actions"><select id="lx-team-period" class="lx-select">${[7, 30, 90].map(d => `<option value="${d}" ${teamPeriod === d ? 'selected' : ''}>Últimos ${d} dias</option>`).join('')}</select></div></div>
+        ${T.rows.length ? `<div class="lx-table-wrap"><table class="lx-table"><thead><tr><th>Pessoa</th><th>Carga</th><th>Processos</th><th>Atrasadas</th><th>Risco legal</th><th>Esta semana</th><th>Impedidas</th><th>Concluídas</th><th>No prazo</th></tr></thead><tbody>${T.rows.sort((a, b) => b.late - a.late || b.open - a.open).map(r => `<tr>
+          <td data-label="Pessoa"><strong>${h(r.person.full_name)}</strong><div class="muted">${h({ admin: 'Administrador', operacao: 'Operação' }[r.person.role] || r.person.role || '')}</div></td>
+          <td data-label="Carga"><div class="lx-load"><div class="lx-progress"><i style="width:${Math.round(r.open / max * 100)}%"></i></div><span>${r.open} aberta(s)</span></div></td>
+          <td data-label="Processos">${r.processes}${r.procLate ? ` ${badge(r.procLate + ' vencido(s)', 'bad')}` : ''}</td>
+          <td data-label="Atrasadas">${r.late ? badge(r.late, 'bad') : '0'}</td>
+          <td data-label="Risco legal">${r.risk ? badge(r.risk, 'bad') : '0'}</td>
+          <td data-label="Esta semana">${r.week}</td>
+          <td data-label="Impedidas">${r.blocked ? badge(r.blocked, 'warn') : '0'}</td>
+          <td data-label="Concluídas">${r.done}${r.concluded ? `<div class="muted">${r.concluded} processo(s)</div>` : ''}</td>
+          <td data-label="No prazo">${r.done ? Math.round(r.onTime / r.done * 100) + '%' : '—'}</td>
+        </tr>`).join('')}</tbody></table></div>` : empty('Sem equipe cadastrada', 'Cadastre usuários de Operação para acompanhar a carga de trabalho.')}
+      </section>
+      <section class="lx-card">
+        <div class="lx-section-head"><h2>Processos parados</h2><span>Sem tarefa concluída, documento recebido ou alteração há mais de 15 dias</span></div>
+        ${T.stalled.length ? `<div class="lx-mini-list">${T.stalled.slice(0, 40).map(x => `<div><strong>${h(x.p.public_code || '—')}</strong><span>${h(x.p.title || '')} · ${h(clientName(data, x.p.client_id))} · ${h(personName(data, x.p.owner_id))} · último movimento ${br(x.last)}</span>${badge(x.days + ' dias', x.days > 30 ? 'bad' : 'warn')}<button class="mini-btn" type="button" data-lx-panel="${h(x.p.id)}">Abrir</button></div>`).join('')}</div>` : '<p class="muted" style="font-size:13px">Nenhum processo parado. Bom trabalho!</p>'}
+      </section>
+      ${T.unownedProcs.length || T.noChecklist.length ? `<section class="lx-card">
+        <div class="lx-section-head"><h2>Para organizar</h2><span>Processos em andamento sem responsável ou sem checklist</span></div>
+        <div class="lx-mini-list">${[...new Map([...T.unownedProcs, ...T.noChecklist].map(p => [p.id, p])).values()].slice(0, 40).map(p => `<div><strong>${h(p.public_code || '—')}</strong><span>${h(p.title || '')} · ${h(clientName(data, p.client_id))}</span>${!p.owner_id ? badge('Sem responsável', 'warn') : ''}${T.noChecklist.includes(p) ? badge('Sem checklist', 'info') : ''}${canReassign && !p.owner_id ? `<select class="lx-select" data-lx-owner="${h(p.id)}"><option value="">Atribuir a...</option>${staff(data).map(s2 => `<option value="${s2.id}">${h(s2.full_name)}</option>`).join('')}</select>` : ''}${canReassign && T.noChecklist.includes(p) ? `<button class="mini-btn" type="button" data-lx-tplp="${h(p.id)}">Aplicar modelo</button>` : ''}</div>`).join('')}</div>
+      </section>` : ''}`);
+    $('#lx-team-period')?.addEventListener('change', e => { teamPeriod = Number(e.target.value); renderTeam(data); });
+    $$('[data-lx-panel]').forEach(b => b.addEventListener('click', () => openPanel(b.dataset.lxPanel)));
+    $$('[data-lx-owner]').forEach(sel => sel.addEventListener('change', async () => {
+      if (!sel.value) return;
+      const { error } = await db().from('processes').update({ owner_id: sel.value }).eq('id', sel.dataset.lxOwner);
+      if (error) return toast('Não foi possível atribuir: ' + error.message, 'bad');
+      toast('Responsável atribuído.'); teamPage();
+    }));
+    $$('[data-lx-tplp]').forEach(b => b.addEventListener('click', async () => { const d2 = await loadCentral({ templates: true }); openTemplateModal(d2, b.dataset.lxTplp, teamPage); }));
+  }
+
+  /* ================================================================
      Integração com o restante do ATLAS
      ================================================================ */
-  const PAGES = { modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
+  const PAGES = { equipe: teamPage, modelos: templatesPage, monitor: monitorPage, tarefas: tasksPage, protocolos: protocolsPage, exigencias: requirementsPage, certidoes: certificatesPage, agenda: agendaPage };
 
   function installRouter() {
     const prev = window.render;
@@ -2199,7 +2296,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { managementData, finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { teamData, managementData, finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();

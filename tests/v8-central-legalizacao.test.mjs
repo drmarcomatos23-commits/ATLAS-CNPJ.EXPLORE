@@ -20,8 +20,8 @@ function load() {
 
 test('V8: módulo expõe API e roteia as novas páginas sem quebrar as antigas', () => {
   const w = load();
-  assert.equal(w.AtlasCentralV8.version, '8.7');
-  assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
+  assert.equal(w.AtlasCentralV8.version, '8.8');
+  assert.deepEqual(Object.keys(w.AtlasCentralV8.pages).sort(), ['agenda', 'certidoes', 'equipe', 'exigencias', 'modelos', 'monitor', 'protocolos', 'tarefas']);
   assert.equal(w.render('dashboard'), 'legacy');
   assert.equal(typeof w.openLegalizacaoPanel, 'function');
 });
@@ -76,7 +76,7 @@ test('V8: menu, shell e script registrados; mobile-v6 continua a última folha d
     assert.match(html, new RegExp(`data-page="${p}"`));
     assert.match(shell, new RegExp(`'${p}'`));
   }
-  assert.match(html, /central-legalizacao-v8\.js\?v=8\.7/);
+  assert.match(html, /central-legalizacao-v8\.js\?v=8\.8/);
   assert.doesNotMatch(html, /central-legalizacao-v8\.css/);
   assert.match(src, /central-legalizacao-v8\.css/);
 });
@@ -141,4 +141,22 @@ test('V8.7: relatório gerencial conta processos e recebimentos do mês escolhid
   assert.equal(G.opened.length, 1); assert.equal(G.completed.length, 1); assert.equal(G.late.length, 1);
   assert.equal(G.feeReceived, 1000); assert.equal(G.feeOpen, 500); assert.equal(G.feeLaunched, 500);
   assert.deepEqual([...G.byService.keys()], ['Abertura de empresa']); assert.equal(G.durations[0].d, 40);
+});
+
+test('V8.8: painel da equipe mede carga, atrasos e processos parados', () => {
+  const { teamData, addDays } = load().AtlasCentralV8.__test;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
+  const procs = [{ id: 'p1', owner_id: 'u1', status: 'in_progress', created_at: addDays(today, -40) + 'T12:00:00Z' }, { id: 'p2', owner_id: 'u2', status: 'in_progress', created_at: addDays(today, -2) + 'T12:00:00Z' }];
+  const data = { processes: procs, processMap: new Map(procs.map(p => [p.id, p])), clientMap: new Map(), profileMap: new Map(),
+    profiles: [{ id: 'u1', full_name: 'Ana', role: 'operacao' }, { id: 'u2', full_name: 'Beto', role: 'admin' }],
+    tasks: [
+      { process_id: 'p1', status: 'aberta', target_date: addDays(today, -3), created_at: addDays(today, -40) + 'T12:00:00Z' },
+      { process_id: 'p2', status: 'concluida', target_date: addDays(today, 2), completed_at: addDays(today, -1) + 'T12:00:00Z', completed_by: 'u2' },
+      { process_id: 'p2', status: 'aberta', assignee_id: 'u1', target_date: addDays(today, 3) }
+    ], docItems: [] };
+  const T = teamData(data, 30);
+  const ana = T.rows.find(r => r.person.id === 'u1'), beto = T.rows.find(r => r.person.id === 'u2');
+  assert.equal(ana.open, 2); assert.equal(ana.late, 1); assert.equal(ana.week, 1);
+  assert.equal(beto.done, 1); assert.equal(beto.onTime, 1);
+  assert.equal(T.stalled.length, 1); assert.equal(T.stalled[0].p.id, 'p1');
 });
