@@ -16,7 +16,9 @@
 (() => {
   'use strict';
 
-  const VERSION = '9.1';
+  const VERSION = '9.2';
+  // renewal_lead_days é integer[] no banco (ex.: {90,60,30}); o formulário mostra o maior prazo
+  const leadDays = v => { const a = (Array.isArray(v) ? v : [v]).map(Number).filter(n => Number.isFinite(n) && n >= 0); return a.length ? Math.max(...a) : 30; };
   const TZ = 'America/Sao_Paulo';
   const XLSX_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
 
@@ -1158,7 +1160,7 @@
       <div class="field"><label>Emissão</label><input id="lx-c-issued" type="date" value="${h(rec.issued_at || '')}"></div>
       <div class="field"><label>Vencimento</label><input id="lx-c-exp" type="date" value="${h(rec.expires_at || '')}"></div>
       <div class="field"><label>Situação</label><select id="lx-c-status"><option value="active" ${rec.status !== 'renewing' && rec.status !== 'not_applicable' ? 'selected' : ''}>Ativo</option><option value="renewing" ${rec.status === 'renewing' ? 'selected' : ''}>Em renovação</option><option value="not_applicable" ${rec.status === 'not_applicable' ? 'selected' : ''}>Não se aplica</option></select></div>
-      <div class="field"><label>Antecedência do aviso (dias)</label><input id="lx-c-lead" type="number" min="0" max="365" value="${h(rec.renewal_lead_days ?? 30)}"></div>
+      <div class="field"><label>Antecedência do aviso (dias)</label><input id="lx-c-lead" type="number" min="0" max="365" value="${h(leadDays(rec.renewal_lead_days))}"></div>
       <div class="field span-2"><label>Link oficial de emissão / consulta</label><input id="lx-c-url" type="url" value="${h(rec.official_url || '')}" placeholder="https://"></div>
       <div class="field span-2"><label>Observações</label><textarea id="lx-c-notes" rows="2">${h(rec.notes || '')}</textarea></div>
       <div class="modal-actions span-2">${l ? '<button type="button" class="btn btn-muted lx-danger-text" id="lx-c-delete">Excluir</button>' : ''}<button type="button" class="btn btn-muted" onclick="closeAtlasModal()">Cancelar</button><button class="btn btn-primary" type="submit" id="lx-c-save">Salvar</button></div>
@@ -1176,7 +1178,7 @@
       const full = {
         category: $('#lx-c-cat').value, name: $('#lx-c-name').value.trim(), client_id: $('#lx-c-client').value, agency: $('#lx-c-agency').value.trim() || null,
         document_number: $('#lx-c-number').value.trim() || null, responsible_id: $('#lx-c-resp').value || null, issued_at: $('#lx-c-issued').value || null,
-        expires_at: $('#lx-c-exp').value || null, status: $('#lx-c-status').value, renewal_lead_days: Number($('#lx-c-lead').value || 30),
+        expires_at: $('#lx-c-exp').value || null, status: $('#lx-c-status').value, renewal_lead_days: [Math.max(0, Math.round(Number($('#lx-c-lead').value || 30)))],
         official_url: url || null, notes: $('#lx-c-notes').value.trim() || null
       };
       if (!full.client_id) return msgBox('#lx-c-msg', 'Selecione a empresa.');
@@ -1215,7 +1217,7 @@
       const existing = new Set((data.licenses || []).filter(l => l.client_id === client).map(l => norm(l.name)));
       const rows = chosen.filter(c => !existing.has(norm(c.name))).map(c => ({
         client_id: client, name: c.name, agency: c.agency, category: c.category || 'certidao', issued_at: issued, expires_at: addDays(issued, c.days),
-        official_url: c.url || null, status: 'active', renewal_lead_days: Math.min(30, c.days), responsible_id: $('#lx-b-resp').value || null
+        official_url: c.url || null, status: 'active', renewal_lead_days: [Math.min(30, c.days)], responsible_id: $('#lx-b-resp').value || null
       }));
       if (!rows.length) return msgBox('#lx-b-msg', 'Todos os itens escolhidos já existem para esta empresa.');
       const { error } = await db().from('licenses').insert(rows);
@@ -1268,7 +1270,7 @@
         const parsed = rows.map(o => {
           const c = byCnpj.get(digits(pick(o, 'cnpj'))) || byName.get(norm(pick(o, 'empresa', 'razao social', 'cliente')));
           const name = String(pick(o, 'documento', 'licenca', 'nome', 'tipo')).trim();
-          return { c, row: { client_id: c?.id, name, category: catOf(pick(o, 'categoria') || name), agency: String(pick(o, 'orgao', 'orgao emissor')).trim() || null, document_number: String(pick(o, 'numero', 'n')).trim() || null, issued_at: parseFlexibleDate(pick(o, 'emissao', 'data emissao')), expires_at: parseFlexibleDate(pick(o, 'vencimento', 'validade', 'data vencimento')), status: 'active', renewal_lead_days: 30 } };
+          return { c, row: { client_id: c?.id, name, category: catOf(pick(o, 'categoria') || name), agency: String(pick(o, 'orgao', 'orgao emissor')).trim() || null, document_number: String(pick(o, 'numero', 'n')).trim() || null, issued_at: parseFlexibleDate(pick(o, 'emissao', 'data emissao')), expires_at: parseFlexibleDate(pick(o, 'vencimento', 'validade', 'data vencimento')), status: 'active', renewal_lead_days: [30] } };
         }).filter(x => x.row.name);
         ready = parsed.filter(x => x.c).map(x => schemaReady ? x.row : (({ category, ...rest }) => rest)(x.row));
         const bad = parsed.filter(x => !x.c);
@@ -2455,7 +2457,7 @@
     setTimeout(installRouter, 0); setTimeout(installRouter, 600); setTimeout(installRouter, 2000);
   }
 
-  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { teamData, managementData, finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
+  window.AtlasCentralV8 = { version: VERSION, openPanel, openCommunicationModal, pages: PAGES, __test: { leadDays, teamData, managementData, finSummary, reportContent, matchDocItem, licenseState, taskDeadlineState, parseFlexibleDate, addDays, diffDays, fillTemplate, guessTemplate, agendaEvents, csv } };
   window.openLegalizacaoPanel = openPanel;
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init, { once: true }); else init();
 })();
