@@ -1,5 +1,6 @@
 const CNPJWS_BASE = 'https://publica.cnpj.ws/cnpj';
 const BRASILAPI_BASE = 'https://brasilapi.com.br/api/cnpj/v1';
+const CNPJA_OPEN_BASE = 'https://open.cnpja.com/office'; // gratuito, sem chave (limite de consultas por minuto)
 const MAX_BODY_SIZE = 3 * 1024 * 1024;
 
 function validCnpj(cnpj) {
@@ -82,6 +83,47 @@ function normalizeBrasilApi(b, cnpj) {
   };
 }
 
+function normalizeCnpja(o, cnpj) {
+  const c = o?.company || {};
+  const a = o?.address || {};
+  const head = o?.head !== false;
+  return {
+    _atlas_source: 'CNPJá (fallback)',
+    razao_social: c.name || o?.alias || '',
+    capital_social: c.equity ?? null,
+    natureza_juridica: { descricao: c.nature?.text || '' },
+    porte: { descricao: c.size?.text || '' },
+    descricao_identificador_matriz_filial: head ? 'MATRIZ' : 'FILIAL',
+    identificador_matriz_filial: head ? 1 : 2,
+    estabelecimento: {
+      cnpj: o?.taxId || cnpj,
+      tipo: head ? 'Matriz' : 'Filial',
+      descricao_identificador_matriz_filial: head ? 'MATRIZ' : 'FILIAL',
+      identificador_matriz_filial: head ? 1 : 2,
+      nome_fantasia: o?.alias || '',
+      situacao_cadastral: o?.status?.text || '',
+      data_inicio_atividade: o?.founded || '',
+      tipo_logradouro: '',
+      logradouro: a.street || '',
+      numero: a.number || '',
+      complemento: a.details || '',
+      bairro: a.district || '',
+      cep: a.zip || '',
+      cidade: { nome: a.city || '' },
+      estado: { sigla: a.state || '' },
+      atividade_principal: { id: o?.mainActivity?.id ? String(o.mainActivity.id) : '', descricao: o?.mainActivity?.text || '' },
+      atividades_secundarias: (Array.isArray(o?.sideActivities) ? o.sideActivities : []).map(x => ({ id: x?.id ? String(x.id) : '', descricao: x?.text || '' }))
+    },
+    socios: (Array.isArray(c.members) ? c.members : []).map(m => ({
+      nome: m?.person?.name || '',
+      cpf_cnpj_socio: m?.person?.taxId || '',
+      tipo: m?.person?.type === 'LEGAL' ? 'Pessoa Jurídica' : 'Pessoa Física',
+      qualificacao_socio: { descricao: m?.role?.text || '' },
+      data_entrada_sociedade: m?.since || ''
+    }))
+  };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     res.setHeader('Allow', 'GET, HEAD');
@@ -96,7 +138,7 @@ export default async function handler(req, res) {
 
   let firstError = null;
   try {
-    const body = await fetchJson(`${CNPJWS_BASE}/${cnpj}`, 9000);
+    const body = await fetchJson(`${CNPJWS_BASE}/${cnpj}`, 6000);
     if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Error('Cadastro inválido');
     body._atlas_source = 'CNPJws';
     res.setHeader('X-Atlas-Source', 'cnpjws');
@@ -106,20 +148,44 @@ export default async function handler(req, res) {
     firstError = error;
   }
 
+  let secondError = null;
   try {
-    const fallback = await fetchJson(`${BRASILAPI_BASE}/${cnpj}`, 9000);
+    const fallback = await fetchJson(`${BRASILAPI_BASE}/${cnpj}`, 6000);
     const body = normalizeBrasilApi(fallback, cnpj);
     res.setHeader('X-Atlas-Source', 'brasilapi');
     res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return res.status(200).json(body);
-  } catch (fallbackError) {
-    res.setHeader('Cache-Control', 'no-store');
-    const timedOut = firstError?.name === 'AbortError' || fallbackError?.name === 'AbortError';
-    return res.status(502).json({
-      titulo: 'Falha de comunicação',
-      detalhes: timedOut
-        ? 'As fontes de consulta demoraram para responder. Tente novamente em instantes.'
-        : 'CNPJws e BrasilAPI estão temporariamente indisponíveis. Tente novamente em instantes.'
+  } catch (error) {
+    secondError = error;
+  }
+
+  let thirdError = null;
+  try {
+    const raw = await fetchJson(`${CNPJA_OPEN_BASE}/${cnpj}`, 6000);
+    if (!raw || typeof raw !== 'object' || !(raw.company || raw.taxId)) throw new Error('Cadastro inválido');
+    const body = normalizeCnpja(raw, cnpj);
+    res.setHeader('X-Atlas-Source', 'cnpja');
+    res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    return res.status(200).json(body);
+  } catch (error) {
+    thirdError = error;
+  }
+
+  res.setHeader('Cache-Control', 'no-store');
+  const errors = [firstError, secondError, thirdError];
+  const notFound = errors.filter(e => e?.status === 404).length;
+  // Pelo menos duas bases responderam "não encontrado": o CNPJ ainda não está nas bases públicas
+  if (notFound >= 2) {
+    return res.status(404).json({
+      titulo: 'CNPJ não encontrado',
+      detalhes: 'Este CNPJ ainda não aparece nas bases públicas gratuitas (CNPJws, BrasilAPI e CNPJá). Empresas abertas recentemente podem levar algumas semanas para constar. Preencha os dados manualmente e consulte de novo depois.'
     });
   }
+  const timedOut = errors.some(e => e?.name === 'AbortError');
+  return res.status(502).json({
+    titulo: 'Falha de comunicação',
+    detalhes: timedOut
+      ? 'As fontes de consulta demoraram para responder. Tente novamente em instantes.'
+      : 'As fontes de consulta de CNPJ estão temporariamente indisponíveis. Tente novamente em instantes.'
+  });
 }
