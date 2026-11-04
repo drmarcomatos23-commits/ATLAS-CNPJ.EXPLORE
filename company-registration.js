@@ -347,6 +347,22 @@
       else if(d.length===0) showNoCnpjState();
     });
     if(!id && !digits(cnpjInput?.value||''))showNoCnpjState();
+    const nameInput=document.getElementById('client-legal-name');
+    nameInput?.addEventListener('blur',async ()=>{
+      const name=nameInput.value.trim();
+      const d=digits(cnpjInput?.value||'');
+      const formMsg=document.getElementById('client-form-message');
+      if(!name||!formMsg)return;
+      const {data,error}=await db.rpc('atlas_find_client_duplicate',{p_cnpj:d.length===14?d:null,p_name:name,p_exclude_id:id||null});
+      if(error)return;
+      const dup=(data||[])[0];
+      if(dup&&dup.motivo!=='cnpj'){
+        formMsg.innerHTML='<strong>Atenção:</strong> já existe a empresa <strong>'+escHtml(dup.legal_name)+'</strong>'+(dup.tax_id?' (CNPJ '+escHtml(dup.tax_id)+')':' (sem CNPJ)')+'. O sistema não permite cadastrar a mesma empresa duas vezes'+(dup.motivo==='nome_sem_cnpj'?' — abra o cadastro existente e informe o CNPJ nele.':'.');
+        formMsg.className='auth-message error span-2';
+      }else if(formMsg.textContent.includes('mesma empresa duas vezes')){
+        formMsg.textContent='';formMsg.className='auth-message hidden span-2';
+      }
+    });
     document.getElementById('client-cnpj-consult')?.addEventListener('click',async ()=>{
       const duplicated=await checkDuplicateCnpj();
       if(!duplicated)lookupCompanyCnpj();
@@ -431,6 +447,19 @@
             throw new Error('Cadastro bloqueado: este CNPJ já está cadastrado para '+duplicate.legal_name+(duplicate.archived?' (empresa arquivada).':' .'));
           }
         }
+        {
+          const legalName=document.getElementById('client-legal-name').value.trim();
+          const {data:dupData,error:dupError}=await db.rpc('atlas_find_client_duplicate',{p_cnpj:cnpjDigits.length===14?cnpjDigits:null,p_name:legalName,p_exclude_id:id||null});
+          if(dupError&&!/atlas_find_client_duplicate/.test(dupError.message||''))throw dupError;
+          const dup=(dupData||[])[0];
+          if(dup){
+            throw new Error(dup.motivo==='cnpj'
+              ? 'Cadastro bloqueado: este CNPJ já está cadastrado para '+dup.legal_name+(dup.archived?' (empresa arquivada — restaure o cadastro em Empresas › Arquivadas).':'.')
+              : dup.motivo==='nome_sem_cnpj'
+                ? 'Cadastro bloqueado: a empresa '+dup.legal_name+' já está cadastrada sem CNPJ. Abra esse cadastro e informe o CNPJ nele, em vez de criar outro.'
+                : 'Cadastro bloqueado: já existe a empresa '+dup.legal_name+(dup.tax_id?' (CNPJ '+dup.tax_id+')':' (sem CNPJ)')+' com o mesmo nome.');
+          }
+        }
 
         const payload={
           organization_id:atlasProfile().organization_id,
@@ -479,7 +508,9 @@
         const raw=String(err?.message||err||'');
         msg.textContent=/row-level security|permission denied/i.test(raw)
           ? 'Não foi possível salvar por falta de permissão ou sessão expirada. Atualize a página e entre novamente no ATLAS.'
-          : (raw||'Não foi possível salvar a empresa.');
+          : /ATLAS_DUPLICIDADE|clients_org_cnpj_unique|duplicate key/i.test(raw)
+            ? 'Cadastro bloqueado: '+(raw.replace(/^.*ATLAS_DUPLICIDADE:\s*/,'').replace(/duplicate key.*$/i,'este CNPJ já está cadastrado.'))
+            : (raw||'Não foi possível salvar a empresa.');
         msg.className='auth-message error span-2';
         btn.disabled=false;btn.textContent='Salvar empresa';
       }

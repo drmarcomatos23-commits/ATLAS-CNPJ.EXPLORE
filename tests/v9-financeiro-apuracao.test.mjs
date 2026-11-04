@@ -71,3 +71,14 @@ test('cadastro do processo: vencimento obrigatório, parcelamento e validação 
   const html = fs.readFileSync('index.html', 'utf8');
   assert.ok(html.indexOf('financial-costs.js') < html.indexOf('financeiro-apuracao.js'));
 });
+
+test('cadastro de empresa bloqueia duplicidade (banco + telas)', () => {
+  const sql = fs.readFileSync('supabase/migrations/20261104_clientes_sem_duplicidade_v9_6.sql', 'utf8');
+  assert.match(sql, /create unique index if not exists clients_org_cnpj_unique/);
+  assert.match(sql, /create or replace trigger atlas_prevent_duplicate_client/);
+  const reg = fs.readFileSync('company-registration.js', 'utf8');
+  const quick = fs.readFileSync('company-flow.js', 'utf8');
+  assert.match(reg, /atlas_find_client_duplicate/);
+  assert.match(reg, /ATLAS_DUPLICIDADE/);
+  assert.ok(quick.indexOf("rpc('atlas_find_client_duplicate'") < quick.indexOf(".from('clients')\n        .insert("));
+});

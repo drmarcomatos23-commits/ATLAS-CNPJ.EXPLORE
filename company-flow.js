@@ -129,6 +129,19 @@
         }
       }
 
+      {
+        const { data: dupData } = await db.rpc('atlas_find_client_duplicate', { p_cnpj: taxId || null, p_name: legalName, p_exclude_id: null });
+        const dup = (dupData || [])[0];
+        if (dup && !dup.archived) {
+          if (![...select.options].some(o => o.value === dup.id)) select.add(new Option(dup.legal_name, dup.id));
+          select.value = dup.id;
+          msg.textContent = 'Esta empresa já estava cadastrada (' + dup.legal_name + '). O cadastro existente foi selecionado — não é permitido cadastrar em duplicidade.';
+          msg.className = 'auth-message info';
+          return;
+        }
+        if (dup && dup.archived) throw new Error('Este CNPJ pertence à empresa arquivada ' + dup.legal_name + '. Restaure o cadastro em Empresas › Arquivadas.');
+      }
+
       const { data: created, error } = await db
         .from('clients')
         .insert({
@@ -160,7 +173,7 @@
         document.getElementById('quick-company-panel')?.classList.add('hidden');
       }, 650);
     } catch (err) {
-      msg.textContent = err.message || 'Não foi possível cadastrar a empresa.';
+      msg.textContent = String(err.message || 'Não foi possível cadastrar a empresa.').replace(/^.*ATLAS_DUPLICIDADE:\s*/, 'Cadastro bloqueado: ');
       msg.className = 'auth-message error';
     } finally {
       btn.disabled = false;
