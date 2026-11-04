@@ -82,3 +82,18 @@ test('cadastro de empresa bloqueia duplicidade (banco + telas)', () => {
   assert.match(reg, /ATLAS_DUPLICIDADE/);
   assert.ok(quick.indexOf("rpc('atlas_find_client_duplicate'") < quick.indexOf(".from('clients')\n        .insert("));
 });
+
+test('apuração separa recebido no mês, com atraso e caixa (caso KORINHO)', () => {
+  const H = (o) => ({ fee_kind: 'honorarios', ...o });
+  const A = F.apuracao([
+    H({ amount: 100, due_date: '2026-10-16', payment_status: 'paid', paid_at: '2026-10-30' }),
+    H({ amount: 3242, due_date: '2026-10-30', payment_status: 'paid', paid_at: '2026-11-03' }),
+    H({ amount: 50, due_date: '2026-10-20', payment_status: 'pending' })
+  ], '2026-10', '2026-11-04');
+  assert.equal(A.totalPaid, 3342);
+  assert.equal(A.totalPaidIn, 100);
+  assert.equal(A.totalPaidLater, 3242);
+  assert.equal(A.totalCash, 100);
+  assert.equal(A.totalLate, 50);
+  assert.equal(A.total, A.totalPaidIn + A.totalPaidLater + A.totalPaidEarly + A.totalLate + A.totalOpen);
+});

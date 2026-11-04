@@ -53,18 +53,26 @@
     const fees = (costs || []).filter(isFee);
     const sum = arr => arr.reduce((n, c) => n + cents(c.amount), 0) / 100;
     const monthStart = ym + '-01';
+    const paidYm = c => (day(c.paid_at) || refMonth(c)).slice(0, 7);
     const month = fees.filter(c => refMonth(c) === ym);
     const paid = month.filter(isPaid);
+    const paidIn = paid.filter(c => paidYm(c) === ym);       // pagas dentro do mês
+    const paidLater = paid.filter(c => paidYm(c) > ym);      // pagas depois do mês (entram no caixa do mês seguinte)
+    const paidEarly = paid.filter(c => paidYm(c) < ym);      // pagas antes (antecipadas)
     const late = month.filter(c => feeState(c, today) === 'late');
     const open = month.filter(c => feeState(c, today) === 'open');
-    const cash = fees.filter(c => isPaid(c) && day(c.paid_at).slice(0, 7) === ym);
+    const cash = fees.filter(c => isPaid(c) && paidYm(c) === ym);
     const cashOther = cash.filter(c => refMonth(c) !== ym);
+    const cashFromPast = cashOther.filter(c => refMonth(c) < ym);
+    const cashFromFuture = cashOther.filter(c => refMonth(c) > ym);
     const carried = fees.filter(c => !isPaid(c) && c.due_date && day(c.due_date) < monthStart);
     const noDue = fees.filter(c => feeState(c, today) === 'nodue');
     return {
-      ym, today, month, paid, late, open, cash, cashOther, carried, noDue,
-      total: sum(month), totalPaid: sum(paid), totalLate: sum(late), totalOpen: sum(open),
-      totalCash: sum(cash), totalCashOther: sum(cashOther), totalCarried: sum(carried), totalNoDue: sum(noDue),
+      ym, today, month, paid, paidIn, paidLater, paidEarly, late, open, cash, cashOther, cashFromPast, cashFromFuture, carried, noDue,
+      total: sum(month), totalPaid: sum(paid), totalPaidIn: sum(paidIn), totalPaidLater: sum(paidLater), totalPaidEarly: sum(paidEarly),
+      totalLate: sum(late), totalOpen: sum(open),
+      totalCash: sum(cash), totalCashOther: sum(cashOther), totalCashFromPast: sum(cashFromPast), totalCashFromFuture: sum(cashFromFuture),
+      totalCarried: sum(carried), totalNoDue: sum(noDue),
       rate: month.length ? Math.round(sum(paid) / Math.max(0.01, sum(month)) * 100) : null
     };
   }
@@ -156,11 +164,11 @@
       </div>
       <div class="grid kpi-grid finance-kpis fx-kpis">
         ${kpi('Previsto no mês', money(A.total), `${A.month.length} parcela(s) com vencimento em ${MONTHS[Number(ym.slice(5)) - 1]}`)}
-        ${kpi('Recebido', money(A.totalPaid), A.rate === null ? 'Nada previsto no mês' : `${A.rate}% do previsto`, 'ok')}
+        ${kpi('Recebido', money(A.totalPaid), A.rate === null ? 'Nada previsto no mês' : `${A.rate}% do previsto` + (A.paidLater.length ? ` · ${money(A.totalPaidLater)} pago depois do mês` : ''), 'ok')}
         ${kpi('A vencer', money(A.totalOpen), `${A.open.length} parcela(s)`, A.open.length ? 'warn' : '')}
         ${kpi('Vencido', money(A.totalLate), `${A.late.length} parcela(s) sem baixa`, A.late.length ? 'bad' : '')}
       </div>
-      <div class="fx-cash">Entrou no caixa em ${monthLabel(ym)}: <strong>${money(A.totalCash)}</strong>${A.cashOther.length ? ` · inclui ${money(A.totalCashOther)} de parcelas de outros meses` : ''}</div>
+      <div class="fx-cash">Entrou no caixa em ${monthLabel(ym)} (pela data do pagamento): <strong>${money(A.totalCash)}</strong>${A.cashOther.length ? ` · inclui ${money(A.totalCashOther)} de parcelas de outros meses` : ''}${A.paidLater.length ? ` · ${money(A.totalPaidLater)} das parcelas deste mês foram pagos depois e entram no caixa do mês do pagamento` : ''}</div>
       ${A.noDue.length ? `<div class="fx-alert"><strong>${A.noDue.length} honorário(s) em aberto sem data de vencimento (${money(A.totalNoDue)}).</strong> Sem a data, eles não entram na apuração mensal nem viram vencidos. Abra o processo e informe o vencimento. <button type="button" class="mini-btn" data-fx-toggle="nodue">Ver lista</button><div class="fx-collapse" data-fx-box="nodue" hidden>${table(D, A.noDue, today, '')}</div></div>` : ''}
       ${A.carried.length ? `<div class="fx-alert bad"><strong>${A.carried.length} parcela(s) vencida(s) de meses anteriores ainda sem baixa (${money(A.totalCarried)}).</strong> <button type="button" class="mini-btn" data-fx-toggle="carried">Ver lista</button><div class="fx-collapse" data-fx-box="carried" hidden>${table(D, A.carried, today, '')}</div></div>` : ''}
       <div class="fx-chips">${chip('todos', 'Todas do mês', A.month.length)}${chip('aberto', 'A vencer', A.open.length)}${chip('vencido', 'Vencidas', A.late.length)}${chip('recebido', 'Recebidas', A.paid.length)}</div>
@@ -252,74 +260,110 @@
     const doc = new jsPDF({ unit: 'mm', format: 'a4' });
     const today = todayISO();
     const A = apuracao(D.costs, ym, today);
-    const label = monthLabel(ym);
+    const label = monthLabel(ym), mName = MONTHS[Number(ym.slice(5)) - 1];
     const W = 210, M = 14, CW = W - M * 2, BOTTOM = 280;
-    const NAVY = [8, 40, 81], BLUE = [13, 94, 168], MUTED = [99, 119, 148], LINE = [216, 228, 240], RED = [180, 35, 24], WARN = [168, 93, 0], OKC = [15, 138, 95];
+    const NAVY = [8, 40, 81], BLUE = [13, 94, 168], MUTED = [99, 119, 148], LINE = [216, 228, 240], RED = [180, 35, 24], WARN = [168, 93, 0], OKC = [15, 138, 95], SOFT = [244, 248, 252];
     let y = M;
     const logo = await imageDataUrl(REPORT_LOGO);
     const t = (txt, x, yy, size = 10, color = NAVY, style = 'normal', align) => { doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color); doc.text(String(txt), x, yy, align ? { align } : undefined); };
     const ensure = need => { if (y + need > BOTTOM) { doc.addPage(); y = M + 4; } };
-    const section = (title, sub) => { ensure(18); y += 3; doc.setDrawColor(...LINE); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += 6; t(title.toUpperCase(), M, y, 9.5, BLUE, 'bold'); if (sub) t(sub, W - M, y, 8, MUTED, 'normal', 'right'); y += 5; };
-    const kpis = items => {
-      const n = items.length, gap = 3, w = (CW - gap * (n - 1)) / n; ensure(22);
-      items.forEach((k, i) => {
-        const x = M + i * (w + gap);
-        doc.setFillColor(244, 248, 252); doc.setDrawColor(...LINE); doc.roundedRect(x, y, w, 19, 2, 2, 'FD');
-        doc.setFillColor(...(k.color || BLUE)); doc.rect(x, y + 2, 1.2, 15, 'F');
-        t(k.label.toUpperCase(), x + 4, y + 5.5, 6.6, MUTED, 'bold');
-        t(k.value, x + 4, y + 12, 11.5, k.color || NAVY, 'bold');
-        if (k.sub) t(doc.splitTextToSize(k.sub, w - 6)[0], x + 4, y + 16.5, 6.8, MUTED);
-      });
-      y += 23;
-    };
-    const cols = [{ h: 'Venc.', w: 0.1 }, { h: 'Processo', w: 0.14 }, { h: 'Empresa', w: 0.32 }, { h: 'Parc.', w: 0.07 }, { h: 'Valor', w: 0.13, r: 1 }, { h: 'Situação', w: 0.12 }, { h: 'Recebido', w: 0.12 }];
-    const stateText = c => { const s = feeState(c, today); return s === 'paid' ? 'Recebido' : s === 'late' ? `Vencido ${daysBetween(today, day(c.due_date))}d` : s === 'nodue' ? 'Sem venc.' : 'A vencer'; };
-    const stateColor = c => ({ paid: OKC, late: RED, open: WARN, nodue: MUTED })[feeState(c, today)];
-    const table = (list, totalLabel) => {
-      if (!list.length) { t('Sem lançamentos.', M, y + 1, 9, MUTED); y += 7; return; }
-      const sorted = [...list].sort((a, b) => day(a.due_date || a.paid_at).localeCompare(day(b.due_date || b.paid_at)));
-      const head = () => { ensure(12); doc.setFillColor(244, 248, 252); doc.rect(M, y - 3.8, CW, 6, 'F'); let x = M + 1.5; cols.forEach(c => { const w = CW * c.w; t(c.h.toUpperCase(), c.r ? x + w - 3 : x, y, 6.8, MUTED, 'bold', c.r ? 'right' : undefined); x += w; }); y += 6; };
-      head();
-      sorted.forEach(c => {
-        if (y + 6.5 > BOTTOM) { doc.addPage(); y = M + 4; head(); }
-        const p = procOf(D, c), cl = clientOf(D, c);
-        const cells = [br(c.due_date), p.public_code || '—', cl.legal_name || '—', installmentLabel(c), money(c.amount), stateText(c), isPaid(c) ? br(c.paid_at) : '—'];
-        let x = M + 1.5;
-        cells.forEach((v, i) => { const col = cols[i], w = CW * col.w; const txt = doc.splitTextToSize(String(v), w - 3)[0]; t(txt, col.r ? x + w - 3 : x, y, 8.2, i === 5 ? stateColor(c) : NAVY, i === 5 || i === 4 ? 'bold' : 'normal', col.r ? 'right' : undefined); x += w; });
-        doc.setDrawColor(...LINE); doc.line(M, y + 2.2, W - M, y + 2.2); y += 6;
-      });
-      const total = list.reduce((n, c) => n + cents(c.amount), 0) / 100;
-      ensure(8); t(totalLabel || 'Total', M + 1.5, y + 1, 8.6, NAVY, 'bold'); t(money(total), M + CW * 0.76 - 1.5, y + 1, 8.6, NAVY, 'bold', 'right'); y += 8;
-    };
+    const count = n => `${n} parcela${n === 1 ? '' : 's'}`;
 
     // Cabeçalho
     if (logo) { const hh = 15; doc.addImage(logo.url, 'PNG', M, y - 2, logo.w / logo.h * hh, hh); }
     t(REPORT_BRAND, M + 30, y + 3.5, 10.5, NAVY, 'bold');
-    t(`Relatório de apuração de honorários · ${label}`, M + 30, y + 9.5, 10, BLUE, 'bold');
-    t(`Situação em ${br(today)}`, W - M, y + 3.5, 8.5, MUTED, 'bold', 'right');
+    t(`Apuração de honorários · ${label}`, M + 30, y + 9.5, 11, BLUE, 'bold');
+    t(`Posição em ${br(today)}`, W - M, y + 3.5, 8.5, MUTED, 'bold', 'right');
     t('Uso interno', W - M, y + 9.5, 8, MUTED, 'normal', 'right');
     y += 20;
 
-    section('Resumo do mês', `competência = mês de vencimento`);
-    kpis([
-      { label: 'Previsto no mês', value: money(A.total), sub: `${A.month.length} parcela(s)` },
-      { label: 'Recebido', value: money(A.totalPaid), sub: A.rate === null ? '—' : `${A.rate}% do previsto`, color: OKC },
-      { label: 'A vencer', value: money(A.totalOpen), sub: `${A.open.length} parcela(s)`, color: A.open.length ? WARN : NAVY },
-      { label: 'Vencido', value: money(A.totalLate), sub: `${A.late.length} sem baixa`, color: A.late.length ? RED : OKC }
-    ]);
-    kpis([
-      { label: 'Entrada de caixa no mês', value: money(A.totalCash), sub: 'pela data de recebimento', color: OKC },
-      { label: 'De outros meses', value: money(A.totalCashOther), sub: `${A.cashOther.length} parcela(s)` },
-      { label: 'Vencidos anteriores', value: money(A.totalCarried), sub: `${A.carried.length} em aberto`, color: A.carried.length ? RED : OKC },
-      { label: 'Sem vencimento', value: money(A.totalNoDue), sub: `${A.noDue.length} a regularizar`, color: A.noDue.length ? WARN : OKC }
-    ]);
+    // ---- Quadro 1: conciliação das parcelas do mês ----
+    const statement = (title, sub, lines, x, w) => {
+      const top = y;
+      doc.setFillColor(...SOFT); doc.setDrawColor(...LINE); doc.roundedRect(x, top, w, 9 + lines.length * 7.2 + 3, 2, 2, 'FD');
+      t(title.toUpperCase(), x + 4, top + 6, 8.4, BLUE, 'bold');
+      if (sub) t(sub, x + w - 4, top + 6, 7, MUTED, 'normal', 'right');
+      let yy = top + 13.5;
+      lines.forEach(l => {
+        if (l.rule) { doc.setDrawColor(...NAVY); doc.setLineWidth(0.35); doc.line(x + 4, yy - 4.6, x + w - 4, yy - 4.6); doc.setLineWidth(0.2); }
+        t(l.label, x + 4 + (l.indent ? 3 : 0), yy, l.bold ? 9 : 8.6, l.color || NAVY, l.bold ? 'bold' : 'normal');
+        if (l.note) t(l.note, x + w - 50, yy, 7.6, MUTED, 'normal', 'right');
+        t(l.value, x + w - 4, yy, l.bold ? 9.6 : 8.8, l.color || NAVY, 'bold', 'right');
+        yy += 7.2;
+      });
+      return top + 9 + lines.length * 7.2 + 3;
+    };
+    const L1 = [
+      { label: `Previsto no mês (vencimento em ${mName})`, note: count(A.month.length), value: money(A.total), bold: true },
+      { label: `(–) Recebido dentro de ${mName}`, note: count(A.paidIn.length), value: money(A.totalPaidIn), color: OKC, indent: true }
+    ];
+    if (A.paidEarly.length) L1.push({ label: '(–) Recebido antecipado (antes do mês)', note: count(A.paidEarly.length), value: money(A.totalPaidEarly), color: OKC, indent: true });
+    if (A.paidLater.length) L1.push({ label: `(–) Recebido com atraso (depois de ${mName})`, note: count(A.paidLater.length), value: money(A.totalPaidLater), color: WARN, indent: true });
+    L1.push({ label: '(=) Em aberto — vencido, sem baixa', note: count(A.late.length), value: money(A.totalLate), color: A.late.length ? RED : OKC, bold: true, rule: true });
+    if (A.open.length) L1.push({ label: '(=) Em aberto — ainda a vencer', note: count(A.open.length), value: money(A.totalOpen), color: WARN, bold: true });
 
-    section(`Parcelas com vencimento em ${label}`);
-    table(A.month, 'Total previsto no mês');
-    if (A.late.length) { section('Vencidas no mês sem baixa'); table(A.late, 'Total vencido no mês'); }
-    if (A.cashOther.length) { section(`Recebidas em ${label} de outros meses`); table(A.cashOther, 'Total recebido de outros meses'); }
-    if (A.carried.length) { section('Vencidas de meses anteriores ainda em aberto'); table(A.carried, 'Total em atraso acumulado'); }
-    if (A.noDue.length) { section('Honorários em aberto sem vencimento (regularizar)'); table(A.noDue, 'Total sem vencimento'); }
+    const L2 = [{ label: `Parcelas com vencimento em ${mName}`, value: money(A.totalPaidIn), indent: true }];
+    L2.push({ label: 'Parcelas atrasadas de meses anteriores', value: money(A.totalCashFromPast), indent: true });
+    if (A.cashFromFuture.length) L2.push({ label: 'Parcelas antecipadas de meses seguintes', value: money(A.totalCashFromFuture), indent: true });
+    L2.push({ label: `Total que entrou em ${mName}`, value: money(A.totalCash), bold: true, color: OKC, rule: true });
+
+    ensure(70);
+    y = statement('1. Parcelas com vencimento no mês', A.rate === null ? '' : `${A.rate}% do previsto já foi recebido`, L1, M, CW) + 4;
+    ensure(40);
+    y = statement(`2. Caixa de ${mName} (o que entrou na conta)`, 'pela data do pagamento', L2, M, CW) + 5;
+
+    // Explicação da diferença entre os quadros
+    const diff = Math.round((A.totalPaid - A.totalCash) * 100) / 100;
+    if (Math.abs(diff) >= 0.01) {
+      const parts = [];
+      if (A.paidLater.length) parts.push(`${money(A.totalPaidLater)} das parcelas de ${mName} foram pagos depois do mês (${A.paidLater.map(c => `${clientOf(D, c).legal_name || procOf(D, c).public_code} em ${br(c.paid_at)}`).slice(0, 3).join('; ')}${A.paidLater.length > 3 ? '…' : ''}) e entram no caixa do mês do pagamento`);
+      if (A.paidEarly.length) parts.push(`${money(A.totalPaidEarly)} foram pagos antes de ${mName}`);
+      if (A.cashOther.length) parts.push(`${money(A.totalCashOther)} entraram em ${mName} referentes a parcelas de outros meses`);
+      const txt = `Por que o total recebido das parcelas (${money(A.totalPaid)}) é diferente do caixa (${money(A.totalCash)})? ` + parts.join('; ') + '.';
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.2);
+      const linesTxt = doc.splitTextToSize(txt, CW - 8);
+      ensure(linesTxt.length * 4.2 + 7);
+      doc.setFillColor(255, 248, 234); doc.setDrawColor(241, 211, 155); doc.roundedRect(M, y, CW, linesTxt.length * 4.2 + 5, 2, 2, 'FD');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.2); doc.setTextColor(93, 61, 0); doc.text(linesTxt, M + 4, y + 5);
+      y += linesTxt.length * 4.2 + 9;
+    }
+
+    // ---- Tabelas por grupo ----
+    const cols = [{ h: 'Empresa', w: 0.36 }, { h: 'Processo', w: 0.17 }, { h: 'Parc.', w: 0.07 }, { h: 'Vencimento', w: 0.12 }, { h: 'Valor', w: 0.14, r: 1 }, { h: '', w: 0.14 }];
+    const group = (title, list, lastHead, lastCell, color, note) => {
+      if (!list.length) return;
+      const total = list.reduce((n, c) => n + cents(c.amount), 0) / 100;
+      ensure(24); y += 2;
+      doc.setFillColor(...color); doc.rect(M, y - 4, 1.4, 6, 'F');
+      t(title, M + 3.5, y + 0.6, 10, NAVY, 'bold');
+      t(`${count(list.length)} · ${money(total)}`, W - M, y + 0.6, 9, color, 'bold', 'right');
+      y += 4;
+      if (note) { t(note, M + 3.5, y + 0.8, 7.3, MUTED); y += 4; }
+      y += 2;
+      const head = () => { doc.setFillColor(...SOFT); doc.rect(M, y - 3.8, CW, 6, 'F'); let x = M + 1.5; cols.forEach((c, i) => { const w = CW * c.w; t((i === 5 ? lastHead : c.h).toUpperCase(), c.r ? x + w - 3 : x, y, 6.8, MUTED, 'bold', c.r ? 'right' : undefined); x += w; }); y += 6; };
+      head();
+      [...list].sort((a, b) => day(a.due_date || a.paid_at).localeCompare(day(b.due_date || b.paid_at)) || String(clientOf(D, a).legal_name).localeCompare(String(clientOf(D, b).legal_name))).forEach(c => {
+        if (y + 6.5 > BOTTOM) { doc.addPage(); y = M + 4; head(); }
+        const p = procOf(D, c), cl = clientOf(D, c);
+        const cells = [cl.legal_name || '—', p.public_code || '—', installmentLabel(c), c.due_date ? br(c.due_date) : 's/ venc.*', money(c.amount), lastCell(c)];
+        let x = M + 1.5;
+        cells.forEach((v, i) => { const col = cols[i], w = CW * col.w; const s = doc.splitTextToSize(String(v), w - 2.5)[0]; t(s, col.r ? x + w - 3 : x, y, 8, i === 5 ? color : NAVY, i === 4 || i === 5 ? 'bold' : 'normal', col.r ? 'right' : undefined); x += w; });
+        doc.setDrawColor(...LINE); doc.line(M, y + 2.2, W - M, y + 2.2); y += 6;
+      });
+      y += 3;
+    };
+    const lateDays = c => { const d = daysBetween(today, day(c.due_date)); return `${d} dia${d === 1 ? '' : 's'} de atraso`; };
+    group('Em aberto — vencidas sem baixa', A.late, 'Situação', lateDays, RED, 'Cobrar o cliente ou, se já pagou, dar baixa com a data real do pagamento.');
+    group('Em aberto — a vencer', A.open, 'Vence em', c => { const d = daysBetween(day(c.due_date), today); return d === 0 ? 'hoje' : `${d} dia(s)`; }, WARN);
+    group(`Recebidas com atraso (pagas depois de ${mName})`, A.paidLater, 'Pago em', c => br(c.paid_at), WARN, `Entram no caixa do mês em que foram pagas, não no de ${mName}.`);
+    group('Recebidas antecipadamente', A.paidEarly, 'Pago em', c => br(c.paid_at), OKC);
+    group(`Recebidas dentro de ${mName}`, A.paidIn, 'Pago em', c => br(c.paid_at), OKC);
+    group(`Entraram em ${mName} — parcelas de outros meses`, A.cashOther, 'Pago em', c => br(c.paid_at), BLUE, 'Compõem o caixa do mês, mas pertencem à apuração do mês de vencimento.');
+    group('Vencidas de meses anteriores ainda em aberto', A.carried, 'Situação', lateDays, RED);
+    group('Sem data de vencimento — regularizar', A.noDue, 'Situação', () => 'sem vencimento', MUTED, 'Informe o vencimento no processo para entrarem na apuração.');
+
+    const anyNoDue = A.month.some(c => !c.due_date) || A.cashOther.some(c => !c.due_date);
+    if (anyNoDue) { ensure(8); t('* s/ venc.: honorário antigo sem data de vencimento cadastrada; considerado no mês em que foi recebido.', M, y + 1, 7.3, MUTED); y += 6; }
 
     const pages = doc.getNumberOfPages();
     for (let i = 1; i <= pages; i++) {
@@ -355,9 +399,9 @@
     window.costPage = wrapped;
   }
   if (typeof document !== 'undefined' && !document.getElementById('fx-css')) {
-    const link = document.createElement('link'); link.id = 'fx-css'; link.rel = 'stylesheet'; link.href = '/financeiro-apuracao.css?v=9.4';
+    const link = document.createElement('link'); link.id = 'fx-css'; link.rel = 'stylesheet'; link.href = '/financeiro-apuracao.css?v=9.7';
     document.head?.appendChild(link);
   }
 
-  window.AtlasFinanceiro = { version: '9.4', splitInstallments, addMonths, feeState, refMonth, apuracao, installmentLabel, csvRows, buildPdf, enhance };
+  window.AtlasFinanceiro = { version: '9.7', splitInstallments, addMonths, feeState, refMonth, apuracao, installmentLabel, csvRows, buildPdf, enhance };
 })();
