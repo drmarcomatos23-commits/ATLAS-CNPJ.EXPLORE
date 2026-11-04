@@ -128,6 +128,8 @@
       const data=await res.json().catch(()=>null);
       if(!res.ok)throw new Error(data?.detalhes||data?.titulo||'Não foi possível consultar o CNPJ.');
       const company=companyFromPayload(data);
+      const cap=Number(String(data?.capital_social??'').replace(',','.'));
+      window.__atlasLastCnpjCapital=Number.isFinite(cap)&&cap>0?{cnpj,value:cap}:null;
       document.getElementById('client-tax-id').value=company.tax_id;
       document.getElementById('client-legal-name').value=company.legal_name;
       document.getElementById('client-trade-name').value=company.trade_name;
@@ -450,6 +452,8 @@
           country:document.getElementById('client-country').value.trim()||'Brasil',
           address_reference:document.getElementById('client-address-reference').value.trim()||null
         };
+        const lastCap=window.__atlasLastCnpjCapital;
+        if(lastCap&&lastCap.cnpj===digits(normalizedCnpj||''))payload.capital_social=lastCap.value;
         if(canViewGroups){
           payload.group_id=document.getElementById('client-group-id')?.value||null;
         }

@@ -1,7 +1,7 @@
 import postgres from "npm:postgres@3.4.5";
 
 // ATLAS Legalização — Monitoramento de CNPJ da carteira (custo zero).
-// Consulta a base pública (BrasilAPI, com CNPJws como reserva), guarda um retrato do cadastro
+// Consulta a base pública (BrasilAPI, com CNPJws e CNPJá como reserva), guarda um retrato do cadastro
 // em client_registry_snapshots e avisa no sino quando algo relevante muda.
 // Empresas BAIXADAS são reconferidas só a cada 60 dias.
 // Chamado de hora em hora pelo pg_cron (token no Vault) ou pelo botão "Verificar agora" (JWT de Admin/Operação).
@@ -28,10 +28,10 @@ function validCnpj(c: string) {
 
 async function getJson(url: string) {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "ATLAS-LEGALIZACAO-MONITOR/1.0" }, signal: AbortSignal.timeout(12000) }).catch((e) => ({ ok: false, status: 0, e } as any));
+    const r = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "ATLAS-LEGALIZACAO-MONITOR/1.1" }, signal: AbortSignal.timeout(12000) }).catch((e) => ({ ok: false, status: 0, e } as any));
     if (r.ok) return await r.json();
     if (r.status === 404) { const e: any = new Error("NOT_FOUND"); e.notFound = true; throw e; }
-    if (attempt === 0 && [0, 429, 500, 502, 503, 504].includes(r.status)) { await sleep(2500); continue; }
+    if (attempt === 0 && [0, 429, 500, 502, 503, 504].includes(r.status)) { await sleep(r.status === 429 ? 13000 : 2500); continue; }
     throw new Error("HTTP_" + r.status);
   }
   throw new Error("UNAVAILABLE");
@@ -76,13 +76,49 @@ function fromCnpjWs(d: any) {
   };
 }
 
+function fromCnpja(o: any) {
+  const c = o?.company || {}, a = o?.address || {};
+  return {
+    fonte: "CNPJá",
+    situacao: up(o?.status?.text),
+    data_situacao: txt(o?.statusDate),
+    motivo_situacao: up(o?.reason?.text),
+    razao_social: up(c?.name),
+    nome_fantasia: up(o?.alias),
+    natureza: up(c?.nature?.text),
+    capital_social: Number(c?.equity ?? 0) || 0,
+    endereco: [up(a?.street), up(a?.number), up(a?.details), up(a?.district), digits(a?.zip), up(a?.city), up(a?.state)].filter(Boolean).join(" | "),
+    cnae_principal: digits(o?.mainActivity?.id),
+    cnaes_secundarios: (Array.isArray(o?.sideActivities) ? o.sideActivities : []).map((x: any) => digits(x?.id)).filter(Boolean).sort(),
+    socios: (Array.isArray(c?.members) ? c.members : []).map((m: any) => `${up(m?.person?.name)} (${up(m?.role?.text)})`).sort(),
+    simples: c?.simples?.optant === true ? "SIM" : c?.simples?.optant === false ? "NÃO" : "",
+    mei: c?.simei?.optant === true ? "SIM" : c?.simei?.optant === false ? "NÃO" : ""
+  };
+}
+
+// BrasilAPI → CNPJws → CNPJá (todas gratuitas). "Não encontrado" só quando nenhuma fonte tem o CNPJ;
+// empresas recém-abertas costumam aparecer primeiro na CNPJá.
 async function fetchCnpj(cnpj: string) {
-  try { return fromBrasilApi(await getJson(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`)); }
-  catch (e: any) {
-    if (e?.notFound) throw e;
-    await sleep(1200);
-    return fromCnpjWs(await getJson(`https://publica.cnpj.ws/cnpj/${cnpj}`));
+  const sources: [string, (x: any) => any][] = [
+    [`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`, fromBrasilApi],
+    [`https://publica.cnpj.ws/cnpj/${cnpj}`, fromCnpjWs],
+    [`https://open.cnpja.com/office/${cnpj}`, fromCnpja]
+  ];
+  let notFound = 0, lastErr: any = null;
+  for (let i = 0; i < sources.length; i++) {
+    const [url, map] = sources[i];
+    try {
+      const out = map(await getJson(url));
+      if (out.razao_social || out.situacao) return out;
+      throw new Error("EMPTY");
+    } catch (e: any) {
+      if (e?.notFound) notFound++; else lastErr = e;
+      if (i < sources.length - 1) await sleep(1200);
+    }
   }
+  // Só é "não encontrado" quando todas as fontes responderam 404; limite/instabilidade vira falha e é refeita no dia seguinte.
+  if (notFound === sources.length) { const e: any = new Error("NOT_FOUND"); e.notFound = true; throw e; }
+  throw lastErr || new Error("UNAVAILABLE");
 }
 
 // Compara campos que a fonte de fato informou (evita falso alerta quando uma fonte não traz o campo).
@@ -95,12 +131,12 @@ function diff(prev: any, cur: any) {
   cmp("Situação cadastral", prev.situacao, cur.situacao, true);
   cmp("Razão social", prev.razao_social, cur.razao_social);
   cmp("Nome fantasia", prev.nome_fantasia, cur.nome_fantasia);
-  cmp("Endereço", prev.endereco, cur.endereco);
+  if (prev.fonte === cur.fonte) cmp("Endereço", prev.endereco, cur.endereco);
   cmp("CNAE principal", prev.cnae_principal, cur.cnae_principal);
   if (prev.fonte === cur.fonte) cmp("CNAEs secundários", prev.cnaes_secundarios, cur.cnaes_secundarios);
   if (prev.fonte === cur.fonte) cmp("Quadro de sócios", prev.socios, cur.socios, true);
   if (prev.capital_social && cur.capital_social && Number(prev.capital_social) !== Number(cur.capital_social)) out.push({ campo: "Capital social", antes: String(prev.capital_social), depois: String(cur.capital_social) });
-  cmp("Natureza jurídica", prev.natureza, cur.natureza);
+  if (prev.fonte === cur.fonte) cmp("Natureza jurídica", prev.natureza, cur.natureza);
   cmp("Opção pelo Simples", prev.simples, cur.simples, true);
   cmp("MEI", prev.mei, cur.mei);
   return out;
