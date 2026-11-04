@@ -180,6 +180,7 @@
     });
     host.querySelector('#fx-csv')?.addEventListener('click', () => exportCsv(D, state.ym || todayISO().slice(0, 7)));
     host.__fxD = D;
+    cardTables(host);
     if (!host.__fxBound) { host.__fxBound = true; host.addEventListener('click', ev => onAction(host, ev)); }
   }
   async function onAction(host, ev) {
@@ -203,8 +204,20 @@
   }
   function setMonth(ym) { state.ym = ym; state.filter = 'todos'; try { sessionStorage.setItem('atlas.finYm', ym); } catch (_) {} }
 
+  // Tabelas viram cartões quando a área é estreita (tela dividida / notebook): rótulo de cada coluna em data-label
+  function cardTables(root) {
+    root?.querySelectorAll('.table-wrap > table').forEach(tb => {
+      const heads = [...tb.querySelectorAll('thead th')].map(th => th.textContent.trim());
+      tb.classList.add('fx-cards');
+      tb.closest('.surface')?.classList.add('fx-host');
+      tb.querySelectorAll('tbody tr').forEach(tr => [...tr.children].forEach((td, i) => { if (!td.dataset.label && heads[i]) td.dataset.label = heads[i]; }));
+    });
+  }
+  window.addEventListener?.('atlas:fx-rendered', () => cardTables(document.getElementById('page-content')));
+
   async function enhance() {
     const root = document.getElementById('page-content');
+    cardTables(root);
     const old = root?.querySelector('.honorarios-control');
     if (!old || old.dataset.fx === '1') return;
     old.dataset.fx = '1';
@@ -342,9 +355,9 @@
     window.costPage = wrapped;
   }
   if (typeof document !== 'undefined' && !document.getElementById('fx-css')) {
-    const link = document.createElement('link'); link.id = 'fx-css'; link.rel = 'stylesheet'; link.href = '/financeiro-apuracao.css?v=9.3';
+    const link = document.createElement('link'); link.id = 'fx-css'; link.rel = 'stylesheet'; link.href = '/financeiro-apuracao.css?v=9.4';
     document.head?.appendChild(link);
   }
 
-  window.AtlasFinanceiro = { version: '9.3', splitInstallments, addMonths, feeState, refMonth, apuracao, installmentLabel, csvRows, buildPdf, enhance };
+  window.AtlasFinanceiro = { version: '9.4', splitInstallments, addMonths, feeState, refMonth, apuracao, installmentLabel, csvRows, buildPdf, enhance };
 })();

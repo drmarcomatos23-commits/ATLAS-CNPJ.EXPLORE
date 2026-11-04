@@ -52,3 +52,23 @@
   .fx-tools{width:100%}
   .fx-tools select{flex:1}
 }
+
+/* V9.4 — tabelas do Financeiro em cartões quando a área fica estreita (tela dividida) */
+#app-shell .fx-host{container-type:inline-size;container-name:fxhost}
+@container fxhost (max-width: 1080px){
+  .fx-host .table-wrap{border:0!important;overflow:visible!important;border-radius:0!important}
+  .fx-host table.fx-cards,.fx-host table.fx-cards tbody{display:block;width:100%;min-width:0!important}
+  .fx-host table.fx-cards thead{display:none}
+  .fx-host table.fx-cards tr{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 16px;padding:12px 14px;margin:0 0 10px;border:1px solid #dfe7ef;border-radius:12px;background:#fff;box-shadow:0 1px 2px rgba(5,25,43,.04)}
+  .fx-host table.fx-cards tr.fx-late{border-left:4px solid #d64535}
+  .fx-host table.fx-cards td{display:block;padding:0!important;border:0!important;white-space:normal!important;min-width:0!important;text-align:left!important;font-size:13px!important;line-height:1.35}
+  .fx-host table.fx-cards td::before{content:attr(data-label);display:block;margin-bottom:3px;font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#6a7d93}
+  .fx-host table.fx-cards td[data-label="Processo"],.fx-host table.fx-cards td[data-label="Empresa"]{grid-column:span 2}
+  .fx-host table.fx-cards td[data-label="Ações"]{grid-column:1/-1;padding-top:8px!important;border-top:1px solid #edf2f7!important}
+  .fx-host table.fx-cards td[data-label="Ações"]::before{display:none}
+  .fx-host table.fx-cards td[data-label="Ações"] .row-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-start}
+}
+@container fxhost (max-width: 520px){
+  .fx-host table.fx-cards tr{grid-template-columns:1fr 1fr}
+  .fx-host table.fx-cards td[data-label="Processo"],.fx-host table.fx-cards td[data-label="Empresa"]{grid-column:1/-1}
+}
