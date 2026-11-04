@@ -1,0 +1,54 @@
+/* ATLAS · Financeiro V9.3 — gestão mensal de honorários e parcelamento */
+.fx-section .fx-head{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between}
+.fx-section .fx-head > div:first-child{flex:1 1 320px;min-width:0}
+.fx-section .fx-head > div:first-child span{display:block;color:#55677f;font-size:12px;line-height:1.4;margin-top:3px}
+.fx-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fx-tools select{min-height:36px;border:1px solid #cfdbe7;border-radius:9px;padding:0 10px;font:inherit;font-size:13px;font-weight:600;color:#0c2c4f;background:#fff}
+.fx-tools .mini-btn[data-fx-step]{width:34px;min-height:36px;font-size:17px;font-weight:700}
+.fx-kpis{margin:14px 0 10px}
+.fx-kpi.ok strong{color:#0f8a5f}
+.fx-kpi.warn strong{color:#a85d00}
+.fx-kpi.bad strong{color:#b42318}
+.fx-cash{font-size:13px;color:#33475f;margin:0 0 12px}
+.fx-alert{border:1px solid #f1d39b;background:#fff8ea;color:#5d3d00;border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;margin:0 0 10px}
+.fx-alert.bad{border-color:#f3c0bb;background:#fff3f2;color:#7a1a12}
+.fx-alert .mini-btn{margin-left:6px}
+.fx-collapse{margin-top:10px}
+.fx-collapse[hidden]{display:none!important}
+.fx-chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 10px}
+.fx-chip{border:1px solid #cfdbe7;background:#fff;border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:600;color:#33475f;cursor:pointer}
+.fx-chip b{margin-left:4px;color:#0c3f6e}
+.fx-chip.active{background:#0b3a66;border-color:#0b3a66;color:#fff}
+.fx-chip.active b{color:#fff}
+.fx-table td,.fx-table th{white-space:nowrap}
+.fx-table td:nth-child(2),.fx-table td:nth-child(3){white-space:normal;min-width:150px}
+.fx-num{text-align:right!important}
+.fx-table tr.fx-late td:first-child{color:#b42318;font-weight:700}
+.fx-receive{display:inline-flex;gap:4px;align-items:center}
+.fx-receive .fx-date{height:30px;border:1px solid #cfdbe7;border-radius:7px;padding:0 6px;font:inherit;font-size:12px;width:132px}
+.fx-empty{padding:16px 0}
+
+/* Cadastro do processo: à vista x parcelado */
+.process-finance-box [hidden]{display:none!important}
+.honor-mode-toggle{display:flex;flex-wrap:wrap;gap:8px}
+.honor-mode-toggle label{display:inline-flex;align-items:center;gap:7px;border:1px solid #cfdbe7;border-radius:9px;padding:8px 12px;font-size:13px;font-weight:600;color:#1d3553;cursor:pointer;background:#fff;text-transform:none;letter-spacing:0}
+.honor-mode-toggle input{width:16px!important;height:16px!important;min-height:0!important;min-width:0!important;margin:0!important;padding:0!important;flex:0 0 16px;box-shadow:none!important;accent-color:#1b6597}
+.honor-mode-toggle label:has(input:checked){border-color:#1b6597;background:#eef5fb;color:#0b3a66}
+.inst-setup{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:10px}
+.inst-setup .field{flex:1 1 140px;margin:0}
+.inst-setup .mini-btn{min-height:40px}
+.inst-head,.inst-row{display:grid;grid-template-columns:52px minmax(90px,1fr) minmax(130px,1.1fr) minmax(110px,1fr) minmax(130px,1.1fr);gap:6px;align-items:center}
+.inst-head{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#55677f;padding:0 2px 4px}
+.inst-row{padding:4px 0;border-top:1px solid #e6edf3}
+.inst-row input,.inst-row select{width:100%;min-width:0;height:36px;border:1px solid #cfdbe7;border-radius:8px;padding:0 8px;font:inherit;font-size:13px;background:#fff}
+.inst-row input:disabled{background:#f3f6f9;color:#8a9aae}
+.inst-n{font-weight:800;color:#0c3f6e;font-size:13px}
+.inst-sum-bad{color:#b42318!important;font-weight:700}
+@media (max-width:640px){
+  .inst-head{display:none}
+  .inst-row{grid-template-columns:44px 1fr 1fr;row-gap:6px}
+  .inst-row .inst-status{grid-column:2}
+  .inst-row .inst-paid-at{grid-column:3}
+  .fx-tools{width:100%}
+  .fx-tools select{flex:1}
+}
