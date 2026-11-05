@@ -1,0 +1,43 @@
+name: ATLAS V7.1 DB Homologation (Ephemeral)
+on:
+  push:
+    branches:
+      - atlas-legalizacao-v7-1-central-operacional-20261017
+  workflow_dispatch:
+
+jobs:
+  sql-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: atlas_test
+          POSTGRES_PASSWORD: atlas_ci_only
+          POSTGRES_DB: atlas_71_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U atlas_test -d atlas_71_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: atlas_test
+      PGPASSWORD: atlas_ci_only
+      PGDATABASE: atlas_71_ci
+    steps:
+      - uses: actions/checkout@v4
+      - name: PostgreSQL client
+        run: command -v psql || (sudo apt-get update -qq && sudo apt-get install -y postgresql-client)
+      - name: Synthetic base schema (no production data)
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/atlas-v71-pg-baseline.sql
+      - name: Apply V7.1 core migration to ephemeral Postgres
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017_atlas_v7_1_operational_engine.sql
+      - name: Apply V7.1 document and exigency migration
+        run: psql -X -v ON_ERROR_STOP=1 -f supabase/migrations/20261017_atlas_v7_1_document_exigencies.sql
+      - name: Execute authenticated document/exigency/RLS integration tests
+        run: psql -X -v ON_ERROR_STOP=1 -f tests/fixtures/atlas-v71-pg-integration.sql
